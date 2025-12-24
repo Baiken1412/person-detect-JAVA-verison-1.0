@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.project.caseapp.track.mapper.CompositeEventMapper">
+
+    <resultMap type="CompositeEvent" id="CompositeEventResult">
+        <result property="id"    column="id"    />
+        <result property="eventId"    column="event_id"    />
+        <result property="qyid"    column="qyid"    />
+        <result property="qymc"    column="qymc"    />
+        <result property="isClosed"    column="is_closed"    />
+        <result property="bzzt"    column="bzzt"    />
+        <result property="startTime"    column="start_time"    />
+        <result property="endTime"    column="end_time"    />
+        <result property="duration"    column="duration"    />
+        <result property="trackCount"    column="track_count"    />
+        <result property="xwyy"    column="xwyy"    />
+        <result property="ryxm"    column="ryxm"    />
+        <result property="wlry"    column="wlry"    />
+        <result property="ryslMax"    column="rysl_max"    />
+        <result property="pathAreas"    column="path_areas"    />
+        <result property="hasNonworktime"    column="has_nonworktime"    />
+        <result property="hasAbnormalPerson"    column="has_abnormal_person"    />
+        <!-- trackIds字段仅在内存中使用，不再持久化到数据库 -->
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectCompositeEventVo">
+        select id, event_id, qyid, qymc, is_closed, bzzt, start_time, end_time, duration,
+               track_count, xwyy, ryxm, wlry, rysl_max, path_areas, has_nonworktime,
+               has_abnormal_person, create_time, update_time, remark
+        from app_composite_event
+    </sql>
+
+    <select id="selectCompositeEventList" parameterType="CompositeEvent" resultMap="CompositeEventResult">
+        <include refid="selectCompositeEventVo"/>
+        <where>
+            <if test="eventId != null"> and event_id = #{eventId}</if>
+            <if test="qyid != null"> and qyid = #{qyid}</if>
+            <if test="qymc != null and qymc != ''"> and qymc like concat('%', #{qymc}, '%')</if>
+            <if test="isClosed != null"> and is_closed = #{isClosed}</if>
+            <if test="bzzt != null and bzzt != ''"> and bzzt = #{bzzt}</if>
+            <if test="ryxm != null and ryxm != ''"> and ryxm like concat('%', #{ryxm}, '%')</if>
+            <if test="hasNonworktime != null"> and has_nonworktime = #{hasNonworktime}</if>
+            <if test="hasAbnormalPerson != null"> and has_abnormalPerson = #{hasAbnormalPerson}</if>
+            <if test="params.beginTime != null and params.endTime != null">
+                and start_time between #{params.beginTime} and #{params.endTime}
+            </if>
+        </where>
+        order by start_time desc
+    </select>
+
+    <select id="selectCompositeEventById" parameterType="Long" resultMap="CompositeEventResult">
+        <include refid="selectCompositeEventVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectCompositeEventByEventId" parameterType="Long" resultMap="CompositeEventResult">
+        <include refid="selectCompositeEventVo"/>
+        where event_id = #{eventId}
+    </select>
+
+    <!-- 此查询已废弃，现在通过关系表 app_event_track_relation 查询 -->
+    <!--
+    <select id="selectCompositeEventsByTrackId" parameterType="Long" resultMap="CompositeEventResult">
+        select e.* from app_composite_event e
+        inner join app_event_track_relation r on e.id = r.event_id
+        where r.track_id = #{trackId}
+    </select>
+    -->
+
+    <insert id="insertCompositeEvent" parameterType="CompositeEvent" useGeneratedKeys="true" keyProperty="id">
+        insert into app_composite_event
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="eventId != null">event_id,</if>
+            <if test="qyid != null">qyid,</if>
+            <if test="qymc != null">qymc,</if>
+            <if test="isClosed != null">is_closed,</if>
+            <if test="bzzt != null">bzzt,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="duration != null">duration,</if>
+            <if test="trackCount != null">track_count,</if>
+            <if test="xwyy != null">xwyy,</if>
+            <if test="ryxm != null">ryxm,</if>
+            <if test="wlry != null">wlry,</if>
+            <if test="ryslMax != null">rysl_max,</if>
+            <if test="pathAreas != null">path_areas,</if>
+            <if test="hasNonworktime != null">has_nonworktime,</if>
+            <if test="hasAbnormalPerson != null">has_abnormal_person,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="eventId != null">#{eventId},</if>
+            <if test="qyid != null">#{qyid},</if>
+            <if test="qymc != null">#{qymc},</if>
+            <if test="isClosed != null">#{isClosed},</if>
+            <if test="bzzt != null">#{bzzt},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="endTime != null">#{endTime},</if>
+            <if test="duration != null">#{duration},</if>
+            <if test="trackCount != null">#{trackCount},</if>
+            <if test="xwyy != null">#{xwyy},</if>
+            <if test="ryxm != null">#{ryxm},</if>
+            <if test="wlry != null">#{wlry},</if>
+            <if test="ryslMax != null">#{ryslMax},</if>
+            <if test="pathAreas != null">#{pathAreas},</if>
+            <if test="hasNonworktime != null">#{hasNonworktime},</if>
+            <if test="hasAbnormalPerson != null">#{hasAbnormalPerson},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCompositeEvent" parameterType="CompositeEvent">
+        update app_composite_event
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="qyid != null">qyid = #{qyid},</if>
+            <if test="qymc != null">qymc = #{qymc},</if>
+            <if test="isClosed != null">is_closed = #{isClosed},</if>
+            <if test="bzzt != null">bzzt = #{bzzt},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="duration != null">duration = #{duration},</if>
+            <if test="trackCount != null">track_count = #{trackCount},</if>
+            <if test="xwyy != null">xwyy = #{xwyy},</if>
+            <if test="ryxm != null">ryxm = #{ryxm},</if>
+            <if test="wlry != null">wlry = #{wlry},</if>
+            <if test="ryslMax != null">rysl_max = #{ryslMax},</if>
+            <if test="pathAreas != null">path_areas = #{pathAreas},</if>
+            <if test="hasNonworktime != null">has_nonworktime = #{hasNonworktime},</if>
+            <if test="hasAbnormalPerson != null">has_abnormal_person = #{hasAbnormalPerson},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="closeCompositeEvent" parameterType="Long">
+        update app_composite_event set is_closed = 1 where id = #{id}
+    </update>
+
+    <delete id="deleteCompositeEventById" parameterType="Long">
+        delete from app_composite_event where id = #{id}
+    </delete>
+
+    <delete id="deleteCompositeEventByIds" parameterType="String">
+        delete from app_composite_event where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

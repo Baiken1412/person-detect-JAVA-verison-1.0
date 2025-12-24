@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.project.caseapp.roomip.mapper.AppRoomipMapper">
+    
+    <resultMap type="AppRoomip" id="AppRoomipResult">
+        <result property="id"    column="id"    />
+        <result property="fjmc"    column="fjmc"    />
+        <result property="ip"    column="ip"    />
+        <result property="dk"    column="dk"    />
+        <result property="tdh"    column="tdh"    />
+        <result property="xh"    column="xh"    />
+        <result property="zh"    column="zh"    />
+        <result property="mm"    column="mm"    />
+        <result property="sblx"    column="sblx"    />
+        <result property="gnslx"    column="gnslx"    />
+        <result property="rtspssl"    column="rtspssl"    />
+    </resultMap>
+
+    <sql id="selectAppRoomipVo">
+        select id, fjmc, ip, dk, tdh, xh, zh, mm, sblx, gnslx, rtspssl from app_roomip
+    </sql>
+
+    <select id="selectAppRoomipList" parameterType="AppRoomip" resultMap="AppRoomipResult">
+        <include refid="selectAppRoomipVo"/>
+        <where>  
+            <if test="fjmc != null  and fjmc != ''"> and fjmc = #{fjmc}</if>
+            <if test="ip != null  and ip != ''"> and ip = #{ip}</if>
+            <if test="dk != null  and dk != ''"> and dk = #{dk}</if>
+            <if test="tdh != null  and tdh != ''"> and tdh = #{tdh}</if>
+            <if test="xh != null  and xh != ''"> and xh = #{xh}</if>
+            <if test="zh != null  and zh != ''"> and zh = #{zh}</if>
+            <if test="mm != null  and mm != ''"> and mm = #{mm}</if>
+            <if test="sblx != null  and sblx != ''"> and sblx = #{sblx}</if>
+            <if test="gnslx != null  and gnslx != ''"> and gnslx = #{gnslx}</if>
+            <if test="rtspssl != null  and rtspssl != ''"> and rtspssl = #{rtspssl}</if>
+        </where>
+    </select>
+    
+    <select id="selectAppRoomipById" parameterType="Long" resultMap="AppRoomipResult">
+        <include refid="selectAppRoomipVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertAppRoomip" parameterType="AppRoomip" useGeneratedKeys="true" keyProperty="id">
+        insert into app_roomip
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="fjmc != null">fjmc,</if>
+            <if test="ip != null">ip,</if>
+            <if test="dk != null">dk,</if>
+            <if test="tdh != null">tdh,</if>
+            <if test="xh != null">xh,</if>
+            <if test="zh != null">zh,</if>
+            <if test="mm != null">mm,</if>
+            <if test="sblx != null">sblx,</if>
+            <if test="gnslx != null">gnslx,</if>
+            <if test="rtspssl != null">rtspssl,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="fjmc != null">#{fjmc},</if>
+            <if test="ip != null">#{ip},</if>
+            <if test="dk != null">#{dk},</if>
+            <if test="tdh != null">#{tdh},</if>
+            <if test="xh != null">#{xh},</if>
+            <if test="zh != null">#{zh},</if>
+            <if test="mm != null">#{mm},</if>
+            <if test="sblx != null">#{sblx},</if>
+            <if test="gnslx != null">#{gnslx},</if>
+            <if test="rtspssl != null">#{rtspssl},</if>
+         </trim>
+    </insert>
+
+    <update id="updateAppRoomip" parameterType="AppRoomip">
+        update app_roomip
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="fjmc != null">fjmc = #{fjmc},</if>
+            <if test="ip != null">ip = #{ip},</if>
+            <if test="dk != null">dk = #{dk},</if>
+            <if test="tdh != null">tdh = #{tdh},</if>
+            <if test="xh != null">xh = #{xh},</if>
+            <if test="zh != null">zh = #{zh},</if>
+            <if test="mm != null">mm = #{mm},</if>
+            <if test="sblx != null">sblx = #{sblx},</if>
+            <if test="gnslx != null">gnslx = #{gnslx},</if>
+            <if test="rtspssl != null">rtspssl = #{rtspssl},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteAppRoomipById" parameterType="Long">
+        delete from app_roomip where id = #{id}
+    </delete>
+
+    <delete id="deleteAppRoomipByIds" parameterType="String">
+        delete from app_roomip where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

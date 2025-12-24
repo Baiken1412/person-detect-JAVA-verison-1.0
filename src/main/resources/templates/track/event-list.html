@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>事件标注 - 资产视频分析插件</title>
+    <th:block th:include="include :: select2-css" />
+    <th:block th:include="include :: bootstrap-select-css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            padding: 40px 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-logo {
+            font-size: 64px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        .header-text h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header-text p {
+            font-size: 16px;
+            opacity: 0.95;
+            letter-spacing: 1px;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #2a5298;
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2a5298;
+        }
+
+        .toolbar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .toolbar > div {
+            display: flex;
+            align-items: center;
+        }
+
+        /* 区域筛选容器更宽 */
+        .toolbar > div:nth-child(2) {
+            min-width: 250px;
+        }
+
+        /* 状态筛选容器更宽 */
+        .toolbar > div:nth-child(3) {
+            min-width: 200px;
+        }
+
+        /* 管理员筛选容器更宽 */
+        .toolbar > div:nth-child(4) {
+            min-width: 200px;
+        }
+
+        /* 特殊筛选容器更宽 */
+        .toolbar > div:nth-child(5) {
+            min-width: 200px;
+        }
+
+        .toolbar label {
+            font-size: 14px;
+            color: #666;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+
+        .toolbar input[type="date"],
+        .toolbar select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        /* select2 容器对齐 */
+        .toolbar .select2-container {
+            vertical-align: middle;
+        }
+
+        .toolbar .select2-selection {
+            height: auto;
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+        }
+
+        .toolbar .select2-selection__rendered {
+            line-height: 38px;
+        }
+
+        .toolbar button {
+            padding: 8px 20px;
+            background: #2a5298;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .toolbar button:hover {
+            background: #1e3c72;
+        }
+
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .event-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .event-card.unlabeled {
+            border: 2px solid #ff6b6b;
+        }
+
+        .event-card.labeled {
+            border: 2px solid #51cf66;
+        }
+
+        .event-card.worktime-warning {
+            border: 3px solid #ff6b6b;
+            background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        }
+
+        .event-card.worktime-warning:hover {
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .worktime-warning-badge {
+            display: inline-block;
+            background: #ff6b6b;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .event-thumbnail {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .event-thumbnail .thumbnail-icon {
+            font-size: 48px;
+            z-index: 1;
+            /* 指定Emoji字体，提高兼容性 */
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", sans-serif;
+        }
+
+        .event-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .event-status.unlabeled {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .event-status.labeled {
+            background: #51cf66;
+            color: white;
+        }
+
+        .event-info {
+            padding: 15px;
+        }
+
+        .event-time {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .event-location {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .event-location::before {
+            content: "📍";
+            margin-right: 5px;
+        }
+
+        .event-reason {
+            font-size: 13px;
+            color: #888;
+            padding: 5px 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .event-suggestion {
+            font-size: 12px;
+            color: #ff9800;
+            padding: 8px 10px;
+            background: #fff3e0;
+            border-radius: 4px;
+            margin-top: 8px;
+            border-left: 3px solid #ff9800;
+        }
+
+        .event-suggestion::before {
+            content: "💡 ";
+        }
+
+
+        .no-events {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .no-events svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .loading-tip {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            grid-column: 1 / -1;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2a5298;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
+        /* ===== Composite Events ===== */
+        .composite-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .composite-section h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #2a5298;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .composite-card {
+            background: white;
+            border: 2px solid #9775fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .composite-card:hover {
+            background: #f3f0ff;
+            box-shadow: 0 4px 12px rgba(151,117,250,0.2);
+        }
+
+        .composite-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .composite-title {
+            font-weight: bold;
+            color: #9775fa;
+            font-size: 16px;
+        }
+
+        .composite-badge {
+            background: #9775fa;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .composite-path {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .composite-time-range {
+            color: #999;
+            font-size: 13px;
+        }
+
+        .analyze-btn {
+            padding: 8px 16px;
+            background: #51cf66;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .analyze-btn:hover {
+            background: #40c057;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-logo {
+                font-size: 48px;
+            }
+
+            .header-text h1 {
+                font-size: 24px;
+            }
+
+            .header-text p {
+                font-size: 14px;
+            }
+
+            .events-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .toolbar > * {
+                width: 100%;
+            }
+
+            .modal-content {
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="header-logo">🛡️</div>
+            <div class="header-text">
+                <h1>资产视频分析插件</h1>
+                <p>人员活动自动识别与追溯管理系统</p>
+            </div>
+            <div style="margin-left: auto;">
+                <button onclick="goToCompositeEvents()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    🔗 查看复合事件
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 统计卡片 -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <h3>📊 今日事件总数</h3>
+                <div class="number" id="todayTotal">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>⏳ 待标注事件</h3>
+                <div class="number" id="unlabeledCount">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>✅ 已标注事件</h3>
+                <div class="number" id="labeledCount">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>📅 本月事件总数</h3>
+                <div class="number" id="monthTotal">0</div>
+            </div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+            <div>
+                <label for="beginDateFilter">📅 日期筛选：</label>
+                <input type="date" id="beginDateFilter">
+                <span style="margin: 0 5px;">至</span>
+                <input type="date" id="endDateFilter">
+            </div>
+            <div>
+                <label for="areaFilter">📍 区域筛选：</label>
+                <select id="areaFilter" class="form-control noselect2">
+                    <option value="">全部区域</option>
+                </select>
+            </div>
+            <div>
+                <label for="statusFilter">🏷️ 状态筛选：</label>
+                <select id="statusFilter" class="form-control noselect2">
+                    <option value="">全部状态</option>
+                </select>
+            </div>
+            <div>
+                <label for="personFilter">👤 管理员筛选：</label>
+                <select id="personFilter" class="form-control noselect2" multiple>
+                    <!-- 人员选项将通过JavaScript动态生成 -->
+                </select>
+            </div>
+            <div>
+                <label for="specialFilter">⚠️ 特殊筛选：</label>
+                <select id="specialFilter" class="form-control noselect2" multiple>
+                    <option value="nonWorktime">非工作时间提示</option>
+                    <option value="abnormalPerson">人员异常数量</option>
+                </select>
+            </div>
+            <button onclick="applyFilters()">🔍 筛选</button>
+            <button onclick="resetFilters()">🔄 重置</button>
+            <button onclick="exportData()" style="background: #51cf66;">📤 导出台账</button>
+        </div>
+
+        <!-- 事件列表 -->
+        <div class="events-grid" id="eventsGrid">
+            <!-- 事件卡片将通过JavaScript动态生成 -->
+        </div>
+    </div>
+
+    <div class="footer">
+        Copyright © 2023-2024 某科技公司 版权所有
+    </div>
+
+
+    <script>
+        // 事件数据
+        let eventsData = []; // 事件数据
+        let compositeEvents = []; // 复合事件数据
+        let currentPage = 1; // 当前页码
+        let pageSize = 8; // 每页显示数量
+        let totalCount = 0; // 总记录数
+        let isLoading = false; // 是否正在加载
+        let hasMore = true; // 是否还有更多数据
+        let currentFilters = {}; // 当前筛选条件
+
+        // 区域邻接关系（定义哪些区域是相邻的）
+        const areaAdjacency = {
+            '库区大门': ['通道'],
+            '通道': ['库区大门', '贵重物品区', '小库房门口'],
+            '贵重物品区': ['通道'],
+            '小库房门口': ['通道']
+        };
+
+        // 初始化页面
+        function init() {
+            updateStats();
+            loadAreaList();
+            loadDictData();
+            loadPersonList();
+
+            // 设置默认日期：本月第一天到今天
+            const today = new Date();
+            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+            const firstDayStr = firstDayOfMonth.toISOString().split('T')[0];
+            const todayStr = today.toISOString().split('T')[0];
+
+            document.getElementById('beginDateFilter').value = firstDayStr;
+            document.getElementById('endDateFilter').value = todayStr;
+
+            // 保存当前筛选条件
+            currentFilters = {
+                beginDateFilter: firstDayStr,
+                endDateFilter: todayStr,
+                areaFilter: '',
+                statusFilter: '',
+                personFilter: [],
+                specialFilter: []
+            };
+
+            // 初始化特殊筛选 select2
+            $('#specialFilter').select2({
+                width: '200px',
+                placeholder: '请选择特殊筛选',
+                allowClear: true
+            });
+
+            // 加载本月的事件列表
+            loadEvents(firstDayStr, todayStr, '', '', [], 1, false);
+            setupScrollListener();
+        }
+        
+        // 设置滚动监听
+        function setupScrollListener() {
+            let scrollTimer = null;
+            window.addEventListener('scroll', function() {
+                // 防抖处理
+                if (scrollTimer) {
+                    clearTimeout(scrollTimer);
+                }
+                scrollTimer = setTimeout(function() {
+                    // 检查是否滚动到底部
+                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    const windowHeight = window.innerHeight;
+                    const documentHeight = document.documentElement.scrollHeight;
+                    
+                    // 当距离底部小于100px时，加载更多
+                    if (documentHeight - scrollTop - windowHeight < 100) {
+                        loadMoreEvents();
+                    }
+                }, 100);
+            });
+        }
+
+        // 加载字典数据
+        function loadDictData() {
+            fetch('/caseapp/track/dict/biz_annotation_status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0 && data.data) {
+                        const statusFilter = document.getElementById('statusFilter');
+                        // 保留"全部状态"选项
+                        statusFilter.innerHTML = '<option value="">全部状态</option>';
+                        // 添加字典选项
+                        data.data.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item.dictValue;
+                            option.textContent = item.dictLabel;
+                            statusFilter.appendChild(option);
+                        });
+                        // 初始化 select2
+                        $('#statusFilter').select2({
+                            width: '200px',
+                            placeholder: '请选择状态'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('获取字典数据失败:', error);
+                });
+        }
+
+
+        // 加载区域列表
+        function loadAreaList() {
+            fetch('/caseapp/roomip/areas', {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0 && data.data) {
+                        const areaFilter = document.getElementById('areaFilter');
+                        // 清空现有选项（保留"全部区域"）
+                        areaFilter.innerHTML = '<option value="">全部区域</option>';
+                        // 添加区域选项
+                        data.data.forEach(area => {
+                            const option = document.createElement('option');
+                            option.value = area;
+                            option.textContent = area;
+                            areaFilter.appendChild(option);
+                        });
+                        // 初始化 select2（可搜索）
+                        $('#areaFilter').select2({
+                            width: '250px',
+                            placeholder: '请选择区域'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('获取区域列表失败:', error);
+                });
+        }
+
+        // 加载人员列表（管理员）
+        function loadPersonList() {
+            fetch('/caseapp/person/persons', {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0 && data.data) {
+                        const personFilter = document.getElementById('personFilter');
+                        
+                        // 如果 select2 已经初始化，先销毁
+                        if ($('#personFilter').data('select2')) {
+                            $('#personFilter').select2('destroy');
+                        }
+                        
+                        // 清空现有选项
+                        personFilter.innerHTML = '';
+                        // 添加人员选项
+                        data.data.forEach(person => {
+                            const option = document.createElement('option');
+                            option.value = person;
+                            option.textContent = person;
+                            personFilter.appendChild(option);
+                        });
+                        // 初始化 select2（可搜索，多选）
+                        $('#personFilter').select2({
+                            width: '200px',
+                            placeholder: '请选择管理员',
+                            allowClear: true,
+                            multiple: true
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('获取人员列表失败:', error);
+                });
+        }
+
+        // 加载事件列表（支持分页）
+        function loadEvents(beginDateFilter, endDateFilter, areaFilter, statusFilter, personFilter, pageNum, append) {
+            if (isLoading) return; // 如果正在加载，直接返回
+            
+            isLoading = true;
+            const formData = new FormData();
+            
+            // 设置分页参数
+            formData.append('pageNum', pageNum || 1);
+            formData.append('pageSize', pageSize);
+            
+            // 设置状态筛选（对应实体类 bzzt 字段）
+            if (statusFilter) {
+                formData.append('bzzt', statusFilter);
+            }
+            
+            // 设置区域筛选（对应实体类 qymc 字段）
+            if (areaFilter) {
+                formData.append('qymc', areaFilter);
+            }
+            
+            // 设置管理员筛选（对应实体类 ryxm 字段，支持多选，使用模糊查询）
+            // 如果选择了多个管理员，使用逗号拼接
+            if (personFilter && personFilter.length > 0) {
+                // 将多个管理员用逗号拼接成一个字符串
+                const personStr = personFilter.join(',');
+                formData.append('ryxm', personStr);
+            }
+            
+            // 设置时间区间（对应 params.beginPssj 和 params.endPssj）
+            // 如果开始日期为空，默认使用今天
+            let beginDateStr = beginDateFilter || new Date().toISOString().split('T')[0];
+            // 如果结束日期为空，默认使用开始日期（同一天）
+            let endDateStr = endDateFilter || beginDateStr;
+            
+            const beginDate = new Date(beginDateStr);
+            const endDate = new Date(endDateStr);
+            
+            // 开始时间：开始日期当天 0:00:00
+            beginDate.setHours(0, 0, 0, 0);
+            const beginPssj = beginDate.getFullYear() + '-' + 
+                String(beginDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(beginDate.getDate()).padStart(2, '0') + ' ' +
+                String(beginDate.getHours()).padStart(2, '0') + ':' +
+                String(beginDate.getMinutes()).padStart(2, '0') + ':' +
+                String(beginDate.getSeconds()).padStart(2, '0');
+            
+            // 结束时间：结束日期当天 23:59:59
+            endDate.setHours(23, 59, 59, 999);
+            const endPssj = endDate.getFullYear() + '-' + 
+                String(endDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(endDate.getDate()).padStart(2, '0') + ' ' +
+                String(endDate.getHours()).padStart(2, '0') + ':' +
+                String(endDate.getMinutes()).padStart(2, '0') + ':' +
+                String(endDate.getSeconds()).padStart(2, '0');
+            
+            formData.append('params[beginPssj]', beginPssj);
+            formData.append('params[endPssj]', endPssj);
+            
+            fetch('/caseapp/track/events', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    isLoading = false;
+                    if (data.code === 0 && data.rows) {
+                        totalCount = data.total || 0;
+                        const newEvents = data.rows.map(item => {
+                            const event = {
+                                id: item.id,
+                                time: formatDateTime(item.pssj),
+                                area: item.qymc || '',
+                                videoUrl: item.spdz || '',
+                                status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
+                                reason: item.xwyy || '',
+                                reasonDetail: '',
+                                persons: [],
+                                operator: '',
+                                operateTime: item.bzsj || '',
+                                spsc: item.spsc || '',
+                                pstp: item.pstp || '', // 图片路径
+                                rysl: item.rysl || 0, // 人员数量
+                                pssj: item.pssj || '', // 原始拍摄时间字符串
+                                suggestions: []
+                            };
+                            
+                            // 解析人员信息
+                            if (item.ryxm) {
+                                event.persons.push(item.ryxm);
+                            }
+                            if (item.wlry) {
+                                event.persons.push(item.wlry);
+                            }
+                            
+                            // 解析原因详情
+                            if (item.xwyy && item.xwyy.includes('：')) {
+                                const parts = item.xwyy.split('：', 2);
+                                event.reason = parts[0];
+                                event.reasonDetail = parts[1];
+                            } else {
+                                event.reason = item.xwyy || '';
+                            }
+                            
+                            if (item.bzzt === '1') {
+                                event.operator = item.ryxm || '';
+                            }
+                            
+                            return event;
+                        });
+                        
+                        if (append) {
+                            // 追加模式：将新数据追加到现有数据
+                            eventsData = eventsData.concat(newEvents);
+                            currentPage = pageNum; // 更新当前页码
+                        } else {
+                            // 替换模式：重置数据
+                            eventsData = newEvents;
+                            currentPage = pageNum || 1;
+                        }
+                        
+                        // 检查是否还有更多数据
+                        if (totalCount === 0) {
+                            // 如果没有数据，肯定没有更多
+                            hasMore = false;
+                        } else if (newEvents.length < pageSize) {
+                            // 如果当前页返回的数据少于 pageSize，说明已经是最后一页
+                            hasMore = false;
+                        } else {
+                            // 否则根据已加载数量和总数判断
+                            hasMore = eventsData.length < totalCount;
+                        }
+                        
+                        // 应用特殊筛选（如果有）
+                        let filteredEvents = eventsData;
+                        if (currentFilters.specialFilter && currentFilters.specialFilter.length > 0) {
+                            filteredEvents = filterEventsBySpecial(eventsData, currentFilters.specialFilter);
+                        }
+                        
+                        renderEvents(filteredEvents);
+                    } else {
+                        if (!append) {
+                            eventsData = [];
+                            renderEvents([]);
+                        }
+                        hasMore = false;
+                        compositeEvents = [];
+                        renderCompositeEvents();
+                    }
+                })
+                .catch(error => {
+                    isLoading = false;
+                    console.error('获取事件列表失败:', error);
+                    if (!append) {
+                        eventsData = [];
+                        renderEvents([]);
+                    }
+                    hasMore = false;
+                });
+        }
+        
+        // 加载更多事件（滚动加载）
+        function loadMoreEvents() {
+            if (!hasMore || isLoading) {
+                return;
+            }
+            
+            const nextPage = currentPage + 1;
+            loadEvents(
+                currentFilters.beginDateFilter,
+                currentFilters.endDateFilter,
+                currentFilters.areaFilter,
+                currentFilters.statusFilter,
+                currentFilters.personFilter || [],
+                nextPage,
+                true // 追加模式
+            );
+        }
+
+        // 格式化日期时间
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // 检查是否满足工作时间超过3人进入的条件
+        // 条件：pssj在9时-18时 且 rysl >= 3
+        function isWorktimeWarning(event) {
+            if (!event.pssj) return false;
+            
+            // 检查时间是否在9时-18时之间
+            const date = new Date(event.pssj);
+            const hour = date.getHours();
+            if (hour < 9 || hour >= 18) {
+                return false;
+            }
+            
+            // 检查人员数量是否 >= 3
+            if (!event.rysl || event.rysl < 3) {
+                return false;
+            }
+            
+            return true;
+        }
+
+        // 检查是否满足非工作时间提示条件
+        // 条件：拍摄时间不在 9:00-18:00 之间 且 rysl >= 1
+        function isNonWorktimeWarning(event) {
+            if (!event.pssj) return false;
+            
+            // 检查时间是否不在9时-18时之间
+            const date = new Date(event.pssj);
+            const hour = date.getHours();
+            if (hour >= 9 && hour < 18) {
+                return false;
+            }
+            
+            // 检查人员数量是否 >= 1
+            if (!event.rysl || event.rysl < 1) {
+                return false;
+            }
+            
+            return true;
+        }
+
+        // 检查是否满足人员异常数量条件
+        // 条件：pssj在9时-18时 且 rysl >= 3
+        function isAbnormalPersonCount(event) {
+            return isWorktimeWarning(event);
+        }
+
+        // 根据特殊筛选条件过滤事件
+        function filterEventsBySpecial(events, specialFilters) {
+            if (!specialFilters || specialFilters.length === 0) {
+                return events;
+            }
+            
+            return events.filter(event => {
+                let matches = false;
+                
+                // 如果选择了"非工作时间提示"
+                if (specialFilters.includes('nonWorktime')) {
+                    if (isNonWorktimeWarning(event)) {
+                        matches = true;
+                    }
+                }
+                
+                // 如果选择了"人员异常数量"
+                if (specialFilters.includes('abnormalPerson')) {
+                    if (isAbnormalPersonCount(event)) {
+                        matches = true;
+                    }
+                }
+                
+                // 如果两个条件都选择了，只要满足其中一个就返回true（OR逻辑）
+                // 如果只选择了一个条件，必须满足该条件
+                return matches;
+            });
+        }
+
+        // 解析时长（秒）
+        function parseDuration(durationStr) {
+            if (!durationStr) return 0;
+            // 假设格式为 "XX秒" 或 "XX"
+            const match = durationStr.match(/(\d+)/);
+            return match ? parseInt(match[1]) : 0;
+        }
+
+        // 更新统计数据
+        function updateStats() {
+            // 调用后端统计接口
+            fetch('/caseapp/track/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0) {
+                        document.getElementById('todayTotal').textContent = data.todayTotal || 0;
+                        document.getElementById('unlabeledCount').textContent = data.unlabeledCount || 0;
+                        document.getElementById('labeledCount').textContent = data.labeledCount || 0;
+                        document.getElementById('monthTotal').textContent = data.monthTotal || 0;
+                    } else {
+                        console.error('获取统计数据失败:', data.msg);
+                        // 失败时显示0
+                        document.getElementById('todayTotal').textContent = 0;
+                        document.getElementById('unlabeledCount').textContent = 0;
+                        document.getElementById('labeledCount').textContent = 0;
+                        document.getElementById('monthTotal').textContent = 0;
+                    }
+                })
+                .catch(error => {
+                    console.error('获取统计数据出错:', error);
+                    // 出错时显示0
+                    document.getElementById('todayTotal').textContent = 0;
+                    document.getElementById('unlabeledCount').textContent = 0;
+                    document.getElementById('labeledCount').textContent = 0;
+                    document.getElementById('monthTotal').textContent = 0;
+                });
+        }
+
+        // 渲染事件列表
+        function renderEvents(events) {
+            const grid = document.getElementById('eventsGrid');
+
+            if (events.length === 0) {
+                grid.innerHTML = `
+                    <div class="no-events">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <p>暂无事件记录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 移除加载提示
+            const loadingTip = grid.querySelector('.loading-tip');
+            if (loadingTip) {
+                loadingTip.remove();
+            }
+
+            grid.innerHTML = events.map(event => {
+                // 检查是否满足工作时间警告条件（人员异常数量）
+                const isWarning = isWorktimeWarning(event);
+                // 检查是否满足非工作时间警告条件
+                const isNonWorktime = isNonWorktimeWarning(event);
+                const warningClass = isWarning ? 'worktime-warning' : '';
+                
+                return `
+                <div class="event-card ${event.status} ${warningClass}" onclick="openEventDetail('${event.id}')">
+                    <div class="event-thumbnail">
+                        ${event.pstp ? `<img src="${event.pstp}" alt="事件缩略图" onerror="this.onerror=null; this.src=''; this.style.display='none'; this.nextElementSibling.style.display='inline-block';" /><span class="thumbnail-icon" style="display:none;">🎥</span>` : '<span class="thumbnail-icon">🎥</span>'}
+                        <span class="event-status ${event.status}">
+                            ${event.status === 'unlabeled' ? '待标注' : '已标注'}
+                        </span>
+                    </div>
+                    <div class="event-info">
+                        <div class="event-time">${event.time}</div>
+                        <div class="event-location">${event.area}</div>
+                        ${isWarning ? `
+                            <div class="worktime-warning-badge">⚠️ 工作时间超过3人进入</div>
+                        ` : ''}
+                        ${isNonWorktime ? `
+                            <div class="worktime-warning-badge" style="background: #ff9800;">⚠️ 非工作时间进入</div>
+                        ` : ''}
+                        ${event.status === 'labeled' ? `
+                            ${event.persons && event.persons.length > 0 ? `
+                                <div class="event-reason">
+                                    👤 ${event.persons.join('、')}
+                                </div>
+                            ` : ''}
+                            <div class="event-reason">
+                                ${event.reason === '其他' ? event.reason + '：' + event.reasonDetail : event.reason}
+                            </div>
+                        ` : `
+                            <div class="event-reason">待标注原因</div>
+                            ${event.suggestions && event.suggestions.length > 0 ? `
+                                <div class="event-suggestion">
+                                    该时段前后可能有${event.suggestions.join('、')}操作
+                                </div>
+                            ` : ''}
+                        `}
+                    </div>
+                </div>
+            `;
+            }).join('');
+            
+            // 如果还有更多数据，显示加载提示
+            if (hasMore) {
+                const loadingTip = document.createElement('div');
+                loadingTip.className = 'loading-tip';
+                loadingTip.innerHTML = '<div class="loading-spinner"></div><p>滚动加载更多...</p>';
+                grid.appendChild(loadingTip);
+            } else if (events.length > 0) {
+                const loadingTip = document.createElement('div');
+                loadingTip.className = 'loading-tip';
+                // 如果应用了特殊筛选，显示筛选后的实际数量；否则显示总数
+                const displayCount = (currentFilters.specialFilter && currentFilters.specialFilter.length > 0) 
+                    ? events.length 
+                    : totalCount;
+                loadingTip.innerHTML = '<p>已加载全部数据（共 ' + displayCount + ' 条）</p>';
+                grid.appendChild(loadingTip);
+            }
+        }
+
+        // 打开事件详情（跳转到标注页面）
+        function openEventDetail(eventId) {
+            window.location.href = '/caseapp/track/eventAnnotation?id=' + eventId;
+        }
+
+        // 跳转到复合事件页面
+        function goToCompositeEvents() {
+            window.location.href = '/caseapp/track';
+        }
+
+        // 应用筛选
+        function applyFilters() {
+            const beginDateFilter = document.getElementById('beginDateFilter').value;
+            const endDateFilter = document.getElementById('endDateFilter').value;
+            const areaFilter = $('#areaFilter').val();
+            const statusFilter = $('#statusFilter').val();
+            const personFilter = $('#personFilter').val() || [];
+            const specialFilter = $('#specialFilter').val() || [];
+            
+            // 保存当前筛选条件
+            currentFilters = {
+                beginDateFilter: beginDateFilter,
+                endDateFilter: endDateFilter,
+                areaFilter: areaFilter,
+                statusFilter: statusFilter,
+                personFilter: personFilter,
+                specialFilter: specialFilter
+            };
+            
+            // 重置分页
+            currentPage = 1;
+            hasMore = true;
+            
+            // 重新加载事件列表（带筛选条件，替换模式）
+            loadEvents(beginDateFilter, endDateFilter, areaFilter, statusFilter, personFilter, 1, false);
+        }
+
+        // 重置筛选
+        function resetFilters() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('beginDateFilter').value = today;
+            document.getElementById('endDateFilter').value = today;
+            $('#areaFilter').val('').trigger('change');
+            $('#statusFilter').val('').trigger('change');
+            $('#personFilter').val(null).trigger('change');
+            $('#specialFilter').val(null).trigger('change');
+
+            // 保存当前筛选条件
+            currentFilters = {
+                beginDateFilter: today,
+                endDateFilter: today,
+                areaFilter: '',
+                statusFilter: '',
+                personFilter: [],
+                specialFilter: []
+            };
+
+            // 重置分页
+            currentPage = 1;
+            hasMore = true;
+
+            loadEvents(today, today, '', '', [], 1, false);
+        }
+
+        // 导出台账数据
+        function exportData() {
+            const beginDateFilter = currentFilters.beginDateFilter || document.getElementById('beginDateFilter').value;
+            const endDateFilter = currentFilters.endDateFilter || document.getElementById('endDateFilter').value;
+            const areaFilter = currentFilters.areaFilter || $('#areaFilter').val();
+            const statusFilter = currentFilters.statusFilter || $('#statusFilter').val();
+            const personFilter = currentFilters.personFilter || $('#personFilter').val() || [];
+
+            // 构建POST参数数组
+            var dataParam = [];
+
+            // 设置状态筛选（对应实体类 bzzt 字段）
+            if (statusFilter) {
+                dataParam.push({ "name": "bzzt", "value": statusFilter });
+            }
+
+            // 设置区域筛选（对应实体类 qymc 字段）
+            if (areaFilter) {
+                dataParam.push({ "name": "qymc", "value": areaFilter });
+            }
+
+            // 设置管理员筛选（对应实体类 ryxm 字段）
+            if (personFilter && personFilter.length > 0) {
+                dataParam.push({ "name": "ryxm", "value": personFilter.join(',') });
+            }
+
+            // 设置时间区间
+            let beginDateStr = beginDateFilter || new Date().toISOString().split('T')[0];
+            let endDateStr = endDateFilter || beginDateStr;
+
+            const beginDate = new Date(beginDateStr);
+            const endDate = new Date(endDateStr);
+
+            // 开始时间：开始日期当天 0:00:00
+            beginDate.setHours(0, 0, 0, 0);
+            const beginPssj = beginDate.getFullYear() + '-' +
+                String(beginDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(beginDate.getDate()).padStart(2, '0') + ' ' +
+                String(beginDate.getHours()).padStart(2, '0') + ':' +
+                String(beginDate.getMinutes()).padStart(2, '0') + ':' +
+                String(beginDate.getSeconds()).padStart(2, '0');
+
+            // 结束时间：结束日期当天 23:59:59
+            endDate.setHours(23, 59, 59, 999);
+            const endPssj = endDate.getFullYear() + '-' +
+                String(endDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(endDate.getDate()).padStart(2, '0') + ' ' +
+                String(endDate.getHours()).padStart(2, '0') + ':' +
+                String(endDate.getMinutes()).padStart(2, '0') + ':' +
+                String(endDate.getSeconds()).padStart(2, '0');
+
+            dataParam.push({ "name": "params[beginPssj]", "value": beginPssj });
+            dataParam.push({ "name": "params[endPssj]", "value": endPssj });
+
+            // 提示用户
+            $.modal.loading("正在导出数据，请稍候...");
+
+            // POST到导出接口，获取文件名后下载
+            $.post('/caseapp/track/export', dataParam, function(result) {
+                if (result.code == 0) {
+                    window.location.href = ctx + "common/download?fileName=" + encodeURI(result.msg) + "&delete=" + true;
+                    $.modal.closeLoading();
+                    $.modal.msgSuccess("导出成功！");
+                } else {
+                    $.modal.closeLoading();
+                    $.modal.alertError(result.msg || "导出失败");
+                }
+            }).fail(function() {
+                $.modal.closeLoading();
+                $.modal.alertError("导出请求失败，请稍后重试");
+            });
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: select2-js" />
+    <th:block th:include="include :: bootstrap-select-js" />
+</body>
+</html>

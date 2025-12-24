@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.project.caseapp.person.mapper.AppPersonMapper">
+    
+    <resultMap type="AppPerson" id="AppPersonResult">
+        <result property="id"    column="id"    />
+        <result property="empno"    column="empno"    />
+        <result property="empname"    column="empname"    />
+        <result property="empsex"    column="empsex"    />
+        <result property="empDept"    column="emp_dept"    />
+        <result property="isdel"    column="isdel"    />
+        <result property="idno"    column="idno"    />
+        <result property="phone"    column="phone"    />
+    </resultMap>
+
+    <sql id="selectAppPersonVo">
+        select id, empno, empname, empsex, emp_dept, isdel, idno, phone from app_person
+    </sql>
+
+    <select id="selectAppPersonList" parameterType="AppPerson" resultMap="AppPersonResult">
+        <include refid="selectAppPersonVo"/>
+        <where>  
+            <if test="empno != null  and empno != ''"> and empno = #{empno}</if>
+            <if test="empname != null  and empname != ''"> and empname = #{empname}</if>
+            <if test="empsex != null  and empsex != ''"> and empsex = #{empsex}</if>
+            <if test="empDept != null  and empDept != ''"> and emp_dept = #{empDept}</if>
+            <if test="isdel != null  and isdel != ''"> and isdel = #{isdel}</if>
+            <if test="idno != null  and idno != ''"> and idno = #{idno}</if>
+            <if test="phone != null  and phone != ''"> and phone = #{phone}</if>
+        </where>
+    </select>
+    
+    <select id="selectAppPersonById" parameterType="Long" resultMap="AppPersonResult">
+        <include refid="selectAppPersonVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertAppPerson" parameterType="AppPerson" useGeneratedKeys="true" keyProperty="id">
+        insert into app_person
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="empno != null">empno,</if>
+            <if test="empname != null">empname,</if>
+            <if test="empsex != null">empsex,</if>
+            <if test="empDept != null">emp_dept,</if>
+            <if test="isdel != null">isdel,</if>
+            <if test="idno != null">idno,</if>
+            <if test="phone != null">phone,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="empno != null">#{empno},</if>
+            <if test="empname != null">#{empname},</if>
+            <if test="empsex != null">#{empsex},</if>
+            <if test="empDept != null">#{empDept},</if>
+            <if test="isdel != null">#{isdel},</if>
+            <if test="idno != null">#{idno},</if>
+            <if test="phone != null">#{phone},</if>
+         </trim>
+    </insert>
+
+    <update id="updateAppPerson" parameterType="AppPerson">
+        update app_person
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="empno != null">empno = #{empno},</if>
+            <if test="empname != null">empname = #{empname},</if>
+            <if test="empsex != null">empsex = #{empsex},</if>
+            <if test="empDept != null">emp_dept = #{empDept},</if>
+            <if test="isdel != null">isdel = #{isdel},</if>
+            <if test="idno != null">idno = #{idno},</if>
+            <if test="phone != null">phone = #{phone},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteAppPersonById" parameterType="Long">
+        delete from app_person where id = #{id}
+    </delete>
+
+    <delete id="deleteAppPersonByIds" parameterType="String">
+        delete from app_person where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

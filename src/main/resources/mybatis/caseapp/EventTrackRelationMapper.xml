@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.project.caseapp.track.mapper.EventTrackRelationMapper">
+
+    <resultMap id="EventTrackRelationResult" type="com.ruoyi.project.caseapp.track.domain.EventTrackRelation">
+        <id     property="id"         column="id"          />
+        <result property="eventId"    column="event_id"    />
+        <result property="trackId"    column="track_id"    />
+        <result property="seqNo"      column="seq_no"      />
+        <result property="createdAt"  column="created_at"  />
+    </resultMap>
+
+    <sql id="selectRelationVo">
+        SELECT id, event_id, track_id, seq_no, created_at
+        FROM app_event_track_relation
+    </sql>
+
+    <!-- 查询关系列表 -->
+    <select id="selectRelationList" parameterType="EventTrackRelation" resultMap="EventTrackRelationResult">
+        <include refid="selectRelationVo"/>
+        <where>
+            <if test="eventId != null">AND event_id = #{eventId}</if>
+            <if test="trackId != null">AND track_id = #{trackId}</if>
+        </where>
+        ORDER BY event_id, seq_no
+    </select>
+
+    <!-- 根据事件ID查询所有轨迹ID -->
+    <select id="selectTrackIdsByEventId" parameterType="Long" resultType="Long">
+        SELECT track_id
+        FROM app_event_track_relation
+        WHERE event_id = #{eventId}
+        ORDER BY seq_no
+    </select>
+
+    <!-- 根据轨迹ID查询所有事件ID -->
+    <select id="selectEventIdsByTrackId" parameterType="Long" resultType="Long">
+        SELECT event_id
+        FROM app_event_track_relation
+        WHERE track_id = #{trackId}
+        ORDER BY created_at
+    </select>
+
+    <!-- 批量插入关系 -->
+    <insert id="batchInsertRelations" parameterType="java.util.List">
+        INSERT INTO app_event_track_relation (event_id, track_id, seq_no)
+        VALUES
+        <foreach collection="relations" item="item" separator=",">
+            (#{item.eventId}, #{item.trackId}, #{item.seqNo})
+        </foreach>
+        ON DUPLICATE KEY UPDATE seq_no = VALUES(seq_no)
+    </insert>
+
+    <!-- 插入单个关系 -->
+    <insert id="insertRelation" parameterType="EventTrackRelation" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO app_event_track_relation (event_id, track_id, seq_no)
+        VALUES (#{eventId}, #{trackId}, #{seqNo})
+        ON DUPLICATE KEY UPDATE seq_no = #{seqNo}
+    </insert>
+
+    <!-- 删除事件的所有关系 -->
+    <delete id="deleteByEventId" parameterType="Long">
+        DELETE FROM app_event_track_relation WHERE event_id = #{eventId}
+    </delete>
+
+    <!-- 删除轨迹的所有关系 -->
+    <delete id="deleteByTrackId" parameterType="Long">
+        DELETE FROM app_event_track_relation WHERE track_id = #{trackId}
+    </delete>
+
+    <!-- 删除指定的关系 -->
+    <delete id="deleteRelation">
+        DELETE FROM app_event_track_relation
+        WHERE event_id = #{eventId} AND track_id = #{trackId}
+    </delete>
+
+    <!-- 统计事件包含的轨迹数量 -->
+    <select id="countTracksByEventId" parameterType="Long" resultType="int">
+        SELECT COUNT(*) FROM app_event_track_relation WHERE event_id = #{eventId}
+    </select>
+
+</mapper>

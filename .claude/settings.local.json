@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(taskkill /F /PID 9312)",
+      "Bash(taskkill //F //PID 9312)",
+      "Bash(timeout /t 15 /nobreak)",
+      "Bash(mysql:*)",
+      "Bash(curl:*)",
+      "Bash(python -m json.tool:*)",
+      "Bash(python:*)",
+      "Bash(taskkill //F //PID 23412)",
+      "Bash(timeout /t 30 /nobreak)",
+      "Bash(find:*)",
+      "Bash(taskkill //F //PID 18344)",
+      "Bash(taskkill //F //PID 8544)",
+      "Bash(taskkill //F //PID 29100)",
+      "Bash(taskkill //F //PID 20888)",
+      "Bash(taskkill //F //PID 916)",
+      "Bash(java:*)",
+      "Bash(taskkill //F //PID 6844)",
+      "Bash(ping:*)",
+      "Bash(taskkill //F //PID 732)",
+      "Bash(cat:*)"
+    ]
+  }
+}

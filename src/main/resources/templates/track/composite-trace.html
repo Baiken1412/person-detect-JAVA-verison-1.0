@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>事件经过还原（复合事件）</title>
+    <th:block th:include="include :: select2-css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #9775fa 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .content {
+            padding: 20px 30px;
+        }
+
+        .composite-info {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .composite-info-title {
+            font-weight: bold;
+            color: #9775fa;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .composite-info-detail {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .video-container {
+            width: 100%;
+            background: #000;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .video-controls {
+            padding: 12px 15px;
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .volume-btn {
+            background: #9775fa;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .volume-btn:hover {
+            background: #764ba2;
+        }
+
+        .volume-btn.muted {
+            background: #868e96;
+        }
+
+        .trace-timeline {
+            border-left: 3px solid #9775fa;
+            padding-left: 20px;
+            margin-top: 20px;
+        }
+
+        .trace-node {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            position: relative;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .trace-node:hover {
+            background: #e7f5ff;
+        }
+
+        .trace-node::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 20px;
+            width: 16px;
+            height: 16px;
+            background: #bbb;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            transition: all 0.3s;
+        }
+
+        .trace-node.active {
+            background: #e7f5ff;
+            border-left: 3px solid #9775fa;
+            box-shadow: 0 2px 8px rgba(151,117,250,0.2);
+        }
+
+        .trace-node.active::before {
+            background: #9775fa;
+            transform: scale(1.2);
+        }
+
+        .trace-time {
+            font-weight: bold;
+            color: #9775fa;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .trace-area {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .trace-duration {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background: #9775fa;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+
+        .back-btn:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" onclick="goBack()">🔙 返回</button>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🎬 事件经过还原（复合事件）</h1>
+            <button class="close-btn" onclick="goBack()">✖️</button>
+        </div>
+        <div class="content">
+            <div class="composite-info" id="compositeInfo"></div>
+            <div class="video-container">
+                <video id="traceVideo" controls muted>
+                    <source src="" type="video/mp4">
+                    您的浏览器不支持视频播放。
+                </video>
+                <div class="video-controls">
+                    <button class="volume-btn muted" id="volumeBtn" onclick="toggleVolume()">
+                        🔇 点击开启声音
+                    </button>
+                    <span style="color: #666; font-size: 12px;">
+                        💡 视频默认静音自动播放，如需声音请点击左侧按钮
+                    </span>
+                </div>
+            </div>
+            <div class="trace-timeline" id="traceTimeline"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentComposite = null;
+        let compositeId = null;
+
+        // 从URL参数获取复合事件ID
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // 初始化页面
+        function init() {
+            compositeId = getUrlParam('id');
+            if (!compositeId) {
+                $.modal.alertError('缺少复合事件ID参数');
+                goBack();
+                return;
+            }
+            loadCompositeEvent(compositeId);
+        }
+
+        // 加载复合事件数据
+        function loadCompositeEvent(id) {
+            // 从URL参数获取时间范围（如果有）
+            const beginDate = getUrlParam('beginDate') || new Date().toISOString().split('T')[0];
+            const endDate = getUrlParam('endDate') || beginDate;
+            
+            // 构建时间参数
+            const beginDateObj = new Date(beginDate);
+            const endDateObj = new Date(endDate);
+            
+            beginDateObj.setHours(0, 0, 0, 0);
+            const beginPssj = beginDateObj.getFullYear() + '-' + 
+                String(beginDateObj.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(beginDateObj.getDate()).padStart(2, '0') + ' ' +
+                String(beginDateObj.getHours()).padStart(2, '0') + ':' +
+                String(beginDateObj.getMinutes()).padStart(2, '0') + ':' +
+                String(beginDateObj.getSeconds()).padStart(2, '0');
+            
+            endDateObj.setHours(23, 59, 59, 999);
+            const endPssj = endDateObj.getFullYear() + '-' + 
+                String(endDateObj.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(endDateObj.getDate()).padStart(2, '0') + ' ' +
+                String(endDateObj.getHours()).padStart(2, '0') + ':' +
+                String(endDateObj.getMinutes()).padStart(2, '0') + ':' +
+                String(endDateObj.getSeconds()).padStart(2, '0');
+            
+            const formData = new FormData();
+            formData.append('params[beginPssj]', beginPssj);
+            formData.append('params[endPssj]', endPssj);
+            
+            fetch('/caseapp/track/compositeEvents/list', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0 && data.data) {
+                        // 查找匹配的复合事件
+                        const composite = data.data.find((comp, currentIndex) => {
+                            // 优先使用eventId匹配
+                            if (comp.eventId && comp.eventId == id) {
+                                return true;
+                            }
+                            // 兼容旧的COMP索引格式（向后兼容）
+                            if (id.startsWith('COMP')) {
+                                const targetIndex = parseInt(id.replace('COMP', '')) - 1;
+                                return currentIndex === targetIndex;
+                            }
+                            return false;
+                        });
+                        
+                        if (!composite) {
+                            $.modal.alertError('未找到指定的复合事件');
+                            goBack();
+                            return;
+                        }
+                        
+                        // 转换数据格式
+                        const events = composite.events.map(item => ({
+                            id: item.id,
+                            time: formatDateTime(item.pssj),
+                            area: item.qymc || '',
+                            videoUrl: item.spdz || '',
+                            status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
+                            reason: item.xwyy || '',
+                            spsc: item.spsc || ''
+                        }));
+                        
+                        currentComposite = {
+                            id: id,
+                            eventId: composite.eventId,
+                            events: events,
+                            startTime: formatDateTime(composite.startTime),
+                            endTime: formatDateTime(composite.endTime),
+                            path: events.map(e => e.area),
+                            eventCount: composite.eventCount,
+                            bzzt: String(composite.bzzt || '0'),
+                            xwyy: composite.xwyy || '',
+                            ryxm: composite.ryxm || '',
+                            wlry: composite.wlry || '',
+                            remark: composite.remark || ''
+                        };
+
+                        // 调试：输出复合事件数据
+                        console.log('========== 复合事件数据加载成功 ==========');
+                        console.log('复合事件ID:', currentComposite.eventId);
+                        console.log('事件数量:', currentComposite.events.length);
+                        console.log('时间范围:', currentComposite.startTime, '~', currentComposite.endTime);
+                        console.log('路径:', currentComposite.path.join(' → '));
+                        console.log('\n关联事件详情:');
+                        currentComposite.events.forEach((e, i) => {
+                            console.log(`  [${i + 1}] ID=${e.id}, 区域=${e.area}, 时间=${e.time}`);
+                            console.log(`      视频URL: "${e.videoUrl}" (长度: ${e.videoUrl ? e.videoUrl.length : 0})`);
+                            console.log(`      状态: ${e.status}, 时长: ${e.spsc}秒`);
+                        });
+                        console.log('==========================================\n');
+
+                        renderCompositeInfo();
+                        renderTraceTimeline();
+                        playTraceVideo(0);
+                    } else {
+                        $.modal.alertError('获取复合事件失败：' + (data.msg || '未知错误'));
+                        goBack();
+                    }
+                })
+                .catch(error => {
+                    console.error('获取复合事件失败:', error);
+                    $.modal.alertError('获取复合事件失败，请稍后重试');
+                    goBack();
+                });
+        }
+
+        // 格式化日期时间
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // 计算时长
+        function calculateDuration(startTime, endTime) {
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            const diffSeconds = Math.floor((end - start) / 1000); // 秒
+
+            if (diffSeconds < 60) {
+                return `${diffSeconds}秒`;
+            } else if (diffSeconds < 3600) {
+                const mins = Math.floor(diffSeconds / 60);
+                const secs = diffSeconds % 60;
+                return `${mins}分${secs}秒`;
+            } else {
+                const hours = Math.floor(diffSeconds / 3600);
+                const mins = Math.floor((diffSeconds % 3600) / 60);
+                const secs = diffSeconds % 60;
+                return `${hours}小时${mins}分${secs}秒`;
+            }
+        }
+
+        // 渲染复合事件信息
+        function renderCompositeInfo() {
+            const duration = calculateDuration(currentComposite.startTime, currentComposite.endTime);
+            const bzzt = String(currentComposite.bzzt || '0');
+            const statusText = bzzt === '1' ? '已标注' : '待标注';
+            const statusColor = bzzt === '1' ? '#51cf66' : '#ff6b6b';
+
+            // 构建标注信息
+            let annotationHtml = '';
+            if (bzzt === '1') {
+                annotationHtml = '<div style="margin-top: 12px; padding: 12px; background: #e7f5ff; border-left: 4px solid #4c6ef5; border-radius: 4px;">';
+                annotationHtml += '<div style="font-weight: bold; color: #4c6ef5; margin-bottom: 6px;">📋 标注信息</div>';
+
+                if (currentComposite.xwyy) {
+                    annotationHtml += `<div style="margin-bottom: 4px;">📝 行为原因：${currentComposite.xwyy}</div>`;
+                }
+                if (currentComposite.ryxm) {
+                    annotationHtml += `<div style="margin-bottom: 4px;">👤 管理员：${currentComposite.ryxm}</div>`;
+                }
+                if (currentComposite.wlry) {
+                    annotationHtml += `<div style="margin-bottom: 4px;">🔶 外来人员：${currentComposite.wlry}</div>`;
+                }
+                if (currentComposite.remark) {
+                    annotationHtml += `<div style="margin-bottom: 4px;">💬 备注：${currentComposite.remark}</div>`;
+                }
+
+                annotationHtml += '</div>';
+            }
+
+            document.getElementById('compositeInfo').innerHTML = `
+                <div class="composite-info-title">
+                    复合事件 #${currentComposite.eventId || currentComposite.id} - ${currentComposite.eventCount || currentComposite.events.length} 个关联事件
+                    <span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px;">${statusText}</span>
+                </div>
+                <div class="composite-info-detail">
+                    📍 路径：${currentComposite.path.join(' → ')}<br>
+                    ⏱️ 时长：${duration}<br>
+                    📅 时间范围：${currentComposite.startTime} ~ ${currentComposite.endTime.split(' ')[1]}
+                </div>
+                ${annotationHtml}
+            `;
+        }
+
+        // 渲染追踪时间线
+        function renderTraceTimeline() {
+            document.getElementById('traceTimeline').innerHTML =
+                currentComposite.events.map((e, i) => {
+                    const prevEvent = i > 0 ? currentComposite.events[i - 1] : null;
+                    const duration = prevEvent ? calculateDuration(prevEvent.time, e.time) : '';
+                    return `
+                        <div class="trace-node ${i === 0 ? 'active' : ''}" id="traceNode${i}" onclick="playTraceVideo(${i})">
+                            ${duration ? `<div class="trace-duration">⏱️ 间隔 ${duration}</div>` : ''}
+                            <div class="trace-time">${e.time}</div>
+                            <div class="trace-area">📍 ${e.area}</div>
+                        </div>
+                    `;
+                }).join('');
+        }
+
+        // // 播放追踪视频
+        // function playTraceVideo(index) {
+        //     if (index >= currentComposite.events.length) return;
+
+        //     const v = document.getElementById('traceVideo');
+        //     highlightTraceNode(index);
+        //     v.src = currentComposite.events[index].videoUrl || '';
+
+        //     if (v.src) {
+        //         v.play();
+        //         v.onended = () => {
+        //             if (index + 1 < currentComposite.events.length) {
+        //                 setTimeout(() => playTraceVideo(index + 1), 500);
+        //             }
+        //         };
+        //     } else {
+        //         if (index + 1 < currentComposite.events.length) {
+        //             setTimeout(() => playTraceVideo(index + 1), 1000);
+        //         }
+        //     }
+        // }
+
+        // 播放追踪视频
+        function playTraceVideo(index) {
+            if (index >= currentComposite.events.length) return;
+
+            const v = document.getElementById('traceVideo');
+            highlightTraceNode(index);
+
+            // 获取原始 URL 字符串
+            const url = currentComposite.events[index].videoUrl;
+            const event = currentComposite.events[index];
+
+            console.log(`[视频播放] 第 ${index + 1}/${currentComposite.events.length} 个事件`);
+            console.log(`  事件ID: ${event.id}`);
+            console.log(`  区域: ${event.area}`);
+            console.log(`  时间: ${event.time}`);
+            console.log(`  视频URL: "${url}"`);
+            console.log(`  URL类型: ${typeof url}, 长度: ${url ? url.length : 0}`);
+
+            // 只有当 URL 真实存在且不为空时才设置 src
+            if (url && url.trim() !== '') {
+                console.log(`  → 设置视频源: ${url}`);
+                v.src = url;
+
+                // 确保视频静音（允许自动播放）
+                v.muted = true;
+
+                // 添加加载失败监听
+                v.onerror = (e) => {
+                    console.error(`  ✗ 视频加载失败:`, e);
+                    console.error(`  ✗ 视频URL: "${url}"`);
+                    console.error(`  ✗ URL长度: ${url.length}`);
+                    console.error(`  ✗ 可能原因: 文件不存在、格式不支持或路径错误`);
+
+                    // 构建错误消息
+                    let errorMsg = `❌ 视频加载失败！\n\n`;
+                    errorMsg += `📍 事件信息：\n`;
+                    errorMsg += `   • 事件ID: ${event.id}\n`;
+                    errorMsg += `   • 区域: ${event.area}\n`;
+                    errorMsg += `   • 时间: ${event.time}\n\n`;
+                    errorMsg += `📂 视频路径：\n`;
+                    errorMsg += `   ${url}\n\n`;
+                    errorMsg += `🔧 可能的原因：\n`;
+                    errorMsg += `   1. 视频文件不存在（路径错误或文件未上传）\n`;
+                    errorMsg += `   2. 视频格式不支持（需要MP4格式）\n`;
+                    errorMsg += `   3. 数据库中spdz字段为空或无效\n`;
+                    errorMsg += `   4. 服务器路径配置问题\n\n`;
+                    errorMsg += `💡 建议：\n`;
+                    errorMsg += `   请检查数据库中该事件的spdz字段值是否正确`;
+
+                    console.error(`\n${'='.repeat(60)}`);
+                    console.error(`视频加载失败详情：`);
+                    console.error(errorMsg);
+                    console.error(`${'='.repeat(60)}\n`);
+
+                    // 只在第一次失败时显示弹窗，避免连续多个弹窗
+                    if (index === 0) {
+                        alert(errorMsg);
+                    }
+
+                    // 自动跳到下一个
+                    if (index + 1 < currentComposite.events.length) {
+                        setTimeout(() => playTraceVideo(index + 1), 1000);
+                    }
+                };
+
+                // 添加 catch 捕获播放错误
+                v.play().catch(e => {
+                    console.error(`  ✗ 播放出错:`, e);
+                    console.error(`  ✗ 错误类型: ${e.name}`);
+                    console.error(`  ✗ 错误详情: ${e.message}`);
+
+                    // 如果是自动播放被阻止的错误，尝试静音后再播放
+                    if (e.name === 'NotAllowedError') {
+                        console.log(`  → 尝试静音播放...`);
+                        v.muted = true;
+                        v.play().catch(err => {
+                            console.error(`  ✗ 静音播放也失败:`, err);
+                            // 播放失败，跳到下一个
+                            if (index + 1 < currentComposite.events.length) {
+                                setTimeout(() => playTraceVideo(index + 1), 2000);
+                            }
+                        });
+                    } else {
+                        // 其他错误（如文件不存在），跳到下一个
+                        if (index + 1 < currentComposite.events.length) {
+                            setTimeout(() => playTraceVideo(index + 1), 2000);
+                        }
+                    }
+                });
+
+                v.onended = () => {
+                    console.log(`  ✓ 视频播放完成`);
+                    if (index + 1 < currentComposite.events.length) {
+                        setTimeout(() => playTraceVideo(index + 1), 500);
+                    }
+                };
+            } else {
+                // 如果没有视频地址，移除 src 属性防止报错
+                v.removeAttribute('src');
+                console.warn(`  ⚠ 第 ${index + 1} 个节点无视频地址，1秒后跳过`);
+
+                // 模拟播放延迟，自动跳到下一个
+                if (index + 1 < currentComposite.events.length) {
+                    setTimeout(() => playTraceVideo(index + 1), 1000);
+                }
+            }
+        }
+
+        // 高亮追踪节点
+        function highlightTraceNode(index) {
+            document.querySelectorAll('.trace-node').forEach(n => n.classList.remove('active'));
+            const node = document.getElementById('traceNode' + index);
+            if (node) {
+                node.classList.add('active');
+                node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        // 切换音量
+        function toggleVolume() {
+            const v = document.getElementById('traceVideo');
+            const btn = document.getElementById('volumeBtn');
+
+            if (v.muted) {
+                v.muted = false;
+                btn.classList.remove('muted');
+                btn.innerHTML = '🔊 声音已开启';
+                console.log('✓ 声音已开启');
+            } else {
+                v.muted = true;
+                btn.classList.add('muted');
+                btn.innerHTML = '🔇 点击开启声音';
+                console.log('✓ 声音已关闭');
+            }
+        }
+
+        // 监听视频音量变化（当用户通过视频控制条切换静音时同步按钮状态）
+        document.addEventListener('DOMContentLoaded', () => {
+            const v = document.getElementById('traceVideo');
+            const btn = document.getElementById('volumeBtn');
+
+            v.addEventListener('volumechange', () => {
+                if (v.muted) {
+                    btn.classList.add('muted');
+                    btn.innerHTML = '🔇 点击开启声音';
+                } else {
+                    btn.classList.remove('muted');
+                    btn.innerHTML = '🔊 声音已开启';
+                }
+            });
+        });
+
+        // 返回上一页
+        function goBack() {
+            window.history.back();
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: select2-js" />
+</body>
+</html>
+

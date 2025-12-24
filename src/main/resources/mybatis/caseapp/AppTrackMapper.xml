@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.project.caseapp.track.mapper.AppTrackMapper">
+    
+    <resultMap type="AppTrack" id="AppTrackResult">
+        <result property="id"    column="id"    />
+        <result property="pssj"    column="pssj"    />
+        <result property="jssj"    column="jssj"    />
+        <result property="pstp"    column="pstp"    />
+        <result property="qyid"    column="qyid"    />
+        <result property="qymc"    column="qymc"    />
+        <result property="sxtmx"    column="sxtmx"    />
+        <result property="spdz"    column="spdz"    />
+        <result property="spsc"    column="spsc"    />
+        <result property="jqzt"    column="jqzt"    />
+        <result property="bzzt"    column="bzzt"    />
+        <result property="bzsj"    column="bzsj"    />
+        <result property="xwyy"    column="xwyy"    />
+        <result property="ryxm"    column="ryxm"    />
+        <result property="wlry"    column="wlry"    />
+        <result property="rysl"    column="rysl"    />
+    </resultMap>
+
+    <sql id="selectAppTrackVo">
+        select id, pssj,jssj, pstp, qyid, qymc,sxtmx,spdz, spsc, jqzt, bzzt, bzsj, xwyy, ryxm, wlry, rysl from app_track
+    </sql>
+
+    <select id="selectAppTrackList" parameterType="AppTrack" resultMap="AppTrackResult">
+        <include refid="selectAppTrackVo"/>
+        <where>
+            <if test="params.beginPssj != null and params.beginPssj != '' and params.endPssj != null and params.endPssj != ''"> and pssj between #{params.beginPssj} and #{params.endPssj} </if>
+            <if test="pstp != null  and pstp != ''"> and pstp = #{pstp}</if>
+            <if test="qyid != null "> and qyid = #{qyid}</if>
+            <if test="qymc != null  and qymc != ''"> and qymc = #{qymc}</if>
+            <if test="sxtmx != null  and sxtmx != ''"> and sxtmx = #{sxtmx}</if>
+            <if test="spdz != null  and spdz != ''"> and spdz = #{spdz}</if>
+            <if test="spsc != null  and spsc != ''"> and spsc = #{spsc}</if>
+            <if test="jqzt != null  and jqzt != ''"> and jqzt = #{jqzt}</if>
+            <if test="bzzt != null  and bzzt != ''"> and bzzt = #{bzzt}</if>
+            <if test="bzsj != null  and bzsj != ''"> and bzsj = #{bzsj}</if>
+            <if test="xwyy != null  and xwyy != ''"> and xwyy = #{xwyy}</if>
+            <if test="ryxm != null  and ryxm != ''"> and ryxm like concat('%', #{ryxm}, '%')</if>
+            <if test="wlry != null  and wlry != ''"> and wlry = #{wlry}</if>
+        </where>
+        order by pssj desc
+    </select>
+    
+    <select id="selectAppTrackById" parameterType="Long" resultMap="AppTrackResult">
+        <include refid="selectAppTrackVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertAppTrack" parameterType="AppTrack">
+        insert into app_track
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="pssj != null">pssj,</if>
+            <if test="jssj != null">jssj,</if>
+            <if test="pstp != null">pstp,</if>
+            <if test="qyid != null">qyid,</if>
+            <if test="qymc != null">qymc,</if>
+            <if test="sxtmx != null">sxtmx,</if>
+            <if test="spdz != null">spdz,</if>
+            <if test="spsc != null">spsc,</if>
+            <if test="jqzt != null">jqzt,</if>
+            <if test="bzzt != null">bzzt,</if>
+            <if test="bzsj != null">bzsj,</if>
+            <if test="xwyy != null">xwyy,</if>
+            <if test="ryxm != null">ryxm,</if>
+            <if test="wlry != null">wlry,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="pssj != null">#{pssj},</if>
+            <if test="jssj != null">#{jssj},</if>
+            <if test="pstp != null">#{pstp},</if>
+            <if test="qyid != null">#{qyid},</if>
+            <if test="qymc != null">#{qymc},</if>
+            <if test="sxtmx != null">#{sxtmx},</if>
+            <if test="spdz != null">#{spdz},</if>
+            <if test="spsc != null">#{spsc},</if>
+            <if test="jqzt != null">#{jqzt},</if>
+            <if test="bzzt != null">#{bzzt},</if>
+            <if test="bzsj != null">#{bzsj},</if>
+            <if test="xwyy != null">#{xwyy},</if>
+            <if test="ryxm != null">#{ryxm},</if>
+            <if test="wlry != null">#{wlry},</if>
+         </trim>
+    </insert>
+
+    <update id="updateAppTrack" parameterType="AppTrack">
+        update app_track
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="pssj != null">pssj = #{pssj},</if>
+            <if test="jssj != null">jssj = #{jssj},</if>
+            <if test="pstp != null">pstp = #{pstp},</if>
+            <if test="qyid != null">qyid = #{qyid},</if>
+            <if test="qymc != null">qymc = #{qymc},</if>
+            <if test="sxtmx != null">sxtmx = #{sxtmx},</if>
+            <if test="spdz != null">spdz = #{spdz},</if>
+            <if test="spsc != null">spsc = #{spsc},</if>
+            <if test="jqzt != null">jqzt = #{jqzt},</if>
+            <if test="bzzt != null">bzzt = #{bzzt},</if>
+            <if test="bzsj != null">bzsj = #{bzsj},</if>
+            <if test="xwyy != null">xwyy = #{xwyy},</if>
+            <if test="ryxm != null">ryxm = #{ryxm},</if>
+            <if test="wlry != null">wlry = #{wlry},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteAppTrackById" parameterType="Long">
+        delete from app_track where id = #{id}
+    </delete>
+
+    <delete id="deleteAppTrackByIds" parameterType="String">
+        delete from app_track where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 统计今日事件总数 -->
+    <select id="countTodayEvents" resultType="int">
+        select count(*) from app_track
+        where DATE_FORMAT(pssj, '%Y-%m-%d') = DATE_FORMAT(NOW(), '%Y-%m-%d')
+    </select>
+
+    <!-- 统计待标注事件数（bzzt = "0"） -->
+    <select id="countUnlabeledEvents" resultType="int">
+        select count(*) from app_track
+        where bzzt = '0'
+    </select>
+
+    <!-- 统计已标注事件数（bzzt = "1"） -->
+    <select id="countLabeledEvents" resultType="int">
+        select count(*) from app_track
+        where bzzt = '1'
+    </select>
+
+    <!-- 统计本月事件总数 -->
+    <select id="countMonthEvents" resultType="int">
+        select count(*) from app_track
+        where DATE_FORMAT(pssj, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+    </select>
+
+    <!-- 查询所有轨迹数据（用于复合事件分组，支持时间、区域、状态、管理员筛选） -->
+    <select id="selectAllAppTrackForComposite" parameterType="AppTrack" resultMap="AppTrackResult">
+        <include refid="selectAppTrackVo"/>
+        <where>
+            <if test="params.beginPssj != null and params.endPssj != null"> and pssj between #{params.beginPssj} and #{params.endPssj} </if>
+            <if test="qymc != null and qymc != ''"> and qymc = #{qymc}</if>
+            <if test="bzzt != null and bzzt != ''"> and bzzt = #{bzzt}</if>
+            <if test="ryxm != null and ryxm != ''"> and ryxm like concat('%', #{ryxm}, '%')</if>
+        </where>
+        order by pssj asc
+    </select>
+
+</mapper>

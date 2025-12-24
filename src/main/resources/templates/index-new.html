@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>资产视频分析插件</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Microsoft YaHei',Arial;background:#f5f7fa;color:#333}
+
+/* ===== Header ===== */
+.header{
+    background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+    color:#fff;
+    padding:40px
+}
+.header h1{font-size:30px;margin-bottom:6px}
+.header p{opacity:.9}
+
+/* ===== Layout ===== */
+.container{max-width:1400px;margin:0 auto;padding:20px}
+
+/* ===== Stats ===== */
+.stats-bar{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:15px;
+    margin-bottom:20px
+}
+.stat-card{
+    background:#fff;
+    padding:20px;
+    border-radius:8px;
+    border-left:4px solid #2a5298
+}
+.stat-card.clickable{cursor:pointer}
+.stat-card.clickable:hover{background:#eef4ff}
+.stat-card .number{
+    font-size:28px;
+    font-weight:bold;
+    color:#2a5298
+}
+
+/* ===== Toolbar ===== */
+.toolbar{
+    background:#fff;
+    padding:15px;
+    border-radius:8px;
+    margin-bottom:20px;
+    display:flex;
+    gap:15px;
+    flex-wrap:wrap;
+    align-items:center
+}
+.toolbar label{font-size:14px;color:#555}
+.toolbar input,.toolbar select{
+    padding:6px 10px;
+    border:1px solid #ddd;
+    border-radius:4px
+}
+.toolbar button{
+    padding:6px 16px;
+    background:#2a5298;
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    cursor:pointer
+}
+.toolbar button.reset{background:#999}
+
+/* ===== Events ===== */
+.events-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+    gap:20px
+}
+.event-card{
+    background:#fff;
+    border-radius:8px;
+    overflow:hidden;
+    cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.1)
+}
+.event-card.unlabeled{border:2px solid #ff6b6b}
+.event-card.labeled{border:2px solid #51cf66}
+.event-thumbnail{
+    height:180px;
+    background:linear-gradient(135deg,#667eea,#764ba2);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:48px;
+    color:#fff;
+    position:relative
+}
+.event-status{
+    position:absolute;
+    top:10px;
+    right:10px;
+    padding:4px 12px;
+    border-radius:12px;
+    font-size:12px
+}
+.event-status.unlabeled{background:#ff6b6b}
+.event-status.labeled{background:#51cf66}
+.event-info{padding:15px}
+.event-time{font-weight:bold}
+.event-location{color:#666}
+
+/* ===== Modal ===== */
+.modal{
+    display:none;
+    position:fixed;
+    top:0;left:0;
+    width:100%;height:100%;
+    background:rgba(0,0,0,.7);
+    align-items:center;
+    justify-content:center;
+    z-index:1000
+}
+.modal.active{display:flex}
+.modal-content{
+    background:#fff;
+    width:90%;
+    max-width:900px;
+    border-radius:12px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column
+}
+.modal-header{
+    background:#2a5298;
+    color:#fff;
+    padding:15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center
+}
+.modal-body{padding:15px;overflow:auto}
+.video-container{
+    background:#000;
+    border-radius:6px;
+    margin-bottom:10px
+}
+video{width:100%}
+
+/* ===== Trace ===== */
+.trace-btn{
+    padding:8px 14px;
+    background:#ff9800;
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    cursor:pointer;
+    margin-bottom:10px
+}
+.trace-timeline{
+    border-left:3px solid #2a5298;
+    padding-left:15px;
+    margin-top:15px
+}
+.trace-node{
+    margin-bottom:12px;
+    padding:10px;
+    border-radius:4px;
+    position:relative;
+    background:#f8f9fa;
+    cursor:pointer
+}
+.trace-node::before{
+    content:'';
+    position:absolute;
+    left:-18px;
+    top:15px;
+    width:14px;
+    height:14px;
+    background:#bbb;
+    border-radius:50%;
+    border:3px solid #fff
+}
+.trace-node.active{
+    background:#e7f5ff;
+    border-left:3px solid #2a5298
+}
+.trace-node.active::before{
+    background:#2a5298
+}
+.trace-time{
+    font-weight:bold;
+    color:#2a5298
+}
+.trace-area{
+    color:#666;
+    font-size:14px;
+    margin-top:3px
+}
+.trace-duration{
+    font-size:12px;
+    color:#999;
+    margin-top:3px
+}
+
+/* ===== Composite Events ===== */
+.composite-section{
+    background:#fff;
+    padding:20px;
+    border-radius:8px;
+    margin-bottom:20px
+}
+.composite-section h2{
+    font-size:20px;
+    margin-bottom:15px;
+    color:#2a5298;
+    display:flex;
+    justify-content:space-between;
+    align-items:center
+}
+.composite-card{
+    background:#fff;
+    border:2px solid #9775fa;
+    border-radius:8px;
+    padding:15px;
+    margin-bottom:15px;
+    cursor:pointer;
+    transition:all 0.3s
+}
+.composite-card:hover{
+    background:#f3f0ff;
+    box-shadow:0 4px 12px rgba(151,117,250,.2)
+}
+.composite-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px
+}
+.composite-title{
+    font-weight:bold;
+    color:#9775fa;
+    font-size:16px
+}
+.composite-badge{
+    background:#9775fa;
+    color:#fff;
+    padding:3px 10px;
+    border-radius:12px;
+    font-size:12px
+}
+.composite-path{
+    color:#666;
+    font-size:14px;
+    margin-bottom:8px;
+    display:flex;
+    align-items:center;
+    gap:5px
+}
+.composite-time-range{
+    color:#999;
+    font-size:13px
+}
+.analyze-btn{
+    padding:8px 16px;
+    background:#51cf66;
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    cursor:pointer
+}
+.analyze-btn:hover{
+    background:#40c057
+}
+
+/* ===== Footer ===== */
+.footer{
+    margin-top:40px;
+    background:#2c3e50;
+    color:#ecf0f1;
+    text-align:center;
+    padding:15px;
+    font-size:13px
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>资产视频分析插件</h1>
+    <p>人员活动自动识别与追溯管理系统</p>
+</div>
+
+<div class="container">
+
+    <div class="stats-bar">
+        <div class="stat-card clickable" onclick="jumpToTodayEvents()">
+            今日事件
+            <div class="number" id="todayTotal">0</div>
+        </div>
+        <div class="stat-card">待标注<div class="number" id="unlabeledCount">0</div></div>
+        <div class="stat-card">已标注<div class="number" id="labeledCount">0</div></div>
+        <div class="stat-card">本月事件<div class="number" id="monthTotal">0</div></div>
+        <div class="stat-card" style="border-left-color:#9775fa">
+            复合事件
+            <div class="number" style="color:#9775fa" id="compositeCount">0</div>
+        </div>
+    </div>
+
+    <div class="toolbar" id="filterBar">
+        <label>日期：<input type="date" id="filterDate"></label>
+        <label>区域：
+            <select id="filterArea">
+                <option value="">全部</option>
+                <option value="库区大门">库区大门</option>
+                <option value="通道">通道</option>
+                <option value="贵重物品区">贵重物品区</option>
+                <option value="小库房门口">小库房门口</option>
+            </select>
+        </label>
+        <label>状态：
+            <select id="filterStatus">
+                <option value="">全部</option>
+                <option value="unlabeled">待标注</option>
+                <option value="labeled">已标注</option>
+            </select>
+        </label>
+        <button onclick="applyFilters()">筛选</button>
+        <button class="reset" onclick="resetFilters()">重置</button>
+    </div>
+
+    <!-- 复合事件区域 -->
+    <div class="composite-section" id="compositeSection" style="display:none">
+        <h2>
+            <span>🔗 复合事件（事件经过还原）</span>
+            <button class="analyze-btn" onclick="analyzeCompositeEvents()">🔍 自动分析关联</button>
+        </h2>
+        <div id="compositeList"></div>
+    </div>
+
+    <!-- 单个事件列表 -->
+    <div class="events-grid" id="eventsGrid"></div>
+</div>
+
+<!-- 单事件模态框 -->
+<div class="modal" id="eventModal">
+<div class="modal-content">
+<div class="modal-header">
+    <h2>事件详情</h2>
+    <button onclick="closeModal()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer">×</button>
+</div>
+<div class="modal-body">
+    <button class="trace-btn" onclick="checkEventTrace()">🔍 查看事件经过</button>
+    <div class="video-container">
+        <video id="eventVideo" controls></video>
+    </div>
+    <div id="eventInfo"></div>
+</div>
+</div>
+</div>
+
+<!-- 事件经过还原模态框 -->
+<div class="modal" id="traceModal">
+<div class="modal-content">
+<div class="modal-header">
+    <h2>🎬 事件经过还原（复合事件）</h2>
+    <button onclick="closeTraceModal()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer">×</button>
+</div>
+<div class="modal-body">
+    <div id="compositeInfo" style="padding:10px;background:#f8f9fa;border-radius:6px;margin-bottom:15px"></div>
+    <div class="video-container">
+        <video id="traceVideo" controls></video>
+    </div>
+    <div class="trace-timeline" id="traceTimeline"></div>
+</div>
+</div>
+</div>
+
+<div class="footer">
+    Copyright © 2023–2025 某科技公司 版权所有
+</div>
+
+<script>
+/* ===== 数据定义 ===== */
+const today=new Date().toISOString().slice(0,10);
+
+// 12 个模拟事件
+let eventsData=[
+{id:'EVT01',time:today+' 08:40',area:'库区大门',status:'unlabeled',videoUrl:''},
+{id:'EVT02',time:today+' 08:55',area:'通道',status:'unlabeled',videoUrl:''},
+{id:'EVT03',time:today+' 09:10',area:'贵重物品区',status:'labeled',videoUrl:''},
+{id:'EVT04',time:today+' 09:35',area:'小库房门口',status:'unlabeled',videoUrl:''},
+{id:'EVT05',time:today+' 10:00',area:'库区大门',status:'labeled',videoUrl:''},
+{id:'EVT06',time:today+' 10:20',area:'通道',status:'unlabeled',videoUrl:''},
+{id:'EVT07',time:today+' 10:45',area:'贵重物品区',status:'labeled',videoUrl:''},
+{id:'EVT08',time:'2023-12-10 09:15',area:'库区大门',status:'labeled',videoUrl:''},
+{id:'EVT09',time:'2023-12-09 14:30',area:'通道',status:'labeled',videoUrl:''},
+{id:'EVT10',time:'2023-12-08 11:20',area:'贵重物品区',status:'labeled',videoUrl:''},
+{id:'EVT11',time:'2023-12-07 16:10',area:'小库房门口',status:'labeled',videoUrl:''},
+{id:'EVT12',time:'2023-12-06 15:00',area:'库区大门',status:'labeled',videoUrl:''}
+];
+
+// 区域邻接关系（定义哪些区域是相邻的）
+const areaAdjacency={
+'库区大门':['通道'],
+'通道':['库区大门','贵重物品区','小库房门口'],
+'贵重物品区':['通道'],
+'小库房门口':['通道']
+};
+
+// 复合事件数据
+let compositeEvents=[];
+let currentEvent=null;
+let currentComposite=null;
+
+/* ===== 初始化 ===== */
+window.onload=()=>{
+renderEvents(eventsData);
+updateStats();
+analyzeCompositeEvents();
+};
+
+/* ===== 事件自动关联算法 ===== */
+function analyzeCompositeEvents(){
+compositeEvents=[];
+const timeThreshold=30*60*1000; // 30分钟时间窗口
+const visited=new Set();
+
+// 按时间排序事件
+const sortedEvents=[...eventsData].sort((a,b)=>new Date(a.time)-new Date(b.time));
+
+// 查找关联事件
+sortedEvents.forEach(event=>{
+if(visited.has(event.id)) return;
+
+const relatedEvents=[event];
+visited.add(event.id);
+
+// 在时间窗口内查找相邻区域的事件
+const eventTime=new Date(event.time);
+for(let i=0;i<sortedEvents.length;i++){
+const candidate=sortedEvents[i];
+if(visited.has(candidate.id)) continue;
+
+const candidateTime=new Date(candidate.time);
+const timeDiff=Math.abs(candidateTime-eventTime);
+
+// 检查时间是否在窗口内
+if(timeDiff<=timeThreshold){
+// 检查是否与已有事件路径相邻
+const isAdjacent=relatedEvents.some(re=>
+areAreasAdjacent(re.area,candidate.area)
+);
+
+if(isAdjacent){
+relatedEvents.push(candidate);
+visited.add(candidate.id);
+}
+}
+}
+
+// 如果找到多个关联事件，创建复合事件
+if(relatedEvents.length>=2){
+relatedEvents.sort((a,b)=>new Date(a.time)-new Date(b.time));
+compositeEvents.push({
+id:'COMP'+compositeEvents.length,
+events:relatedEvents,
+startTime:relatedEvents[0].time,
+endTime:relatedEvents[relatedEvents.length-1].time,
+path:relatedEvents.map(e=>e.area)
+});
+}
+});
+
+renderCompositeEvents();
+updateStats();
+}
+
+// 检查两个区域是否相邻
+function areAreasAdjacent(area1,area2){
+if(area1===area2) return true;
+return areaAdjacency[area1]?.includes(area2)||false;
+}
+
+/* ===== 渲染复合事件 ===== */
+function renderCompositeEvents(){
+const section=document.getElementById('compositeSection');
+const list=document.getElementById('compositeList');
+
+if(compositeEvents.length===0){
+section.style.display='none';
+return;
+}
+
+section.style.display='block';
+list.innerHTML=compositeEvents.map(comp=>{
+const duration=calculateDuration(comp.startTime,comp.endTime);
+const pathStr=comp.path.join(' → ');
+return `
+<div class="composite-card" onclick="openCompositeTrace('${comp.id}')">
+<div class="composite-header">
+<div class="composite-title">复合事件 ${comp.id}</div>
+<div class="composite-badge">${comp.events.length} 个关联事件</div>
+</div>
+<div class="composite-path">
+📍 路径：${pathStr}
+</div>
+<div class="composite-time-range">
+⏱️ ${comp.startTime} ~ ${comp.endTime.split(' ')[1]} (${duration})
+</div>
+</div>`;
+}).join('');
+}
+
+// 计算时长
+function calculateDuration(startTime,endTime){
+const start=new Date(startTime);
+const end=new Date(endTime);
+const diffSeconds=Math.floor((end-start)/1000); // 秒
+if(diffSeconds<60){
+return `${diffSeconds}秒`;
+}else if(diffSeconds<3600){
+const mins=Math.floor(diffSeconds/60);
+const secs=diffSeconds%60;
+return `${mins}分${secs}秒`;
+}else{
+const hours=Math.floor(diffSeconds/3600);
+const mins=Math.floor((diffSeconds%3600)/60);
+const secs=diffSeconds%60;
+return `${hours}小时${mins}分${secs}秒`;
+}
+}
+
+/* ===== 事件列表渲染 ===== */
+function renderEvents(list){
+document.getElementById('eventsGrid').innerHTML=list.map(e=>`
+<div class="event-card ${e.status}" onclick="openEvent('${e.id}')">
+<div class="event-thumbnail">📹
+<span class="event-status ${e.status}">
+${e.status==='unlabeled'?'待标注':'已标注'}
+</span>
+</div>
+<div class="event-info">
+<div class="event-time">${e.time}</div>
+<div class="event-location">${e.area}</div>
+</div>
+</div>`).join('');
+}
+
+/* ===== 筛选功能 ===== */
+function applyFilters(){
+let list=[...eventsData];
+const d=document.getElementById('filterDate').value;
+const a=document.getElementById('filterArea').value;
+const s=document.getElementById('filterStatus').value;
+if(d) list=list.filter(e=>e.time.startsWith(d));
+if(a) list=list.filter(e=>e.area===a);
+if(s) list=list.filter(e=>e.status===s);
+renderEvents(list);
+}
+
+function resetFilters(){
+document.getElementById('filterDate').value='';
+document.getElementById('filterArea').value='';
+document.getElementById('filterStatus').value='';
+renderEvents(eventsData);
+}
+
+function jumpToTodayEvents(){
+document.getElementById('filterDate').value=today;
+applyFilters();
+document.getElementById('filterBar').scrollIntoView({behavior:'smooth'});
+}
+
+/* ===== 单事件模态框 ===== */
+function openEvent(eventId){
+currentEvent=eventsData.find(e=>e.id===eventId);
+document.getElementById('eventVideo').src=currentEvent.videoUrl||'';
+document.getElementById('eventInfo').innerHTML=`
+<p><b>事件编号：</b>${currentEvent.id}</p>
+<p><b>时间：</b>${currentEvent.time}</p>
+<p><b>区域：</b>${currentEvent.area}</p>
+<p><b>状态：</b>${currentEvent.status==='unlabeled'?'待标注':'已标注'}</p>`;
+document.getElementById('eventModal').classList.add('active');
+}
+
+function closeModal(){
+document.getElementById('eventModal').classList.remove('active');
+const v=document.getElementById('eventVideo');
+v.pause();v.src='';
+}
+
+function checkEventTrace(){
+const composite=compositeEvents.find(c=>
+c.events.some(e=>e.id===currentEvent.id)
+);
+if(!composite){
+alert('该事件未关联到其他事件，无复合事件经过。\n\n提示：点击「自动分析关联」按钮可重新分析事件关联关系。');
+return;
+}
+closeModal();
+openCompositeTrace(composite.id);
+}
+
+/* ===== 复合事件追踪模态框 ===== */
+function openCompositeTrace(compositeId){
+currentComposite=compositeEvents.find(c=>c.id===compositeId);
+if(!currentComposite) return;
+
+const duration=calculateDuration(currentComposite.startTime,currentComposite.endTime);
+document.getElementById('compositeInfo').innerHTML=`
+<div style="font-weight:bold;color:#9775fa;margin-bottom:5px">
+${currentComposite.id} - ${currentComposite.events.length} 个关联事件
+</div>
+<div style="color:#666">
+📍 路径：${currentComposite.path.join(' → ')}<br>
+⏱️ 时长：${duration}
+</div>`;
+
+renderTraceTimeline();
+playTraceVideo(0);
+document.getElementById('traceModal').classList.add('active');
+}
+
+function renderTraceTimeline(){
+document.getElementById('traceTimeline').innerHTML=
+currentComposite.events.map((e,i)=>{
+const nextEvent=currentComposite.events[i+1];
+const duration=nextEvent?calculateDuration(e.time,nextEvent.time):'';
+return `
+<div class="trace-node ${i===0?'active':''}" id="traceNode${i}" onclick="playTraceVideo(${i})">
+<div class="trace-time">${e.time}</div>
+<div class="trace-area">📍 ${e.area}</div>
+${duration?`<div class="trace-duration">⏱️ 间隔 ${duration}</div>`:''}
+</div>`;
+}).join('');
+}
+
+function playTraceVideo(index){
+if(index>=currentComposite.events.length) return;
+
+const v=document.getElementById('traceVideo');
+highlightTraceNode(index);
+v.src=currentComposite.events[index].videoUrl||'';
+
+if(v.src){
+v.play();
+v.onended=()=>{
+if(index+1<currentComposite.events.length){
+setTimeout(()=>playTraceVideo(index+1),500);
+}
+};
+}else{
+// 无视频时自动跳到下一个
+if(index+1<currentComposite.events.length){
+setTimeout(()=>playTraceVideo(index+1),1000);
+}
+}
+}
+
+function highlightTraceNode(index){
+document.querySelectorAll('.trace-node').forEach(n=>n.classList.remove('active'));
+const node=document.getElementById('traceNode'+index);
+if(node){
+node.classList.add('active');
+node.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+}
+
+function closeTraceModal(){
+const v=document.getElementById('traceVideo');
+v.pause();v.src='';
+document.getElementById('traceModal').classList.remove('active');
+}
+
+/* ===== 统计更新 ===== */
+function updateStats(){
+document.getElementById('todayTotal').innerText=
+eventsData.filter(e=>e.time.startsWith(today)).length;
+document.getElementById('monthTotal').innerText=eventsData.length;
+document.getElementById('unlabeledCount').innerText=
+eventsData.filter(e=>e.status==='unlabeled').length;
+document.getElementById('labeledCount').innerText=
+eventsData.filter(e=>e.status==='labeled').length;
+document.getElementById('compositeCount').innerText=compositeEvents.length;
+}
+</script>
+
+</body>
+</html>

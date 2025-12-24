@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>纯HTML视频测试</title>
+</head>
+<body>
+    <h1>纯HTML视频测试（不经过Thymeleaf）</h1>
+
+    <h2>测试1：直接设置src</h2>
+    <video id="v1" width="600" controls muted>
+        <source src="/test.mp4" type="video/mp4">
+    </video>
+    <p id="r1">等待加载...</p>
+
+    <h2>测试2：通过JavaScript设置</h2>
+    <video id="v2" width="600" controls muted></video>
+    <p id="r2">等待加载...</p>
+
+    <script>
+        // 测试1
+        const v1 = document.getElementById('v1');
+        const r1 = document.getElementById('r1');
+
+        v1.addEventListener('loadeddata', () => {
+            r1.innerHTML = '✅ 成功！视频时长：' + v1.duration + '秒';
+            r1.style.color = 'green';
+        });
+
+        v1.addEventListener('error', (e) => {
+            r1.innerHTML = '❌ 失败！错误：' + e.target.error.message;
+            r1.style.color = 'red';
+            console.error('测试1失败:', e);
+        });
+
+        // 测试2
+        const v2 = document.getElementById('v2');
+        const r2 = document.getElementById('r2');
+
+        v2.src = '/test.mp4';
+
+        v2.addEventListener('loadeddata', () => {
+            r2.innerHTML = '✅ 成功！视频时长：' + v2.duration + '秒';
+            r2.style.color = 'green';
+        });
+
+        v2.addEventListener('error', (e) => {
+            r2.innerHTML = '❌ 失败！错误：' + (v2.error ? v2.error.message : '未知错误');
+            r2.style.color = 'red';
+            console.error('测试2失败:', e, v2.error);
+        });
+
+        // 打印调试信息
+        console.log('当前页面URL:', window.location.href);
+        console.log('视频1 src:', v1.src || v1.querySelector('source').src);
+        console.log('视频2 src:', v2.src);
+    </script>
+</body>
+</html>
