@@ -401,6 +401,44 @@ public class AppTrackController extends BaseController
     }
 
     /**
+     * 为指定轨迹生成/更新复合事件（Python系统调用）
+     * 轻量级接口：只处理该轨迹及其周围的事件
+     *
+     * @param trackId 轨迹ID
+     * @return 处理结果
+     */
+    @Log(title = "轨迹事件同步", businessType = BusinessType.OTHER)
+    @PostMapping("/syncEventForTrack/{trackId}")
+    @ResponseBody
+    public AjaxResult syncEventForTrack(@PathVariable("trackId") Long trackId)
+    {
+        try
+        {
+            if (trackId == null)
+            {
+                return AjaxResult.error("轨迹ID不能为空");
+            }
+
+            // 查询轨迹
+            AppTrack track = appTrackService.selectAppTrackById(trackId);
+            if (track == null)
+            {
+                return AjaxResult.error("轨迹不存在：ID=" + trackId);
+            }
+
+            // 为该轨迹生成/更新复合事件
+            compositeEventService.updateOrCreateCompositeEventByTrack(track);
+
+            return AjaxResult.success("已为轨迹 ID=" + trackId + " 生成复合事件");
+        }
+        catch (Exception e)
+        {
+            logger.error("为轨迹生成复合事件失败：trackId=" + trackId, e);
+            return AjaxResult.error("生成失败：" + e.getMessage());
+        }
+    }
+
+    /**
      * 标注复合事件
      * 标注复合事件时，会同时更新该事件下的所有轨迹
      *
