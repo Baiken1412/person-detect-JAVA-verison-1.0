@@ -187,7 +187,7 @@
             margin-top: 5px;
         }
 
-        .back-btn {
+        .back-btn, .export-btn {
             padding: 10px 20px;
             background: #9775fa;
             color: white;
@@ -195,18 +195,153 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
-            margin-bottom: 20px;
             transition: background 0.3s;
         }
 
         .back-btn:hover {
             background: #764ba2;
         }
+
+        .export-btn {
+            background: #51cf66;
+        }
+
+        .export-btn:hover {
+            background: #40c057;
+        }
+
+        /* 截图轮播样式 */
+        .image-carousel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .carousel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #9775fa;
+        }
+
+        .carousel-header h3 {
+            font-size: 18px;
+            color: #333;
+            margin: 0;
+        }
+
+        .carousel-counter {
+            font-size: 14px;
+            color: #666;
+            background: #f0f0f0;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+
+        .carousel-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+        }
+
+        .carousel-btn {
+            flex-shrink: 0;
+            width: 50px;
+            height: 50px;
+            background: #9775fa;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(151, 117, 250, 0.3);
+        }
+
+        .carousel-btn:hover:not(:disabled) {
+            background: #764ba2;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(151, 117, 250, 0.5);
+        }
+
+        .carousel-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .carousel-image-wrapper {
+            flex: 1;
+            position: relative;
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .carousel-image-wrapper img {
+            width: 100%;
+            height: auto;
+            max-height: 500px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .no-image-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 16px;
+            padding: 60px;
+        }
+
+        .no-image-placeholder div:first-child {
+            font-size: 64px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        .carousel-image-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            color: white;
+            padding: 20px 15px 10px;
+            font-size: 14px;
+        }
+
+        .carousel-image-info .info-time {
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 15px;
+        }
+
+        .carousel-image-info .info-area {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
-    <button class="back-btn" onclick="goBack()">🔙 返回</button>
-    
+    <div style="position: fixed; top: 20px; left: 20px; z-index: 1000; display: flex; gap: 10px;">
+        <button class="back-btn" onclick="goBack()">🔙 返回</button>
+        <button class="export-btn" onclick="exportEventPackage()">📦 导出事件包</button>
+    </div>
+
     <div class="container">
         <div class="header">
             <h1>🎬 事件经过还原（复合事件）</h1>
@@ -228,6 +363,34 @@
                     </span>
                 </div>
             </div>
+
+            <!-- 轨迹截图轮播区域 -->
+            <div class="image-carousel">
+                <div class="carousel-header">
+                    <h3>📸 轨迹截图</h3>
+                    <span class="carousel-counter" id="imageCounter">1 / 1</span>
+                </div>
+                <div class="carousel-container">
+                    <button class="carousel-btn prev" id="prevImageBtn" onclick="showPrevImage()">
+                        ◀
+                    </button>
+                    <div class="carousel-image-wrapper">
+                        <img id="carouselImage" src="" alt="轨迹截图" onerror="this.src=''; this.style.display='none'; document.getElementById('noImagePlaceholder').style.display='flex';">
+                        <div id="noImagePlaceholder" class="no-image-placeholder" style="display: none;">
+                            <div>📷</div>
+                            <p>暂无截图</p>
+                        </div>
+                        <div class="carousel-image-info" id="imageInfo">
+                            <div class="info-time"></div>
+                            <div class="info-area"></div>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next" id="nextImageBtn" onclick="showNextImage()">
+                        ▶
+                    </button>
+                </div>
+            </div>
+
             <div class="trace-timeline" id="traceTimeline"></div>
         </div>
     </div>
@@ -235,6 +398,7 @@
     <script>
         let currentComposite = null;
         let compositeId = null;
+        let currentImageIndex = 0; // 当前显示的截图索引
 
         // 从URL参数获取复合事件ID
         function getUrlParam(name) {
@@ -314,8 +478,11 @@
                         const events = composite.events.map(item => ({
                             id: item.id,
                             time: formatDateTime(item.pssj),
+                            pssj: item.pssj, // 原始时间，用于判断工作时间
+                            rysl: item.rysl || 0, // 人员数量
                             area: item.qymc || '',
                             videoUrl: item.spdz || '',
+                            imageUrl: item.pstp || '', // 截图路径
                             status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
                             reason: item.xwyy || '',
                             spsc: item.spsc || ''
@@ -352,7 +519,9 @@
 
                         renderCompositeInfo();
                         renderTraceTimeline();
-                        playTraceVideo(0);
+                        // 初始化时显示第一个轨迹的截图，但不自动播放视频
+                        updateCarouselImage(0);
+                        highlightTraceNode(0);
                     } else {
                         $.modal.alertError('获取复合事件失败：' + (data.msg || '未知错误'));
                         goBack();
@@ -447,11 +616,32 @@
                 currentComposite.events.map((e, i) => {
                     const prevEvent = i > 0 ? currentComposite.events[i - 1] : null;
                     const duration = prevEvent ? calculateDuration(prevEvent.time, e.time) : '';
+
+                    // 检查是否非工作时间（8:00-18:00之外）
+                    let isNonWorktime = false;
+                    if (e.pssj) {
+                        const eventTime = new Date(e.pssj);
+                        const hour = eventTime.getHours();
+                        isNonWorktime = (hour < 8 || hour >= 18);
+                    }
+
+                    // 检查人员异常（<2人或≥3人）
+                    const isAbnormalPerson = e.rysl > 0 && (e.rysl < 2 || e.rysl >= 3);
+
+                    // 生成警告标签
+                    const warningTags = [];
+                    if (isNonWorktime) {
+                        warningTags.push('<span style="background: #ff9800; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px; margin-left: 4px;">⚠️ 非工作时间</span>');
+                    }
+                    if (isAbnormalPerson) {
+                        warningTags.push('<span style="background: #e74c3c; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px; margin-left: 4px;">⚠️ 人数异常</span>');
+                    }
+
                     return `
-                        <div class="trace-node ${i === 0 ? 'active' : ''}" id="traceNode${i}" onclick="playTraceVideo(${i})">
+                        <div class="trace-node ${i === 0 ? 'active' : ''}" id="traceNode${i}" onclick="playTraceVideo(${i}, true)">
                             ${duration ? `<div class="trace-duration">⏱️ 间隔 ${duration}</div>` : ''}
                             <div class="trace-time">${e.time}</div>
-                            <div class="trace-area">📍 ${e.area}</div>
+                            <div class="trace-area">📍 ${e.area} ${e.rysl ? `(${e.rysl}人)` : ''}${warningTags.join('')}</div>
                         </div>
                     `;
                 }).join('');
@@ -480,11 +670,15 @@
         // }
 
         // 播放追踪视频
-        function playTraceVideo(index) {
+        function playTraceVideo(index, manualTrigger = false) {
             if (index >= currentComposite.events.length) return;
 
             const v = document.getElementById('traceVideo');
             highlightTraceNode(index);
+            // 只有手动点击时才更新截图显示
+            if (manualTrigger) {
+                updateCarouselImage(index);
+            }
 
             // 获取原始 URL 字符串
             const url = currentComposite.events[index].videoUrl;
@@ -634,6 +828,95 @@
         // 返回上一页
         function goBack() {
             window.history.back();
+        }
+
+        // 导出事件包
+        function exportEventPackage() {
+            if (!compositeId) {
+                $.modal.alertError('无法获取事件ID');
+                return;
+            }
+
+            $.modal.loading("正在导出事件包，请稍候...");
+
+            fetch('/caseapp/track/compositeEvents/export/' + compositeId, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                $.modal.closeLoading();
+                if (data.code === 0) {
+                    $.modal.msgSuccess('导出成功！<br>文件已保存至：<br>' + data.data);
+                } else {
+                    $.modal.alertError('导出失败：' + (data.msg || '未知错误'));
+                }
+            })
+            .catch(error => {
+                $.modal.closeLoading();
+                console.error('导出事件包失败:', error);
+                $.modal.alertError('导出失败，请稍后重试');
+            });
+        }
+
+        // ===== 截图轮播功能 =====
+
+        // 更新截图显示
+        function updateCarouselImage(index) {
+            if (!currentComposite || !currentComposite.events || currentComposite.events.length === 0) {
+                return;
+            }
+
+            currentImageIndex = index;
+            const event = currentComposite.events[index];
+            const img = document.getElementById('carouselImage');
+            const placeholder = document.getElementById('noImagePlaceholder');
+            const counter = document.getElementById('imageCounter');
+            const imageInfo = document.getElementById('imageInfo');
+            const prevBtn = document.getElementById('prevImageBtn');
+            const nextBtn = document.getElementById('nextImageBtn');
+
+            // 更新计数器
+            counter.textContent = `${index + 1} / ${currentComposite.events.length}`;
+
+            // 更新按钮状态
+            prevBtn.disabled = (index === 0);
+            nextBtn.disabled = (index === currentComposite.events.length - 1);
+
+            // 更新图片信息
+            imageInfo.querySelector('.info-time').textContent = `🕐 ${event.time}`;
+            imageInfo.querySelector('.info-area').textContent = `📍 ${event.area}${event.rysl ? ` (${event.rysl}人)` : ''}`;
+
+            // 更新图片
+            if (event.imageUrl && event.imageUrl.trim() !== '') {
+                img.src = event.imageUrl;
+                img.style.display = 'block';
+                placeholder.style.display = 'none';
+                console.log(`显示截图 ${index + 1}: ${event.imageUrl}`);
+            } else {
+                img.style.display = 'none';
+                placeholder.style.display = 'flex';
+                console.log(`第 ${index + 1} 个节点无截图`);
+            }
+        }
+
+        // 显示上一张截图
+        function showPrevImage() {
+            if (currentImageIndex > 0) {
+                const newIndex = currentImageIndex - 1;
+                updateCarouselImage(newIndex);
+                // 同步高亮时间线节点
+                highlightTraceNode(newIndex);
+            }
+        }
+
+        // 显示下一张截图
+        function showNextImage() {
+            if (currentComposite && currentImageIndex < currentComposite.events.length - 1) {
+                const newIndex = currentImageIndex + 1;
+                updateCarouselImage(newIndex);
+                // 同步高亮时间线节点
+                highlightTraceNode(newIndex);
+            }
         }
 
         // 页面加载完成后初始化

@@ -2,8 +2,13 @@ package com.ruoyi.project.caseapp.track.service.impl;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.io.*;
+import java.nio.file.*;
+import java.text.SimpleDateFormat;
+import com.alibaba.fastjson.JSON;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -509,10 +514,14 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                 hasNonworktime = 1;
             }
 
-            // 人员异常：>2人
-            if (track.getRysl() > 2)
+            // 人员异常：双人操作要求，人数<2（单人）或≥3（超员）
+            // 注意：rysl为int类型，默认值为0，0表示无人员数据
+            if (track.getRysl() > 0)
             {
-                hasAbnormal = 1;
+                if (track.getRysl() < 2 || track.getRysl() >= 3)
+                {
+                    hasAbnormal = 1;
+                }
             }
         }
         event.setHasNonworktime(hasNonworktime);
@@ -675,5 +684,467 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             e.printStackTrace();
             throw e;  // 重新抛出异常，确保事务回滚
         }
+    }
+
+    @Value("${ruoyi.profile}")
+    private String uploadPath;
+
+    /**
+     * 导出事件包（HTML报告 + 图片 + 视频 + JSON数据）
+     * 生成包含事件完整信息的离线可查看文件夹
+     *
+     * @param eventId 复合事件ID
+     * @param exportPath 导出根路径
+     * @return 导出路径
+     */
+    @Override
+    public String exportEventPackage(Long eventId, String exportPath) throws Exception
+    {
+        try
+        {
+            // 1. 查询复合事件数据（兼容主键ID和eventId）
+            CompositeEvent event = selectCompositeEventByEventId(eventId);
+            if (event == null)
+            {
+                // 如果通过eventId查不到，尝试通过主键ID查询
+                event = selectCompositeEventById(eventId);
+                if (event == null)
+                {
+                    throw new Exception("复合事件不存在：ID=" + eventId);
+                }
+            }
+
+            // 重要：关系表中的event_id关联的是app_composite_event.id（主键），而不是event_id字段
+            // 所以应该使用复合事件的主键ID来查询关联轨迹
+            Long compositeEventId = event.getId();
+
+            // 2. 查询关联的轨迹列表
+            List<Long> trackIds = relationMapper.selectTrackIdsByEventId(compositeEventId);
+            if (trackIds == null || trackIds.isEmpty())
+            {
+                throw new Exception("复合事件无关联轨迹：compositeEventId=" + compositeEventId);
+            }
+
+            List<AppTrack> tracks = new ArrayList<>();
+            for (Long trackId : trackIds)
+            {
+                AppTrack track = appTrackMapper.selectAppTrackById(trackId);
+                if (track != null)
+                {
+                    tracks.add(track);
+                }
+            }
+
+            // 3. 创建导出目录
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            String timestamp = sdf.format(new Date());
+            String folderName = String.format("事件包_COMP%d_%s", event.getEventId(), timestamp);
+            Path packagePath = Paths.get(exportPath, folderName);
+            Files.createDirectories(packagePath);
+            Files.createDirectories(packagePath.resolve("images"));
+            Files.createDirectories(packagePath.resolve("videos"));
+            Files.createDirectories(packagePath.resolve("data"));
+
+            // 4. 复制图片和视频文件
+            copyMediaFiles(tracks, packagePath);
+
+            // 5. 生成JSON数据文件
+            generateJsonData(event, tracks, packagePath);
+
+            // 6. 生成HTML报告
+            generateHtmlReport(event, tracks, packagePath);
+
+            // 7. 生成README文件
+            generateReadme(event, packagePath);
+
+            return packagePath.toString();
+        }
+        catch (Exception e)
+        {
+            System.err.println("导出事件包失败：" + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    /**
+     * 复制媒体文件（图片和视频）
+     */
+    private void copyMediaFiles(List<AppTrack> tracks, Path packagePath) throws IOException
+    {
+        int imageIndex = 1;
+        int videoIndex = 1;
+
+        for (AppTrack track : tracks)
+        {
+            // 复制图片
+            if (StringUtils.isNotEmpty(track.getPstp()))
+            {
+                String imagePath = track.getPstp();
+                // 移除URL前缀，获取实际文件路径
+                if (imagePath.startsWith("http"))
+                {
+                    imagePath = imagePath.substring(imagePath.indexOf("/profile/"));
+                }
+                File sourceImage = new File(uploadPath + imagePath.replace("/profile", ""));
+                if (sourceImage.exists())
+                {
+                    String ext = imagePath.substring(imagePath.lastIndexOf("."));
+                    String newName = String.format("track_%03d%s", imageIndex++, ext);
+                    Path targetImage = packagePath.resolve("images").resolve(newName);
+                    Files.copy(sourceImage.toPath(), targetImage, StandardCopyOption.REPLACE_EXISTING);
+                    track.setPstp("images/" + newName);  // 更新为相对路径
+                }
+            }
+
+            // 复制视频
+            if (StringUtils.isNotEmpty(track.getSpdz()))
+            {
+                String videoPath = track.getSpdz();
+                if (videoPath.startsWith("http"))
+                {
+                    videoPath = videoPath.substring(videoPath.indexOf("/profile/"));
+                }
+                File sourceVideo = new File(uploadPath + videoPath.replace("/profile", ""));
+                if (sourceVideo.exists())
+                {
+                    String ext = videoPath.substring(videoPath.lastIndexOf("."));
+                    String newName = String.format("track_%03d%s", videoIndex++, ext);
+                    Path targetVideo = packagePath.resolve("videos").resolve(newName);
+                    Files.copy(sourceVideo.toPath(), targetVideo, StandardCopyOption.REPLACE_EXISTING);
+                    track.setSpdz("videos/" + newName);  // 更新为相对路径
+                }
+            }
+        }
+    }
+
+    /**
+     * 生成JSON数据文件
+     */
+    private void generateJsonData(CompositeEvent event, List<AppTrack> tracks, Path packagePath) throws IOException
+    {
+        Map<String, Object> data = new HashMap<>();
+        data.put("event", event);
+        data.put("tracks", tracks);
+        data.put("exportTime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+
+        String json = JSON.toJSONString(data, true);
+        Path jsonFile = packagePath.resolve("data").resolve("event_data.json");
+        Files.write(jsonFile, json.getBytes("UTF-8"));
+    }
+
+    /**
+     * 生成README文件
+     */
+    private void generateReadme(CompositeEvent event, Path packagePath) throws IOException
+    {
+        StringBuilder readme = new StringBuilder();
+        readme.append("===============================================\n");
+        readme.append("           资产视频事件包\n");
+        readme.append("===============================================\n\n");
+        readme.append("事件ID: COMP").append(event.getEventId()).append("\n");
+        readme.append("开始时间: ").append(event.getStartTime()).append("\n");
+        readme.append("结束时间: ").append(event.getEndTime()).append("\n");
+        readme.append("标注状态: ").append("1".equals(event.getBzzt()) ? "已标注" : "待标注").append("\n");
+        if (StringUtils.isNotEmpty(event.getXwyy()))
+        {
+            readme.append("行为原因: ").append(event.getXwyy()).append("\n");
+        }
+        readme.append("导出时间: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).append("\n\n");
+        readme.append("===============================================\n");
+        readme.append("文件说明:\n");
+        readme.append("  index.html     - 事件报告主页面（双击打开）\n");
+        readme.append("  data/          - 结构化数据文件\n");
+        readme.append("  images/        - 关键帧截图\n");
+        readme.append("  videos/        - 事件视频片段\n");
+        readme.append("===============================================\n");
+
+        Path readmeFile = packagePath.resolve("README.txt");
+        Files.write(readmeFile, readme.toString().getBytes("UTF-8"));
+    }
+
+    /**
+     * 生成HTML报告（将在下一步实现）
+     */
+    private void generateHtmlReport(CompositeEvent event, List<AppTrack> tracks, Path packagePath) throws IOException
+    {
+        // HTML模板将在后续创建
+        String html = buildHtmlTemplate(event, tracks);
+        Path htmlFile = packagePath.resolve("index.html");
+        Files.write(htmlFile, html.getBytes("UTF-8"));
+    }
+
+    /**
+     * 构建HTML模板内容
+     */
+    private String buildHtmlTemplate(CompositeEvent event, List<AppTrack> tracks)
+    {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        StringBuilder html = new StringBuilder();
+
+        html.append("<!DOCTYPE html>\n");
+        html.append("<html lang='zh-CN'>\n");
+        html.append("<head>\n");
+        html.append("    <meta charset='UTF-8'>\n");
+        html.append("    <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n");
+        html.append("    <title>资产视频事件报告 - COMP").append(event.getEventId()).append("</title>\n");
+        html.append("    <style>\n");
+        html.append(getHtmlStyles());
+        html.append("    </style>\n");
+        html.append("</head>\n");
+        html.append("<body>\n");
+        html.append("    <div class='header'>\n");
+        html.append("        <h1>📊 资产视频事件报告</h1>\n");
+        html.append("        <p>复合事件ID: COMP").append(event.getEventId()).append("</p>\n");
+        html.append("    </div>\n");
+        html.append("    <div class='container'>\n");
+
+        // 事件基本信息
+        html.append("        <div class='section'>\n");
+        html.append("            <h2>📋 事件基本信息</h2>\n");
+        html.append("            <table>\n");
+        html.append("                <tr><th>事件ID</th><td>COMP").append(event.getEventId()).append("</td></tr>\n");
+        html.append("                <tr><th>开始时间</th><td>").append(event.getStartTime()).append("</td></tr>\n");
+        html.append("                <tr><th>结束时间</th><td>").append(event.getEndTime()).append("</td></tr>\n");
+        html.append("                <tr><th>轨迹数量</th><td>").append(tracks.size()).append(" 条</td></tr>\n");
+        html.append("                <tr><th>标注状态</th><td>").append("1".equals(event.getBzzt()) ? "✅ 已标注" : "⏳ 待标注").append("</td></tr>\n");
+        if (StringUtils.isNotEmpty(event.getXwyy()))
+        {
+            html.append("                <tr><th>行为原因</th><td>").append(event.getXwyy()).append("</td></tr>\n");
+        }
+        if (StringUtils.isNotEmpty(event.getRyxm()))
+        {
+            html.append("                <tr><th>管理员</th><td>").append(event.getRyxm()).append("</td></tr>\n");
+        }
+        if (StringUtils.isNotEmpty(event.getWlry()))
+        {
+            html.append("                <tr><th>外来人员</th><td>").append(event.getWlry()).append("</td></tr>\n");
+        }
+        if (StringUtils.isNotEmpty(event.getRemark()))
+        {
+            html.append("                <tr><th>备注</th><td>").append(event.getRemark()).append("</td></tr>\n");
+        }
+        html.append("                <tr><th>导出时间</th><td>").append(sdf.format(new Date())).append("</td></tr>\n");
+        html.append("            </table>\n");
+        html.append("        </div>\n");
+
+        // 事件时间轴
+        html.append("        <div class='section'>\n");
+        html.append("            <h2>⏱️ 事件时间轴</h2>\n");
+        html.append("            <div class='timeline'>\n");
+        for (int i = 0; i < tracks.size(); i++)
+        {
+            AppTrack track = tracks.get(i);
+            html.append("                <div class='timeline-item' id='track").append(i).append("'>\n");
+            html.append("                    <div class='timeline-marker'>").append(i + 1).append("</div>\n");
+            html.append("                    <div class='timeline-content'>\n");
+            html.append("                        <div class='timeline-time'>").append(track.getPssj()).append("</div>\n");
+            html.append("                        <div class='timeline-area'>📍 ").append(track.getQymc()).append("</div>\n");
+            if (track.getRysl() > 0)
+            {
+                html.append("                        <div class='timeline-person'>👥 ").append(track.getRysl()).append(" 人</div>\n");
+            }
+            html.append("                        <div class='timeline-actions'>\n");
+            html.append("                            <button onclick='showImage(").append(i).append(")'>查看截图</button>\n");
+            html.append("                            <button onclick='showVideo(").append(i).append(")'>查看视频</button>\n");
+            html.append("                        </div>\n");
+            html.append("                    </div>\n");
+            html.append("                </div>\n");
+        }
+        html.append("            </div>\n");
+        html.append("        </div>\n");
+
+        // 视频和图片展示区
+        html.append("        <div class='section'>\n");
+        html.append("            <h2>🎥 媒体查看器</h2>\n");
+        html.append("            <div id='mediaViewer' class='media-viewer'>\n");
+        html.append("                <p style='text-align:center; color:#999;'>请在时间轴中点击&quot;查看截图&quot;或&quot;查看视频&quot;按钮</p>\n");
+        html.append("            </div>\n");
+        html.append("        </div>\n");
+
+        // 关键帧图片列表
+        html.append("        <div class='section'>\n");
+        html.append("            <h2>🖼️ 关键帧截图</h2>\n");
+        html.append("            <div class='image-grid'>\n");
+        for (int i = 0; i < tracks.size(); i++)
+        {
+            AppTrack track = tracks.get(i);
+            if (StringUtils.isNotEmpty(track.getPstp()))
+            {
+                html.append("                <div class='image-item' onclick='showImage(").append(i).append(")'>\n");
+                html.append("                    <img src='").append(track.getPstp()).append("' alt='截图").append(i + 1).append("'>\n");
+                html.append("                    <div class='image-label'>").append(i + 1).append(". ").append(track.getPssj()).append("</div>\n");
+                html.append("                </div>\n");
+            }
+        }
+        html.append("            </div>\n");
+        html.append("        </div>\n");
+
+        html.append("    </div>\n");
+        html.append("    <div class='footer'>\n");
+        html.append("        <p>资产视频分析系统 - 事件包导出 © ").append(new SimpleDateFormat("yyyy").format(new Date())).append("</p>\n");
+        html.append("    </div>\n");
+
+        // JavaScript
+        html.append("    <script>\n");
+        html.append(getHtmlScripts(tracks));
+        html.append("    </script>\n");
+        html.append("</body>\n");
+        html.append("</html>");
+
+        return html.toString();
+    }
+
+    /**
+     * HTML样式
+     */
+    private String getHtmlStyles()
+    {
+        return "* { margin: 0; padding: 0; box-sizing: border-box; }\n" +
+               "body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: #f5f7fa; color: #333; }\n" +
+               ".header { background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); color: white; padding: 40px 20px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }\n" +
+               ".header h1 { font-size: 32px; margin-bottom: 10px; }\n" +
+               ".header p { font-size: 16px; opacity: 0.9; }\n" +
+               ".container { max-width: 1200px; margin: 0 auto; padding: 20px; }\n" +
+               ".section { background: white; margin-bottom: 20px; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }\n" +
+               ".section h2 { font-size: 24px; margin-bottom: 20px; color: #2c5364; border-left: 4px solid #2c5364; padding-left: 12px; }\n" +
+               "table { width: 100%; border-collapse: collapse; }\n" +
+               "table th, table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }\n" +
+               "table th { background: #f8f9fa; font-weight: 600; width: 150px; }\n" +
+               ".timeline { position: relative; padding-left: 40px; }\n" +
+               ".timeline-item { position: relative; padding-bottom: 30px; }\n" +
+               ".timeline-marker { position: absolute; left: -40px; width: 32px; height: 32px; border-radius: 50%; background: #2c5364; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }\n" +
+               ".timeline-item:not(:last-child)::before { content: ''; position: absolute; left: -24px; top: 32px; bottom: -30px; width: 2px; background: #ddd; }\n" +
+               ".timeline-content { background: #f8f9fa; padding: 15px; border-radius: 6px; }\n" +
+               ".timeline-time { font-size: 16px; font-weight: 600; color: #2c5364; margin-bottom: 8px; }\n" +
+               ".timeline-area { font-size: 14px; color: #666; margin-bottom: 5px; }\n" +
+               ".timeline-person { font-size: 14px; color: #666; margin-bottom: 10px; }\n" +
+               ".timeline-actions button { padding: 6px 12px; margin-right: 8px; background: #2c5364; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }\n" +
+               ".timeline-actions button:hover { background: #1e3c72; }\n" +
+               ".media-viewer { min-height: 400px; background: #000; border-radius: 6px; display: flex; align-items: center; justify-content: center; }\n" +
+               ".media-viewer img, .media-viewer video { max-width: 100%; max-height: 600px; }\n" +
+               ".image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }\n" +
+               ".image-item { cursor: pointer; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s; }\n" +
+               ".image-item:hover { transform: scale(1.05); }\n" +
+               ".image-item img { width: 100%; height: 150px; object-fit: cover; }\n" +
+               ".image-label { padding: 8px; background: #f8f9fa; font-size: 12px; text-align: center; }\n" +
+               ".footer { background: #2c3e50; color: #ecf0f1; text-align: center; padding: 20px; margin-top: 40px; }";
+    }
+
+    /**
+     * HTML脚本
+     */
+    private String getHtmlScripts(List<AppTrack> tracks)
+    {
+        StringBuilder js = new StringBuilder();
+        js.append("const tracks = [\n");
+        for (int i = 0; i < tracks.size(); i++)
+        {
+            AppTrack track = tracks.get(i);
+            js.append("    { image: '").append(track.getPstp() != null ? track.getPstp() : "").append("', ");
+            js.append("video: '").append(track.getSpdz() != null ? track.getSpdz() : "").append("', ");
+            js.append("time: '").append(track.getPssj()).append("' }");
+            if (i < tracks.size() - 1) js.append(",");
+            js.append("\n");
+        }
+        js.append("];\n\n");
+        js.append("function showImage(index) {\n");
+        js.append("    const viewer = document.getElementById('mediaViewer');\n");
+        js.append("    const track = tracks[index];\n");
+        js.append("    if (track.image) {\n");
+        js.append("        viewer.innerHTML = '<img src=\"' + track.image + '\" alt=\"截图\">';\n");
+        js.append("    } else {\n");
+        js.append("        viewer.innerHTML = '<p style=\"color:white;\">无截图</p>';\n");
+        js.append("    }\n");
+        js.append("}\n\n");
+        js.append("function showVideo(index) {\n");
+        js.append("    const viewer = document.getElementById('mediaViewer');\n");
+        js.append("    const track = tracks[index];\n");
+        js.append("    if (track.video) {\n");
+        js.append("        viewer.innerHTML = '<video src=\"' + track.video + '\" controls autoplay></video>';\n");
+        js.append("    } else {\n");
+        js.append("        viewer.innerHTML = '<p style=\"color:white;\">无视频</p>';\n");
+        js.append("    }\n");
+        js.append("}\n");
+        return js.toString();
+    }
+
+    /**
+     * 统计今日复合事件总数
+     */
+    @Override
+    public int countTodayEvents()
+    {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        Date beginTime = cal.getTime();
+
+        cal.set(Calendar.HOUR_OF_DAY, 23);
+        cal.set(Calendar.MINUTE, 59);
+        cal.set(Calendar.SECOND, 59);
+        cal.set(Calendar.MILLISECOND, 999);
+        Date endTime = cal.getTime();
+
+        CompositeEvent queryParam = new CompositeEvent();
+        queryParam.getParams().put("beginTime", beginTime);
+        queryParam.getParams().put("endTime", endTime);
+
+        List<CompositeEvent> events = compositeEventMapper.selectCompositeEventList(queryParam);
+        return events != null ? events.size() : 0;
+    }
+
+    /**
+     * 统计待标注复合事件数量
+     */
+    @Override
+    public int countUnlabeledEvents()
+    {
+        CompositeEvent queryParam = new CompositeEvent();
+        queryParam.setBzzt("0");
+
+        List<CompositeEvent> events = compositeEventMapper.selectCompositeEventList(queryParam);
+        return events != null ? events.size() : 0;
+    }
+
+    /**
+     * 统计已标注复合事件数量
+     */
+    @Override
+    public int countLabeledEvents()
+    {
+        CompositeEvent queryParam = new CompositeEvent();
+        queryParam.setBzzt("1");
+
+        List<CompositeEvent> events = compositeEventMapper.selectCompositeEventList(queryParam);
+        return events != null ? events.size() : 0;
+    }
+
+    /**
+     * 统计本月复合事件总数
+     */
+    @Override
+    public int countMonthEvents()
+    {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        Date beginTime = cal.getTime();
+
+        cal.add(Calendar.MONTH, 1);
+        cal.add(Calendar.MILLISECOND, -1);
+        Date endTime = cal.getTime();
+
+        CompositeEvent queryParam = new CompositeEvent();
+        queryParam.getParams().put("beginTime", beginTime);
+        queryParam.getParams().put("endTime", endTime);
+
+        List<CompositeEvent> events = compositeEventMapper.selectCompositeEventList(queryParam);
+        return events != null ? events.size() : 0;
     }
 }

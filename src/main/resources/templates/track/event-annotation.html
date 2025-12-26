@@ -368,6 +368,10 @@
                     <div class="detail-value" id="detailTime">-</div>
                 </div>
                 <div class="detail-row">
+                    <div class="detail-label">🕑 结束时间：</div>
+                    <div class="detail-value" id="detailEndTime">-</div>
+                </div>
+                <div class="detail-row">
                     <div class="detail-label">📍 区域/摄像头：</div>
                     <div class="detail-value" id="detailArea">-</div>
                 </div>
@@ -483,6 +487,7 @@
                         currentEvent = {
                             id: item.id,
                             time: formatDateTime(item.pssj),
+                            endTime: formatDateTime(item.jssj),
                             area: item.qymc || '',
                             videoUrl: item.spdz || '',
                             status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
@@ -519,6 +524,7 @@
                         // 更新详情信息
                         document.getElementById('detailId').textContent = currentEvent.id;
                         document.getElementById('detailTime').textContent = currentEvent.time;
+                        document.getElementById('detailEndTime').textContent = currentEvent.endTime || '-';
                         document.getElementById('detailArea').textContent = currentEvent.area;
                         document.getElementById('detailDuration').textContent = item.spsc || '-';
                         document.getElementById('detailStatus').textContent =

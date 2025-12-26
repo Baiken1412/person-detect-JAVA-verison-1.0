@@ -838,6 +838,7 @@
                             const event = {
                                 id: item.id,
                                 time: formatDateTime(item.pssj),
+                                endTime: formatDateTime(item.jssj), // 结束时间
                                 area: item.qymc || '',
                                 videoUrl: item.spdz || '',
                                 status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
@@ -850,6 +851,7 @@
                                 pstp: item.pstp || '', // 图片路径
                                 rysl: item.rysl || 0, // 人员数量
                                 pssj: item.pssj || '', // 原始拍摄时间字符串
+                                jssj: item.jssj || '', // 原始结束时间字符串
                                 suggestions: []
                             };
                             
@@ -999,9 +1001,14 @@
         }
 
         // 检查是否满足人员异常数量条件
-        // 条件：pssj在9时-18时 且 rysl >= 3
+        // 条件：rysl < 2（单人操作）或 rysl >= 3（超员）
+        // 双人操作要求：必须2人，少于2人或超过2人都异常
         function isAbnormalPersonCount(event) {
-            return isWorktimeWarning(event);
+            if (!event.rysl || event.rysl === 0) {
+                return false; // 没有人员数量数据，不判断
+            }
+            // 人数<2（单人）或≥3（超员）都是异常
+            return event.rysl < 2 || event.rysl >= 3;
         }
 
         // 根据特殊筛选条件过滤事件
@@ -1094,12 +1101,14 @@
             }
 
             grid.innerHTML = events.map(event => {
-                // 检查是否满足工作时间警告条件（人员异常数量）
+                // 检查是否满足工作时间警告条件（已废弃，改用人员异常判断）
                 const isWarning = isWorktimeWarning(event);
                 // 检查是否满足非工作时间警告条件
                 const isNonWorktime = isNonWorktimeWarning(event);
-                const warningClass = isWarning ? 'worktime-warning' : '';
-                
+                // 检查是否满足人员异常数量条件（<2人或≥3人）
+                const isAbnormal = isAbnormalPersonCount(event);
+                const warningClass = (isWarning || isNonWorktime || isAbnormal) ? 'worktime-warning' : '';
+
                 return `
                 <div class="event-card ${event.status} ${warningClass}" onclick="openEventDetail('${event.id}')">
                     <div class="event-thumbnail">
@@ -1110,9 +1119,9 @@
                     </div>
                     <div class="event-info">
                         <div class="event-time">${event.time}</div>
-                        <div class="event-location">${event.area}</div>
-                        ${isWarning ? `
-                            <div class="worktime-warning-badge">⚠️ 工作时间超过3人进入</div>
+                        <div class="event-location">${event.area} ${event.rysl ? `（${event.rysl}人）` : ''}</div>
+                        ${isAbnormal ? `
+                            <div class="worktime-warning-badge" style="background: #e74c3c;">⚠️ 人员数量异常（需双人操作）</div>
                         ` : ''}
                         ${isNonWorktime ? `
                             <div class="worktime-warning-badge" style="background: #ff9800;">⚠️ 非工作时间进入</div>

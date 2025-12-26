@@ -104,4 +104,34 @@ public interface ICompositeEventService
      * @param track 被删除的轨迹
      */
     public void handleTrackDeletion(AppTrack track);
+
+    /**
+     * 导出事件包（HTML报告 + 图片 + 视频 + JSON数据）
+     * 生成包含事件完整信息的离线可查看文件夹
+     *
+     * @param eventId 复合事件ID
+     * @param exportPath 导出路径
+     * @return 导出路径
+     */
+    public String exportEventPackage(Long eventId, String exportPath) throws Exception;
+
+    /**
+     * 统计今日复合事件总数
+     */
+    public int countTodayEvents();
+
+    /**
+     * 统计待标注复合事件数量
+     */
+    public int countUnlabeledEvents();
+
+    /**
+     * 统计已标注复合事件数量
+     */
+    public int countLabeledEvents();
+
+    /**
+     * 统计本月复合事件总数
+     */
+    public int countMonthEvents();
 }

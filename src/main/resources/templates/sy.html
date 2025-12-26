@@ -1528,24 +1528,38 @@
                             });
                             const areasArray = Array.from(allAreas);
 
-                            // 检查特殊情况
+                            // 检查特殊情况（优先使用后端字段，否则前端计算）
                             const specialTags = [];
-                            events.forEach(event => {
-                                const eventTime = new Date(event.pssj);
-                                const hour = eventTime.getHours();
-                                // 非工作时间：18:00-08:00
-                                if (hour < 8 || hour >= 18) {
-                                    if (!specialTags.includes('非工作时间')) {
-                                        specialTags.push('非工作时间');
+
+                            // 非工作时间：优先使用后端hasNonworktime字段
+                            if (comp.hasNonworktime === 1 || comp.hasNonworktime === '1') {
+                                specialTags.push('非工作时间');
+                            } else {
+                                // 前端兜底检查
+                                events.forEach(event => {
+                                    const eventTime = new Date(event.pssj);
+                                    const hour = eventTime.getHours();
+                                    if (hour < 8 || hour >= 18) {
+                                        if (!specialTags.includes('非工作时间')) {
+                                            specialTags.push('非工作时间');
+                                        }
                                     }
-                                }
-                                // 人员异常数量：>2人
-                                if (event.rysl > 2) {
-                                    if (!specialTags.includes('人员异常')) {
-                                        specialTags.push('人员异常');
+                                });
+                            }
+
+                            // 人员异常：优先使用后端hasAbnormalPerson字段
+                            if (comp.hasAbnormalPerson === 1 || comp.hasAbnormalPerson === '1') {
+                                specialTags.push('人员异常');
+                            } else {
+                                // 前端兜底检查：<2人或≥3人
+                                events.forEach(event => {
+                                    if (event.rysl > 0 && (event.rysl < 2 || event.rysl >= 3)) {
+                                        if (!specialTags.includes('人员异常')) {
+                                            specialTags.push('人员异常');
+                                        }
                                     }
-                                }
-                            });
+                                });
+                            }
 
                             return {
                                 id: comp.eventId || ('COMP' + (index + 1)), // 优先使用真实eventId
@@ -1560,6 +1574,9 @@
                                 persons: personsArray, // 聚合的管理员列表
                                 areas: areasArray, // 聚合的区域列表
                                 specialTags: specialTags, // 特殊标签
+                                ryslMax: comp.ryslMax || 0, // 最大人员数量
+                                hasNonworktime: comp.hasNonworktime || 0, // 是否包含非工作时间
+                                hasAbnormalPerson: comp.hasAbnormalPerson || 0, // 是否人员异常
                                 xwyy: annotationXwyy, // 标注的行为原因
                                 ryxm: annotationRyxm, // 标注的管理员姓名
                                 wlry: annotationWlry  // 标注的外来人员
@@ -1635,6 +1652,11 @@
                     }).join('')
                     : '';
 
+                // 显示最大人员数量（如果有异常则高亮显示）
+                const ryslMaxHtml = comp.ryslMax > 0
+                    ? `<span style="margin-left: 8px; padding: 2px 8px; background: ${comp.hasAbnormalPerson ? '#ffe5e5' : '#e8f5e9'}; color: ${comp.hasAbnormalPerson ? '#d32f2f' : '#2e7d32'}; border-radius: 10px; font-size: 11px; font-weight: bold;">👥 最多${comp.ryslMax}人</span>`
+                    : '';
+
                 return `
                     <div class="composite-card" id="composite-card-${comp.eventId}">
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
@@ -1643,7 +1665,7 @@
                                    onclick="event.stopPropagation();">
                             <div style="flex: 1;">
                                 <div class="composite-header" onclick="openCompositeTrace('${comp.id}')">
-                                    <div class="composite-title">复合事件 #${comp.eventIndex || (comp.eventId || '')}${statusBadge}${specialTagsHtml}</div>
+                                    <div class="composite-title">复合事件 #${comp.eventIndex || (comp.eventId || '')}${statusBadge}${specialTagsHtml}${ryslMaxHtml}</div>
                                     <div class="composite-badge">${comp.eventCount || comp.events.length} 个关联事件</div>
                                 </div>
                         <div onclick="openCompositeTrace('${comp.id}')">

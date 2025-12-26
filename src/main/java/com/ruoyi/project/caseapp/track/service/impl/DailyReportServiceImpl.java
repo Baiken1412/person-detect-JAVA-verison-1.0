@@ -71,15 +71,23 @@ public class DailyReportServiceImpl implements IDailyReportService
 
         for (CompositeEvent event : allEvents)
         {
-            if (isAbnormalEvent(event))
+            boolean isAbnormal = isAbnormalEvent(event);
+            boolean isSuspicious = isSuspiciousEvent(event);
+
+            // 异常事件
+            if (isAbnormal)
             {
                 abnormalEvents.add(event);
             }
-            else if (isSuspiciousEvent(event))
+
+            // 待标注事件（可能与异常事件重复，即未标注的异常事件）
+            if (isSuspicious)
             {
                 suspiciousEvents.add(event);
             }
-            else
+
+            // 正常事件（既不异常也不待标注）
+            if (!isAbnormal && !isSuspicious)
             {
                 normalEvents.add(event);
             }

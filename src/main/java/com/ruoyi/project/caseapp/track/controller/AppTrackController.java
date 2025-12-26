@@ -1,5 +1,6 @@
 package com.ruoyi.project.caseapp.track.controller;
 
+import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -213,16 +214,16 @@ public class AppTrackController extends BaseController
     }
 
     /**
-     * 获取统计数据
+     * 获取统计数据（复合事件统计）
      */
     @GetMapping("/stats")
     @ResponseBody
     public AjaxResult getStats()
     {
-        int todayTotal = appTrackService.countTodayEvents();
-        int unlabeledCount = appTrackService.countUnlabeledEvents();
-        int labeledCount = appTrackService.countLabeledEvents();
-        int monthTotal = appTrackService.countMonthEvents();
+        int todayTotal = compositeEventService.countTodayEvents();
+        int unlabeledCount = compositeEventService.countUnlabeledEvents();
+        int labeledCount = compositeEventService.countLabeledEvents();
+        int monthTotal = compositeEventService.countMonthEvents();
 
         return AjaxResult.success()
             .put("todayTotal", todayTotal)
@@ -549,6 +550,34 @@ public class AppTrackController extends BaseController
         catch (Exception e)
         {
             logger.error("导出复合事件台账失败", e);
+            return AjaxResult.error("导出失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 导出事件包（HTML报告 + 图片 + 视频 + JSON数据）
+     */
+    @Log(title = "导出事件包", businessType = BusinessType.EXPORT)
+    @PostMapping("/compositeEvents/export/{eventId}")
+    @ResponseBody
+    public AjaxResult exportEventPackage(@PathVariable("eventId") Long eventId)
+    {
+        try
+        {
+            // 导出路径使用配置的profile路径下的exports目录
+            String exportBasePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + "事件包导出";
+            File exportDir = new File(exportBasePath);
+            if (!exportDir.exists())
+            {
+                exportDir.mkdirs();
+            }
+
+            String exportPath = compositeEventService.exportEventPackage(eventId, exportBasePath);
+            return AjaxResult.success("导出成功", exportPath);
+        }
+        catch (Exception e)
+        {
+            logger.error("导出事件包失败", e);
             return AjaxResult.error("导出失败：" + e.getMessage());
         }
     }
