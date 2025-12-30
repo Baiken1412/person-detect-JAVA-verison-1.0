@@ -36,6 +36,7 @@ import com.ruoyi.project.caseapp.track.service.IDailyReportService;
 import com.ruoyi.project.caseapp.track.mapper.EventTrackRelationMapper;
 import com.ruoyi.framework.web.controller.BaseController;
 import com.ruoyi.framework.web.domain.AjaxResult;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.framework.web.page.TableDataInfo;
 import com.ruoyi.framework.web.page.TableSupport;
@@ -115,20 +116,22 @@ public class AppTrackController extends BaseController
         appRoomip.setSblx("1");
         List<AppRoomip> appRoomips = appRoomipService.selectAppRoomipList(appRoomip);
         for (AppRoomip roomip : appRoomips) {
-            HikVedioUtil hikVedioUtil = new HikVedioUtil();
-            hikVedioUtil.fz(ip,"443",appKey,appSecret);
-            String url = "/api/video/v1/cameras/previewURLs";
-            JSONObject jsonObject = new JSONObject();
-            // 将日期转换为ISO 8601 格式进行传参
-            jsonObject.put("cameraIndexCode",roomip.getIp());  // 摄像头的唯一标识，应该是从数据库里获取
-            jsonObject.put("streamType",0);
-            jsonObject.put("protocol","rtsp");    // 取流协议
-            jsonObject.put("transmode",1);     // 传输协议 1是TCP，0是udp
-            // 调用接口 （视频截取的话应该是返回一个rtsp的视频流）
-            String result = hikVedioUtil.vedioCut(url, jsonObject);
-            JSONObject jsonObject1 = JSON.parseObject(result);
-            String rspturl = jsonObject1.getJSONObject("data").getString("url");
-            roomip.setRtspssl(rspturl);
+            if(StringUtils.isEmpty(roomip.getRtspssl())){
+                HikVedioUtil hikVedioUtil = new HikVedioUtil();
+                hikVedioUtil.fz(ip,"443",appKey,appSecret);
+                String url = "/api/video/v1/cameras/previewURLs";
+                JSONObject jsonObject = new JSONObject();
+                // 将日期转换为ISO 8601 格式进行传参
+                jsonObject.put("cameraIndexCode",roomip.getIp());  // 摄像头的唯一标识，应该是从数据库里获取
+                jsonObject.put("streamType",0);
+                jsonObject.put("protocol","rtsp");    // 取流协议
+                jsonObject.put("transmode",1);     // 传输协议 1是TCP，0是udp
+                // 调用接口 （视频截取的话应该是返回一个rtsp的视频流）
+                String result = hikVedioUtil.vedioCut(url, jsonObject);
+                JSONObject jsonObject1 = JSON.parseObject(result);
+                String rspturl = jsonObject1.getJSONObject("data").getString("url");
+                roomip.setRtspssl(rspturl);
+            }
         }
         return AjaxResult.success(appRoomips);
     }
@@ -161,8 +164,31 @@ public class AppTrackController extends BaseController
     @Log(title = "轨迹", businessType = BusinessType.INSERT)
     @PostMapping("/add")
     @ResponseBody
-    public AjaxResult addSave(AppTrack appTrack)
+    public AjaxResult addSave(AppTrack appTrack, javax.servlet.http.HttpServletRequest request)
     {
+        // 记录调用者信息（用于排查USB轨迹来源）
+        String remoteAddr = request.getRemoteAddr();
+        String userAgent = request.getHeader("User-Agent");
+        String referer = request.getHeader("Referer");
+
+        logger.info("========== 轨迹插入请求 ==========");
+        logger.info("来源IP: {}", remoteAddr);
+        logger.info("User-Agent: {}", userAgent);
+        logger.info("Referer: {}", referer);
+        logger.info("区域ID: {}, 区域名称: {}, 摄像头: {}",
+            appTrack.getQyid(), appTrack.getQymc(), appTrack.getSxtmx());
+        logger.info("拍摄时间: {}", appTrack.getPssj());
+        logger.info("图片路径: {}", appTrack.getPstp());
+        logger.info("====================================");
+
+        // 临时方案：拦截USB轨迹（qyid = -1）
+        if (appTrack.getQyid() != null && appTrack.getQyid() == -1)
+        {
+            logger.warn("!!! 拦截USB轨迹插入请求 !!!");
+            logger.warn("调用者信息 - IP: {}, User-Agent: {}", remoteAddr, userAgent);
+            return AjaxResult.error("USB轨迹插入已被系统禁用，请联系管理员");
+        }
+
         return toAjax(appTrackService.insertAppTrack(appTrack));
     }
 
@@ -578,6 +604,63 @@ public class AppTrackController extends BaseController
         catch (Exception e)
         {
             logger.error("导出事件包失败", e);
+            return AjaxResult.error("导出失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 批量导出事件包（支持多个事件ID，导出到文件夹）
+     *
+     * @param eventIds 事件ID列表（逗号分隔）
+     * @return 导出结果
+     */
+    @Log(title = "批量导出事件包", businessType = BusinessType.EXPORT)
+    @PostMapping("/compositeEvents/batchExport")
+    @ResponseBody
+    public AjaxResult batchExportEventPackages(String eventIds)
+    {
+        try
+        {
+            if (eventIds == null || eventIds.trim().isEmpty())
+            {
+                return AjaxResult.error("请选择要导出的复合事件");
+            }
+
+            // 导出路径
+            String exportBasePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + "事件包导出";
+            File exportDir = new File(exportBasePath);
+            if (!exportDir.exists())
+            {
+                exportDir.mkdirs();
+            }
+
+            // 解析事件ID列表
+            String[] idArray = eventIds.split(",");
+            List<Long> eventIdList = new ArrayList<>();
+            for (String idStr : idArray)
+            {
+                try
+                {
+                    eventIdList.add(Long.parseLong(idStr.trim()));
+                }
+                catch (NumberFormatException e)
+                {
+                    logger.warn("无效的事件ID: " + idStr);
+                }
+            }
+
+            if (eventIdList.isEmpty())
+            {
+                return AjaxResult.error("没有有效的事件ID");
+            }
+
+            // 批量导出事件包
+            String exportPath = compositeEventService.batchExportEventPackages(eventIdList, exportBasePath);
+            return AjaxResult.success("导出成功，共导出 " + eventIdList.size() + " 个事件包", exportPath);
+        }
+        catch (Exception e)
+        {
+            logger.error("批量导出事件包失败", e);
             return AjaxResult.error("导出失败：" + e.getMessage());
         }
     }

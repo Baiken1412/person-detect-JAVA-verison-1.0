@@ -296,11 +296,20 @@ public class ShiroConfig
         filterChainDefinitionMap.put("/caseapp/roomip/**", "anon");
         filterChainDefinitionMap.put("/sy", "anon");
         filterChainDefinitionMap.put("/profile/**", "anon");
+        // 系统配置接口允许匿名访问（用于页面标题等配置）
+        filterChainDefinitionMap.put("/system/config/**", "anon");
+        // 文件下载接口允许匿名访问（用于导出功能）
+        filterChainDefinitionMap.put("/common/download**", "anon");
         // 视频文件匿名访问（活动轨迹视频播放）
         filterChainDefinitionMap.put("/video/**", "anon");
         filterChainDefinitionMap.put("/**/*.mp4", "anon");
         filterChainDefinitionMap.put("/**/*.avi", "anon");
         filterChainDefinitionMap.put("/**/*.flv", "anon");
+        // 图片文件匿名访问
+        filterChainDefinitionMap.put("/**/*.png", "anon");
+        filterChainDefinitionMap.put("/**/*.jpg", "anon");
+        filterChainDefinitionMap.put("/**/*.jpeg", "anon");
+        filterChainDefinitionMap.put("/**/*.gif", "anon");
 
         // 退出 logout地址，shiro去清除session
         filterChainDefinitionMap.put("/logout", "logout");

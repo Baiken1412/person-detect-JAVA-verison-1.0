@@ -50,8 +50,14 @@
         }
 
         .header-logo {
-            font-size: 64px;
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        .header-logo img {
+            height: 80px;
+            width: auto;
+            mix-blend-mode: multiply;
+            /* 如果multiply效果不好，可以尝试 screen 或 darken */
         }
 
         .header-text h1 {
@@ -181,6 +187,48 @@
 
         .toolbar .select2-selection__rendered {
             line-height: 38px;
+        }
+
+        /* 标注模态框中的 Select2 样式 */
+        #compositeAnnotationModal .select2-container--default .select2-selection--multiple {
+            border: 2px solid #dee2e6 !important;
+            border-radius: 4px !important;
+            min-height: 42px !important;
+            padding: 5px 10px !important;
+            background: white !important;
+            position: relative !important;
+        }
+
+        /* 添加下拉箭头指示 */
+        #compositeAnnotationModal .select2-container--default .select2-selection--multiple::after {
+            content: '▼';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #868e96;
+            font-size: 12px;
+        }
+
+        #compositeAnnotationModal .select2-container--default .select2-selection--multiple:hover {
+            border-color: #4c6ef5 !important;
+        }
+
+        /* Placeholder 文字颜色设置为深黑色 */
+        #compositeAnnotationModal .select2-search__field::placeholder {
+            color: #333 !important;
+            opacity: 1 !important;
+        }
+
+        #compositeAnnotationModal .select2-search__field::-webkit-input-placeholder {
+            color: #333 !important;
+            opacity: 1 !important;
+        }
+
+        #compositeAnnotationModal .select2-search__field::-moz-placeholder {
+            color: #333 !important;
+            opacity: 1 !important;
         }
 
         .toolbar button {
@@ -472,8 +520,8 @@
                 text-align: center;
             }
 
-            .header-logo {
-                font-size: 48px;
+            .header-logo img {
+                height: 60px;
             }
 
             .header-text h1 {
@@ -506,17 +554,20 @@
 <body>
     <div class="header">
         <div class="header-content">
-            <div class="header-logo">🛡️</div>
+            <div class="header-logo"><img src="/图片1.png" alt="系统Logo"></div>
             <div class="header-text">
-                <h1>资产视频分析插件</h1>
-                <p>人员活动自动识别与追溯管理系统</p>
+                <h1 id="systemTitle">资产视频分析插件</h1>
+                <p id="systemSubtitle">人员活动自动识别与追溯管理系统</p>
             </div>
             <div style="margin-left: auto; display: flex; gap: 10px;">
-                <button onclick="goToDailyReport()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
-                    📊 每日报告
+                <button style="background: rgba(255,255,255,0.4); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: default; font-size: 14px; font-weight: bold;">
+                    🏠 事件页面
                 </button>
                 <button onclick="goToEventList()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
-                    📝 事件标注管理
+                    📝 轨迹页面
+                </button>
+                <button onclick="goToDailyReport()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                    📊 每日报告
                 </button>
             </div>
         </div>
@@ -579,10 +630,10 @@
             <button onclick="analyzeCompositeEvents()">🔍 筛选</button>
             <button onclick="resetFilters()" style="background: #868e96;">🔄 重置</button>
             <button onclick="syncCompositeEvents()" style="background: #ff6b6b;">⚡ 重新同步复合事件</button>
-            <div style="margin-left: auto; display: flex; gap: 10px;">
-                <button onclick="toggleSelectAll()" style="background: #20c997;">☑️ 全选/反选</button>
-                <button onclick="exportSelectedCompositeEvents()" style="background: #ff9800;">📥 导出选中台账</button>
-            </div>
+            <div style="flex-basis: 100%; height: 0;"></div>
+            <button onclick="toggleSelectAll()" style="background: #20c997;">☑️ 全选/反选</button>
+            <button onclick="exportSelectedCompositeEvents()" style="background: #ff9800;">📥 导出选中台账</button>
+            <button onclick="exportSelectedEventPackages()" style="background: #ff8c42;">📦 导出事件包</button>
         </div>
 
         <!-- 复合事件区域 -->
@@ -604,10 +655,10 @@
         let eventsData = []; // 事件数据
         let compositeEvents = []; // 复合事件数据
         let currentPage = 1; // 当前页码
-        let pageSize = 8; // 每页显示数量
+        let pageSize = 10; // 每页显示数量
         let totalCount = 0; // 总记录数
-        let isLoading = false; // 是否正在加载
         let hasMore = true; // 是否还有更多数据
+        let isLoading = false; // 是否正在加载中
         let currentFilters = {}; // 当前筛选条件
 
         // 区域邻接关系（定义哪些区域是相邻的）
@@ -618,8 +669,25 @@
             '小库房门口': ['通道']
         };
 
+        // 加载系统配置（标题等）
+        function loadSystemConfig() {
+            fetch('/system/config/info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0 && data.data) {
+                        document.getElementById('systemTitle').textContent = data.data.title;
+                        document.getElementById('systemSubtitle').textContent = data.data.subtitle;
+                        document.title = data.data.title;
+                    }
+                })
+                .catch(error => {
+                    console.error('加载系统配置失败:', error);
+                });
+        }
+
         // 初始化页面
         function init() {
+            loadSystemConfig();
             updateStats();
             // 加载筛选条件的下拉框数据
             loadAreaList();
@@ -655,6 +723,9 @@
 
             // 自动加载本月的复合事件
             analyzeCompositeEvents();
+
+            // 设置滚动监听
+            setupScrollListener();
         }
         
         // 设置滚动监听
@@ -682,20 +753,68 @@
         // 加载字典数据
         function loadDictData() {
             fetch('/caseapp/track/dict/biz_annotation_status')
-                .then(response => response.json())
+                .then(response => {
+                    console.log('字典数据响应状态:', response.status);
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('字典数据返回:', data);
                     if (data.code === 0 && data.data) {
                         const statusFilter = document.getElementById('statusFilter');
                         // 保留"全部状态"选项
                         statusFilter.innerHTML = '<option value="">全部状态</option>';
-                        // 添加字典选项
-                        data.data.forEach(item => {
+
+                        if (data.data.length === 0) {
+                            console.warn('警告: 字典数据为空，请检查数据库中是否存在 biz_annotation_status 类型的字典数据');
+                            // 添加默认选项
+                            const defaultOptions = [
+                                {dictValue: '0', dictLabel: '未标注'},
+                                {dictValue: '1', dictLabel: '已标注'}
+                            ];
+                            defaultOptions.forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item.dictValue;
+                                option.textContent = item.dictLabel;
+                                statusFilter.appendChild(option);
+                            });
+                        } else {
+                            // 去重：使用Map确保每个dictValue只出现一次
+                            const uniqueData = new Map();
+                            data.data.forEach(item => {
+                                if (!uniqueData.has(item.dictValue)) {
+                                    uniqueData.set(item.dictValue, item);
+                                }
+                            });
+
+                            // 添加字典选项
+                            uniqueData.forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item.dictValue;
+                                option.textContent = item.dictLabel;
+                                statusFilter.appendChild(option);
+                            });
+                        }
+
+                        // 初始化 select2
+                        $('#statusFilter').select2({
+                            width: '200px',
+                            placeholder: '请选择状态'
+                        });
+                    } else {
+                        console.error('字典数据格式错误:', data);
+                        // 使用默认选项
+                        const statusFilter = document.getElementById('statusFilter');
+                        statusFilter.innerHTML = '<option value="">全部状态</option>';
+                        const defaultOptions = [
+                            {dictValue: '0', dictLabel: '未标注'},
+                            {dictValue: '1', dictLabel: '已标注'}
+                        ];
+                        defaultOptions.forEach(item => {
                             const option = document.createElement('option');
                             option.value = item.dictValue;
                             option.textContent = item.dictLabel;
                             statusFilter.appendChild(option);
                         });
-                        // 初始化 select2
                         $('#statusFilter').select2({
                             width: '200px',
                             placeholder: '请选择状态'
@@ -704,6 +823,23 @@
                 })
                 .catch(error => {
                     console.error('获取字典数据失败:', error);
+                    // 即使失败也提供默认选项
+                    const statusFilter = document.getElementById('statusFilter');
+                    statusFilter.innerHTML = '<option value="">全部状态</option>';
+                    const defaultOptions = [
+                        {dictValue: '0', dictLabel: '未标注'},
+                        {dictValue: '1', dictLabel: '已标注'}
+                    ];
+                    defaultOptions.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.dictValue;
+                        option.textContent = item.dictLabel;
+                        statusFilter.appendChild(option);
+                    });
+                    $('#statusFilter').select2({
+                        width: '200px',
+                        placeholder: '请选择状态'
+                    });
                 });
         }
 
@@ -769,6 +905,46 @@
                             allowClear: true,
                             multiple: true
                         });
+
+                        // 美化管理员筛选框样式，与其他下拉框保持一致
+                        setTimeout(function() {
+                            const $container = $('#personFilter').next('.select2-container');
+                            const $selection = $container.find('.select2-selection');
+
+                            // 添加边框和样式
+                            $selection.css({
+                                'border': '2px solid #dee2e6',
+                                'border-radius': '4px',
+                                'min-height': '38px',
+                                'padding': '10px 30px 10px 10px',
+                                'background': 'white',
+                                'position': 'relative',
+                                'cursor': 'pointer',
+                                'font-size': '14px',
+                                'font-weight': 'bold'
+                            });
+
+                            // 设置搜索框样式
+                            $selection.find('.select2-search__field').css({
+                                'cursor': 'pointer',
+                                'font-weight': 'bold',
+                                'color': '#333'
+                            });
+
+                            // 设置选中项的字体加粗
+                            $selection.find('.select2-selection__choice').css('font-weight', 'bold');
+
+                            // 添加下拉箭头
+                            if ($selection.find('.custom-arrow').length === 0) {
+                                $selection.append('<span class="custom-arrow" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #333; font-size: 16px; font-weight: bold;">▼</span>');
+                            }
+
+                            // 鼠标悬停效果
+                            $selection.hover(
+                                function() { $(this).css('border-color', '#4c6ef5'); },
+                                function() { $(this).css('border-color', '#dee2e6'); }
+                            );
+                        }, 100);
                     }
                 })
                 .catch(error => {
@@ -944,17 +1120,10 @@
             if (!hasMore || isLoading) {
                 return;
             }
-            
-            const nextPage = currentPage + 1;
-            loadEvents(
-                currentFilters.beginDateFilter,
-                currentFilters.endDateFilter,
-                currentFilters.areaFilter,
-                currentFilters.statusFilter,
-                currentFilters.personFilter || [],
-                nextPage,
-                true // 追加模式
-            );
+
+            // 页码+1，加载下一页
+            currentPage++;
+            analyzeCompositeEvents(true); // 追加模式
         }
 
         // 格式化日期时间
@@ -1396,7 +1565,21 @@
         }
 
         // 从后端加载复合事件（基于 qyid=1 的分组）
-        function analyzeCompositeEvents() {
+        // append: 是否追加数据（滚动加载时为true，筛选时为false）
+        function analyzeCompositeEvents(append = false) {
+            // 如果正在加载或没有更多数据，则返回
+            if (isLoading || (!append && !hasMore && currentPage > 1)) {
+                return;
+            }
+
+            isLoading = true;
+
+            // 如果不是追加模式，重置分页
+            if (!append) {
+                currentPage = 1;
+                hasMore = true;
+                compositeEvents = [];
+            }
             // 从日期选择框获取最新的筛选条件
             let beginDateFilter = document.getElementById('beginDateFilter').value;
             let endDateFilter = document.getElementById('endDateFilter').value;
@@ -1448,10 +1631,12 @@
                 String(endDate.getMinutes()).padStart(2, '0') + ':' +
                 String(endDate.getSeconds()).padStart(2, '0');
 
-            // 调用后端接口
+            // 调用后端接口（使用分页接口）
             const formData = new FormData();
             formData.append('params[beginPssj]', beginPssj);
             formData.append('params[endPssj]', endPssj);
+            formData.append('pageNum', currentPage);
+            formData.append('pageSize', pageSize);
 
             // 添加其他筛选条件
             if (areaFilter) {
@@ -1464,21 +1649,25 @@
                 // 管理员筛选：后端使用LIKE匹配，这里传递第一个选中的人员
                 formData.append('ryxm', personFilter[0]);
             }
-            
-            fetch('/caseapp/track/compositeEvents/list', {
+
+            fetch('/caseapp/track/compositeEvents', {
                 method: 'POST',
                 body: formData
             })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.code === 0 && data.data) {
-                        // 转换后端数据格式为前端需要的格式，并按时间排序
-                        let sortedData = [...data.data].sort((a, b) => {
-                            // 按开始时间排序
-                            return new Date(a.startTime) - new Date(b.startTime);
-                        });
-                        
-                        compositeEvents = sortedData.map((comp, index) => {
+                    isLoading = false;
+
+                    if (data.code === 0) {
+                        // 分页接口返回的数据结构: {code: 0, total: xx, rows: []}
+                        const rows = data.rows || [];
+                        totalCount = data.total || 0;
+
+                        // 检查是否还有更多数据
+                        hasMore = rows.length >= pageSize;
+
+                        // 转换后端数据格式为前端需要的格式（分页接口已经按时间排序）
+                        const newEvents = rows.map((comp, index) => {
                             // 将后端的事件列表转换为前端格式
                             const events = (comp.events || []).map(item => ({
                                 id: item.id,
@@ -1582,20 +1771,63 @@
                                 wlry: annotationWlry  // 标注的外来人员
                             };
                         });
-                        
-                        renderCompositeEvents();
+
+                        // 应用特殊筛选（前端过滤）- 先对新数据筛选
+                        let filteredNewEvents = newEvents;
+                        if (specialFilter && specialFilter.length > 0) {
+                            filteredNewEvents = newEvents.filter(comp => {
+                                let matches = false;
+
+                                // 非工作时间筛选
+                                if (specialFilter.includes('nonWorktime')) {
+                                    if (comp.hasNonworktime === 1 || comp.hasNonworktime === '1' || comp.specialTags.includes('非工作时间')) {
+                                        matches = true;
+                                    }
+                                }
+
+                                // 人员异常筛选
+                                if (specialFilter.includes('abnormalPerson')) {
+                                    if (comp.hasAbnormalPerson === 1 || comp.hasAbnormalPerson === '1' || comp.specialTags.includes('人员异常')) {
+                                        matches = true;
+                                    }
+                                }
+
+                                return matches;
+                            });
+                        }
+
+                        // 追加或替换数据（使用筛选后的数据）
+                        if (append) {
+                            compositeEvents = [...compositeEvents, ...filteredNewEvents];
+                        } else {
+                            compositeEvents = filteredNewEvents;
+                        }
+
+                        // 渲染
+                        if (append) {
+                            renderCompositeEvents(true);
+                        } else {
+                            renderCompositeEvents();
+                        }
+
                         updateStats();
                     } else {
-                        compositeEvents = [];
-                        renderCompositeEvents();
+                        if (!append) {
+                            compositeEvents = [];
+                            renderCompositeEvents();
+                        }
+                        hasMore = false;
                         updateStats();
                     }
                 })
                 .catch(error => {
                     console.error('获取复合事件失败:', error);
-                    compositeEvents = [];
-                    renderCompositeEvents();
-                    updateStats();
+                    isLoading = false;
+                    if (!append) {
+                        compositeEvents = [];
+                        renderCompositeEvents();
+                        updateStats();
+                    }
                 });
         }
 
@@ -1606,17 +1838,22 @@
         }
 
         // 渲染复合事件
-        function renderCompositeEvents() {
+        // append: 是否追加渲染（滚动加载时为true）
+        function renderCompositeEvents(append = false) {
             const section = document.getElementById('compositeSection');
             const list = document.getElementById('compositeList');
 
-            if (compositeEvents.length === 0) {
+            if (compositeEvents.length === 0 && !append) {
                 section.style.display = 'none';
                 return;
             }
 
             section.style.display = 'block';
-            list.innerHTML = compositeEvents.map(comp => {
+
+            // 计算需要渲染的事件（追加模式只渲染新增的）
+            const eventsToRender = append ? compositeEvents.slice(-pageSize) : compositeEvents;
+
+            const htmlContent = eventsToRender.map(comp => {
                 const duration = calculateDuration(comp.startTime, comp.endTime);
                 const pathStr = comp.path.join(' → ');
                 // 确保 bzzt 是字符串类型并正确判断
@@ -1691,6 +1928,33 @@
                     </div>
                 `;
             }).join('');
+
+            // 追加或替换内容
+            if (append) {
+                list.innerHTML += htmlContent;
+            } else {
+                list.innerHTML = htmlContent;
+            }
+
+            // 添加加载提示
+            const existingTip = list.querySelector('.loading-tip');
+            if (existingTip) {
+                list.removeChild(existingTip);
+            }
+
+            if (compositeEvents.length > 0) {
+                const loadingTip = document.createElement('div');
+                loadingTip.className = 'loading-tip';
+                loadingTip.style.cssText = 'text-align: center; padding: 20px; color: #999; font-size: 14px;';
+
+                if (hasMore) {
+                    loadingTip.innerHTML = '<p>向下滚动加载更多...</p>';
+                } else {
+                    loadingTip.innerHTML = '<p>已加载全部数据（共 ' + totalCount + ' 条）</p>';
+                }
+
+                list.appendChild(loadingTip);
+            }
         }
 
         // 计算时长
@@ -1758,8 +2022,15 @@
                 return;
             }
 
-            // 获取选中的事件ID列表
-            const selectedEventIds = Array.from(checkboxes).map(cb => cb.getAttribute('data-event-id'));
+            // 获取选中的事件ID列表（过滤无效值）
+            const selectedEventIds = Array.from(checkboxes)
+                .map(cb => cb.getAttribute('data-event-id'))
+                .filter(id => id && id.trim() !== '');
+
+            if (selectedEventIds.length === 0) {
+                alert('未找到有效的事件ID');
+                return;
+            }
 
             // 确认导出
             if (!confirm(`确定要导出选中的 ${selectedEventIds.length} 个复合事件台账吗？`)) {
@@ -1803,6 +2074,67 @@
             });
         }
 
+        // 导出选中的事件包
+        function exportSelectedEventPackages() {
+            const checkboxes = document.querySelectorAll('.composite-checkbox:checked');
+
+            if (checkboxes.length === 0) {
+                alert('请先选择要导出的复合事件');
+                return;
+            }
+
+            // 获取选中的事件ID列表（过滤无效值）
+            const selectedEventIds = Array.from(checkboxes)
+                .map(cb => cb.getAttribute('data-event-id'))
+                .filter(id => id && id.trim() !== '');
+
+            if (selectedEventIds.length === 0) {
+                alert('未找到有效的事件ID');
+                return;
+            }
+
+            // 确认导出
+            if (!confirm(`确定要导出选中的 ${selectedEventIds.length} 个事件包吗？\n\n导出位置：桌面/事件包导出/batch_events_[时间]/\n包含：HTML报告、图片、视频、JSON数据\n\n💡 提示：如需选择保存位置，请在浏览器设置中开启\n"下载前询问每个文件的保存位置"选项`)) {
+                return;
+            }
+
+            // 显示加载提示
+            const loadingMsg = document.createElement('div');
+            loadingMsg.innerHTML = `⏳ 正在导出事件包，请稍候...<br><small>共 ${selectedEventIds.length} 个事件</small>`;
+            loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px 40px; border-radius: 8px; z-index: 9999; font-size: 16px; text-align: center;';
+            document.body.appendChild(loadingMsg);
+
+            // 调用批量导出接口
+            fetch('/caseapp/track/compositeEvents/batchExport', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'eventIds=' + encodeURIComponent(selectedEventIds.join(','))
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (loadingMsg.parentNode) {
+                    document.body.removeChild(loadingMsg);
+                }
+                if (data.code === 0) {
+                    alert('✅ ' + data.msg + '\n\n文件位置：' + data.data);
+
+                    // 取消选中
+                    checkboxes.forEach(cb => cb.checked = false);
+                } else {
+                    alert('❌ 导出失败：' + data.msg);
+                }
+            })
+            .catch(error => {
+                if (loadingMsg.parentNode) {
+                    document.body.removeChild(loadingMsg);
+                }
+                console.error('导出事件包失败:', error);
+                alert('❌ 导出失败：' + error);
+            });
+        }
+
         // 页面加载完成后初始化
         window.addEventListener('DOMContentLoaded', init);
 
@@ -1820,6 +2152,94 @@
 
             // 重置表单
             document.getElementById('annotationForm').reset();
+
+            // 加载人员列表并初始化 Select2
+            loadPersonListForAnnotation();
+        }
+
+        // 加载人员列表供标注使用
+        function loadPersonListForAnnotation() {
+            fetch('/caseapp/person/persons', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                const personSelect = $('#annot_ryxm');
+
+                // 如果 select2 已经初始化，先销毁
+                if (personSelect.data('select2')) {
+                    personSelect.select2('destroy');
+                }
+
+                // 清空现有选项
+                personSelect.empty();
+
+                // 添加选项
+                if (data && data.data) {
+                    data.data.forEach(person => {
+                        personSelect.append(new Option(person, person, false, false));
+                    });
+                }
+
+                // 初始化 Select2（多选下拉框，显示为标签形式）
+                personSelect.select2({
+                    placeholder: '请选择管理员（可多选）',
+                    allowClear: true,
+                    width: '100%',
+                    dropdownParent: $('#compositeAnnotationModal'),
+                    language: {
+                        noResults: function() {
+                            return "未找到匹配的管理员";
+                        }
+                    }
+                });
+
+                // 美化 Select2 多选框，让它看起来更像下拉框
+                setTimeout(function() {
+                    const $container = $('#annot_ryxm').next('.select2-container');
+                    const $selection = $container.find('.select2-selection');
+
+                    // 添加边框和样式，与"行为原因"下拉框保持一致
+                    $selection.css({
+                        'border': '2px solid #dee2e6',
+                        'border-radius': '4px',
+                        'min-height': '38px',
+                        'padding': '10px 30px 10px 10px',
+                        'background': 'white',
+                        'position': 'relative',
+                        'cursor': 'pointer',
+                        'font-size': '14px',
+                        'font-weight': 'bold'
+                    });
+
+                    // 移除输入框的文字光标，并设置字体加粗
+                    $selection.find('.select2-search__field').css({
+                        'cursor': 'pointer',
+                        'font-weight': 'bold'
+                    });
+
+                    // 设置 placeholder 文字颜色为深黑色
+                    $selection.find('.select2-search__field').attr('placeholder', '请选择管理员（可多选）');
+                    $selection.find('.select2-search__field').css('color', '#333');
+
+                    // 设置选中项的字体加粗
+                    $selection.find('.select2-selection__choice').css('font-weight', 'bold');
+
+                    // 如果还没有下拉箭头，添加一个（更大、更黑）
+                    if ($selection.find('.custom-arrow').length === 0) {
+                        $selection.append('<span class="custom-arrow" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #333; font-size: 16px; font-weight: bold;">▼</span>');
+                    }
+
+                    // 鼠标悬停效果
+                    $selection.hover(
+                        function() { $(this).css('border-color', '#4c6ef5'); },
+                        function() { $(this).css('border-color', '#dee2e6'); }
+                    );
+                }, 100);
+            })
+            .catch(error => {
+                console.error('加载人员列表失败:', error);
+            });
         }
 
         // 关闭标注弹窗
@@ -1827,7 +2247,8 @@
             document.getElementById('compositeAnnotationModal').style.display = 'none';
             // 清空表单
             document.getElementById('annot_xwyy').value = '';
-            document.getElementById('annot_ryxm').value = '';
+            // 使用 Select2 的方式清空人员选择
+            $('#annot_ryxm').val(null).trigger('change');
             document.getElementById('annot_wlry').value = '';
             document.getElementById('annot_remark').value = '';
             currentAnnotationEventId = null;
@@ -1837,7 +2258,9 @@
         // 保存复合事件标注
         function saveCompositeAnnotation() {
             const xwyy = document.getElementById('annot_xwyy').value;
-            const ryxm = document.getElementById('annot_ryxm').value;
+            // 从多选下拉框获取选中的人员，用逗号连接
+            const ryxmArray = $('#annot_ryxm').val();
+            const ryxm = ryxmArray ? ryxmArray.join(',') : '';
             const wlry = document.getElementById('annot_wlry').value;
             const remark = document.getElementById('annot_remark').value;
 
@@ -1906,12 +2329,14 @@
                     </div>
 
                     <!-- 人员姓名 -->
-                    <div style="margin-bottom: 20px;">
+                    <div id="annot_ryxm_container" style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">
                             👤 管理员姓名：
                         </label>
-                        <input type="text" id="annot_ryxm" placeholder="多个人员用逗号分隔，如：张三,李四" style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 4px; font-size: 14px;">
-                        <small style="color: #868e96; font-size: 12px;">请输入参与此次事件的管理员姓名</small>
+                        <select id="annot_ryxm" class="form-control" multiple style="width: 100%; display: block !important; visibility: visible !important;">
+                            <option value="">加载中...</option>
+                        </select>
+                        <small style="color: #868e96; font-size: 12px;">可多选，选中后会显示为标签</small>
                     </div>
 
                     <!-- 外来人员 -->

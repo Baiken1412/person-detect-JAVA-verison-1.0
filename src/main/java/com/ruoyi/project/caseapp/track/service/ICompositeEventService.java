@@ -116,6 +116,15 @@ public interface ICompositeEventService
     public String exportEventPackage(Long eventId, String exportPath) throws Exception;
 
     /**
+     * 批量导出事件包（多个事件导出到一个文件夹）
+     *
+     * @param eventIds 复合事件ID列表
+     * @param exportPath 导出路径
+     * @return 导出文件夹路径
+     */
+    public String batchExportEventPackages(List<Long> eventIds, String exportPath) throws Exception;
+
+    /**
      * 统计今日复合事件总数
      */
     public int countTodayEvents();

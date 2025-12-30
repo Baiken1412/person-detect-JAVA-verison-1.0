@@ -50,8 +50,14 @@
         }
 
         .header-logo {
-            font-size: 64px;
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        .header-logo img {
+            height: 80px;
+            width: auto;
+            mix-blend-mode: multiply;
+            /* 如果multiply效果不好，可以尝试 screen 或 darken */
         }
 
         .header-text h1 {
@@ -472,8 +478,8 @@
                 text-align: center;
             }
 
-            .header-logo {
-                font-size: 48px;
+            .header-logo img {
+                height: 60px;
             }
 
             .header-text h1 {
@@ -506,14 +512,20 @@
 <body>
     <div class="header">
         <div class="header-content">
-            <div class="header-logo">🛡️</div>
+            <div class="header-logo"><img src="/图片1.png" alt="系统Logo"></div>
             <div class="header-text">
-                <h1>资产视频分析插件</h1>
-                <p>人员活动自动识别与追溯管理系统</p>
+                <h1 id="systemTitle">资产视频分析插件</h1>
+                <p id="systemSubtitle">人员活动自动识别与追溯管理系统</p>
             </div>
-            <div style="margin-left: auto;">
-                <button onclick="goToCompositeEvents()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                    🔗 查看复合事件
+            <div style="margin-left: auto; display: flex; gap: 10px;">
+                <button onclick="goToCompositeEvents()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                    🏠 事件页面
+                </button>
+                <button style="background: rgba(255,255,255,0.4); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: default; font-size: 14px; font-weight: bold;">
+                    📝 轨迹页面
+                </button>
+                <button onclick="goToDailyReport()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                    📊 每日报告
                 </button>
             </div>
         </div>
@@ -575,12 +587,24 @@
             </div>
             <button onclick="applyFilters()">🔍 筛选</button>
             <button onclick="resetFilters()">🔄 重置</button>
-            <button onclick="exportData()" style="background: #51cf66;">📤 导出台账</button>
         </div>
 
         <!-- 事件列表 -->
         <div class="events-grid" id="eventsGrid">
             <!-- 事件卡片将通过JavaScript动态生成 -->
+        </div>
+
+        <!-- 轨迹详情弹窗 -->
+        <div id="eventDetailModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+            <div style="background: white; border-radius: 8px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; font-size: 20px;">📋 轨迹详情</h2>
+                    <button onclick="closeEventDetailModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 24px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer;">×</button>
+                </div>
+                <div id="eventDetailContent" style="padding: 20px;">
+                    <!-- 详情内容将通过JavaScript动态填充 -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -608,8 +632,25 @@
             '小库房门口': ['通道']
         };
 
+        // 加载系统配置（标题等）
+        function loadSystemConfig() {
+            fetch('/system/config/info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0 && data.data) {
+                        document.getElementById('systemTitle').textContent = data.data.title;
+                        document.getElementById('systemSubtitle').textContent = data.data.subtitle;
+                        document.title = '轨迹页面 - ' + data.data.title;
+                    }
+                })
+                .catch(error => {
+                    console.error('加载系统配置失败:', error);
+                });
+        }
+
         // 初始化页面
         function init() {
+            loadSystemConfig();
             updateStats();
             loadAreaList();
             loadDictData();
@@ -672,20 +713,68 @@
         // 加载字典数据
         function loadDictData() {
             fetch('/caseapp/track/dict/biz_annotation_status')
-                .then(response => response.json())
+                .then(response => {
+                    console.log('字典数据响应状态:', response.status);
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('字典数据返回:', data);
                     if (data.code === 0 && data.data) {
                         const statusFilter = document.getElementById('statusFilter');
                         // 保留"全部状态"选项
                         statusFilter.innerHTML = '<option value="">全部状态</option>';
-                        // 添加字典选项
-                        data.data.forEach(item => {
+
+                        if (data.data.length === 0) {
+                            console.warn('警告: 字典数据为空，请检查数据库中是否存在 biz_annotation_status 类型的字典数据');
+                            // 添加默认选项
+                            const defaultOptions = [
+                                {dictValue: '0', dictLabel: '未标注'},
+                                {dictValue: '1', dictLabel: '已标注'}
+                            ];
+                            defaultOptions.forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item.dictValue;
+                                option.textContent = item.dictLabel;
+                                statusFilter.appendChild(option);
+                            });
+                        } else {
+                            // 去重：使用Map确保每个dictValue只出现一次
+                            const uniqueData = new Map();
+                            data.data.forEach(item => {
+                                if (!uniqueData.has(item.dictValue)) {
+                                    uniqueData.set(item.dictValue, item);
+                                }
+                            });
+
+                            // 添加字典选项
+                            uniqueData.forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item.dictValue;
+                                option.textContent = item.dictLabel;
+                                statusFilter.appendChild(option);
+                            });
+                        }
+
+                        // 初始化 select2
+                        $('#statusFilter').select2({
+                            width: '200px',
+                            placeholder: '请选择状态'
+                        });
+                    } else {
+                        console.error('字典数据格式错误:', data);
+                        // 使用默认选项
+                        const statusFilter = document.getElementById('statusFilter');
+                        statusFilter.innerHTML = '<option value="">全部状态</option>';
+                        const defaultOptions = [
+                            {dictValue: '0', dictLabel: '未标注'},
+                            {dictValue: '1', dictLabel: '已标注'}
+                        ];
+                        defaultOptions.forEach(item => {
                             const option = document.createElement('option');
                             option.value = item.dictValue;
                             option.textContent = item.dictLabel;
                             statusFilter.appendChild(option);
                         });
-                        // 初始化 select2
                         $('#statusFilter').select2({
                             width: '200px',
                             placeholder: '请选择状态'
@@ -694,6 +783,23 @@
                 })
                 .catch(error => {
                     console.error('获取字典数据失败:', error);
+                    // 即使失败也提供默认选项
+                    const statusFilter = document.getElementById('statusFilter');
+                    statusFilter.innerHTML = '<option value="">全部状态</option>';
+                    const defaultOptions = [
+                        {dictValue: '0', dictLabel: '未标注'},
+                        {dictValue: '1', dictLabel: '已标注'}
+                    ];
+                    defaultOptions.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.dictValue;
+                        option.textContent = item.dictLabel;
+                        statusFilter.appendChild(option);
+                    });
+                    $('#statusFilter').select2({
+                        width: '200px',
+                        placeholder: '请选择状态'
+                    });
                 });
         }
 
@@ -852,7 +958,11 @@
                                 rysl: item.rysl || 0, // 人员数量
                                 pssj: item.pssj || '', // 原始拍摄时间字符串
                                 jssj: item.jssj || '', // 原始结束时间字符串
-                                suggestions: []
+                                suggestions: [],
+                                // 添加标注信息字段
+                                ryxm: item.ryxm || '', // 管理员姓名
+                                wlry: item.wlry || '', // 外来人员
+                                remark: item.remark || '' // 备注
                             };
                             
                             // 解析人员信息
@@ -1110,7 +1220,7 @@
                 const warningClass = (isWarning || isNonWorktime || isAbnormal) ? 'worktime-warning' : '';
 
                 return `
-                <div class="event-card ${event.status} ${warningClass}" onclick="openEventDetail('${event.id}')">
+                <div class="event-card ${event.status} ${warningClass}" onclick="viewEventDetail('${event.id}')" style="cursor: pointer;">
                     <div class="event-thumbnail">
                         ${event.pstp ? `<img src="${event.pstp}" alt="事件缩略图" onerror="this.onerror=null; this.src=''; this.style.display='none'; this.nextElementSibling.style.display='inline-block';" /><span class="thumbnail-icon" style="display:none;">🎥</span>` : '<span class="thumbnail-icon">🎥</span>'}
                         <span class="event-status ${event.status}">
@@ -1166,14 +1276,96 @@
             }
         }
 
-        // 打开事件详情（跳转到标注页面）
-        function openEventDetail(eventId) {
-            window.location.href = '/caseapp/track/eventAnnotation?id=' + eventId;
+        // 查看轨迹详情
+        function viewEventDetail(eventId) {
+            // 从 eventsData 中查找对应的轨迹
+            const event = eventsData.find(e => e.id == eventId);
+            if (!event) {
+                alert('未找到该轨迹信息');
+                return;
+            }
+
+            // 构建详情HTML
+            let detailHTML = `
+                <div style="line-height: 1.8;">
+                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📅 拍摄时间</div>
+                        <div style="color: #6c757d;">${event.time}</div>
+                    </div>
+
+                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📍 区域位置</div>
+                        <div style="color: #6c757d;">${event.area || '未知'}</div>
+                    </div>
+
+                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">👥 人员数量</div>
+                        <div style="color: #6c757d;">${event.rysl || 0} 人</div>
+                    </div>
+
+                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📌 标注状态</div>
+                        <div>
+                            <span style="background: ${event.status === 'labeled' ? '#51cf66' : '#ff6b6b'}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 14px;">
+                                ${event.status === 'labeled' ? '✓ 已标注' : '○ 待标注'}
+                            </span>
+                        </div>
+                    </div>
+            `;
+
+            // 如果已标注，显示标注信息
+            if (event.status === 'labeled') {
+                detailHTML += `
+                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📝 行为原因</div>
+                        <div style="color: #6c757d;">${event.reason || '未填写'}</div>
+                    </div>
+
+                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">👤 管理员</div>
+                        <div style="color: #6c757d;">${event.ryxm || '未填写'}</div>
+                    </div>
+
+                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">🚶 外来人员</div>
+                        <div style="color: #6c757d;">${event.wlry || '无'}</div>
+                    </div>
+
+                    ${event.remark ? `
+                        <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                            <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">💬 备注</div>
+                            <div style="color: #6c757d;">${event.remark}</div>
+                        </div>
+                    ` : ''}
+
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">⏰ 标注时间</div>
+                        <div style="color: #6c757d;">${event.operateTime || '未记录'}</div>
+                    </div>
+                `;
+            }
+
+            detailHTML += `</div>`;
+
+            // 显示弹窗
+            document.getElementById('eventDetailContent').innerHTML = detailHTML;
+            const modal = document.getElementById('eventDetailModal');
+            modal.style.display = 'flex';
+        }
+
+        // 关闭详情弹窗
+        function closeEventDetailModal() {
+            document.getElementById('eventDetailModal').style.display = 'none';
         }
 
         // 跳转到复合事件页面
         function goToCompositeEvents() {
             window.location.href = '/caseapp/track';
+        }
+
+        // 跳转到每日报告页面
+        function goToDailyReport() {
+            window.location.href = '/caseapp/track/dailyReport';
         }
 
         // 应用筛选
@@ -1228,79 +1420,6 @@
             hasMore = true;
 
             loadEvents(today, today, '', '', [], 1, false);
-        }
-
-        // 导出台账数据
-        function exportData() {
-            const beginDateFilter = currentFilters.beginDateFilter || document.getElementById('beginDateFilter').value;
-            const endDateFilter = currentFilters.endDateFilter || document.getElementById('endDateFilter').value;
-            const areaFilter = currentFilters.areaFilter || $('#areaFilter').val();
-            const statusFilter = currentFilters.statusFilter || $('#statusFilter').val();
-            const personFilter = currentFilters.personFilter || $('#personFilter').val() || [];
-
-            // 构建POST参数数组
-            var dataParam = [];
-
-            // 设置状态筛选（对应实体类 bzzt 字段）
-            if (statusFilter) {
-                dataParam.push({ "name": "bzzt", "value": statusFilter });
-            }
-
-            // 设置区域筛选（对应实体类 qymc 字段）
-            if (areaFilter) {
-                dataParam.push({ "name": "qymc", "value": areaFilter });
-            }
-
-            // 设置管理员筛选（对应实体类 ryxm 字段）
-            if (personFilter && personFilter.length > 0) {
-                dataParam.push({ "name": "ryxm", "value": personFilter.join(',') });
-            }
-
-            // 设置时间区间
-            let beginDateStr = beginDateFilter || new Date().toISOString().split('T')[0];
-            let endDateStr = endDateFilter || beginDateStr;
-
-            const beginDate = new Date(beginDateStr);
-            const endDate = new Date(endDateStr);
-
-            // 开始时间：开始日期当天 0:00:00
-            beginDate.setHours(0, 0, 0, 0);
-            const beginPssj = beginDate.getFullYear() + '-' +
-                String(beginDate.getMonth() + 1).padStart(2, '0') + '-' +
-                String(beginDate.getDate()).padStart(2, '0') + ' ' +
-                String(beginDate.getHours()).padStart(2, '0') + ':' +
-                String(beginDate.getMinutes()).padStart(2, '0') + ':' +
-                String(beginDate.getSeconds()).padStart(2, '0');
-
-            // 结束时间：结束日期当天 23:59:59
-            endDate.setHours(23, 59, 59, 999);
-            const endPssj = endDate.getFullYear() + '-' +
-                String(endDate.getMonth() + 1).padStart(2, '0') + '-' +
-                String(endDate.getDate()).padStart(2, '0') + ' ' +
-                String(endDate.getHours()).padStart(2, '0') + ':' +
-                String(endDate.getMinutes()).padStart(2, '0') + ':' +
-                String(endDate.getSeconds()).padStart(2, '0');
-
-            dataParam.push({ "name": "params[beginPssj]", "value": beginPssj });
-            dataParam.push({ "name": "params[endPssj]", "value": endPssj });
-
-            // 提示用户
-            $.modal.loading("正在导出数据，请稍候...");
-
-            // POST到导出接口，获取文件名后下载
-            $.post('/caseapp/track/export', dataParam, function(result) {
-                if (result.code == 0) {
-                    window.location.href = ctx + "common/download?fileName=" + encodeURI(result.msg) + "&delete=" + true;
-                    $.modal.closeLoading();
-                    $.modal.msgSuccess("导出成功！");
-                } else {
-                    $.modal.closeLoading();
-                    $.modal.alertError(result.msg || "导出失败");
-                }
-            }).fail(function() {
-                $.modal.closeLoading();
-                $.modal.alertError("导出请求失败，请稍后重试");
-            });
         }
 
         // 页面加载完成后初始化

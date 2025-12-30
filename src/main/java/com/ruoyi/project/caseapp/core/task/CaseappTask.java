@@ -54,7 +54,9 @@ public class CaseappTask {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
         int gpu = 0;
-        String cxip = IpUtils.getHostIp();
+        // 修改：使用getRealHostIp()替代getHostIp()，解决公司环境下获取到localhost的问题
+        String cxip = IpUtils.getRealHostIp();
+        System.out.println("视频下载任务使用的IP地址: " + cxip);
         HikVedioUtil hikVedioUtil = new HikVedioUtil();
         hikVedioUtil.fz(ip,port,appKey,appSecret);
 

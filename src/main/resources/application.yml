@@ -13,6 +13,13 @@ ruoyi:
   # 获取ip地址开关
   addressEnabled: true
 
+# 系统标题配置
+system:
+  # 系统标题（可修改为：某某某资产视频分析插件）
+  title: 视频分析插件
+  # 系统副标题
+  subtitle: 人员活动自动识别与追溯管理系统
+
 # 开发环境配置
 server:
   # 服务器的HTTP端口，默认为80

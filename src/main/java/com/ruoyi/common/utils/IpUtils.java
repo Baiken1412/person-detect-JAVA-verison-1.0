@@ -201,7 +201,7 @@ public class IpUtils
 
     /**
      * 获取IP地址
-     * 
+     *
      * @return 本地IP地址
      */
     public static String getHostIp()
@@ -214,6 +214,79 @@ public class IpUtils
         {
         }
         return "127.0.0.1";
+    }
+
+    /**
+     * 获取真实的局域网IP地址（优先返回非localhost的IP）
+     * 解决在公司环境下getHostIp()可能返回127.0.0.1的问题
+     *
+     * @return 本地局域网IP地址
+     */
+    public static String getRealHostIp()
+    {
+        try
+        {
+            java.util.Enumeration<java.net.NetworkInterface> networkInterfaces = java.net.NetworkInterface.getNetworkInterfaces();
+            while (networkInterfaces.hasMoreElements())
+            {
+                java.net.NetworkInterface networkInterface = networkInterfaces.nextElement();
+                // 跳过回环接口、虚拟接口、未启用的接口
+                if (networkInterface.isLoopback() || networkInterface.isVirtual() || !networkInterface.isUp())
+                {
+                    continue;
+                }
+
+                java.util.Enumeration<java.net.InetAddress> addresses = networkInterface.getInetAddresses();
+                while (addresses.hasMoreElements())
+                {
+                    java.net.InetAddress address = addresses.nextElement();
+                    // 只处理IPv4地址，跳过回环地址
+                    if (address instanceof java.net.Inet4Address && !address.isLoopbackAddress())
+                    {
+                        String ip = address.getHostAddress();
+                        // 优先返回局域网IP（192.168.x.x, 10.x.x.x, 172.16-31.x.x）
+                        if (ip.startsWith("192.168.") || ip.startsWith("10.") ||
+                            (ip.startsWith("172.") && isPrivateIP172(ip)))
+                        {
+                            System.out.println("✓ 获取到真实局域网IP: " + ip);
+                            return ip;
+                        }
+                    }
+                }
+            }
+
+            // 如果没有找到局域网IP，使用原方法
+            String fallbackIp = InetAddress.getLocalHost().getHostAddress();
+            System.out.println("⚠ 未找到局域网IP，使用默认IP: " + fallbackIp);
+            return fallbackIp;
+        }
+        catch (Exception e)
+        {
+            System.err.println("✗ 获取IP地址失败: " + e.getMessage());
+            e.printStackTrace();
+            return "127.0.0.1";
+        }
+    }
+
+    /**
+     * 检查是否为172.16.0.0 - 172.31.255.255范围内的私有IP
+     */
+    private static boolean isPrivateIP172(String ip)
+    {
+        try
+        {
+            String[] parts = ip.split("\\.");
+            if (parts.length == 4)
+            {
+                int secondOctet = Integer.parseInt(parts[1]);
+                return secondOctet >= 16 && secondOctet <= 31;
+            }
+        }
+        catch (Exception e)
+        {
+            // 解析失败，返回false
+        }
+        return false;
     }
 
     /**

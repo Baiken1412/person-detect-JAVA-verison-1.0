@@ -732,10 +732,7 @@
                         alert(errorMsg);
                     }
 
-                    // 自动跳到下一个
-                    if (index + 1 < currentComposite.events.length) {
-                        setTimeout(() => playTraceVideo(index + 1), 1000);
-                    }
+                    // 已移除自动跳到下一个视频的功能
                 };
 
                 // 添加 catch 捕获播放错误
@@ -750,34 +747,24 @@
                         v.muted = true;
                         v.play().catch(err => {
                             console.error(`  ✗ 静音播放也失败:`, err);
-                            // 播放失败，跳到下一个
-                            if (index + 1 < currentComposite.events.length) {
-                                setTimeout(() => playTraceVideo(index + 1), 2000);
-                            }
+                            // 已移除自动跳到下一个视频的功能
                         });
                     } else {
-                        // 其他错误（如文件不存在），跳到下一个
-                        if (index + 1 < currentComposite.events.length) {
-                            setTimeout(() => playTraceVideo(index + 1), 2000);
-                        }
+                        // 已移除自动跳到下一个视频的功能
+                        console.error(`  ✗ 视频播放失败，请手动点击其他轨迹节点`);
                     }
                 });
 
                 v.onended = () => {
                     console.log(`  ✓ 视频播放完成`);
-                    if (index + 1 < currentComposite.events.length) {
-                        setTimeout(() => playTraceVideo(index + 1), 500);
-                    }
+                    // 已移除自动播放下一个视频的功能
+                    // 用户需要手动点击下一个轨迹节点来播放
                 };
             } else {
                 // 如果没有视频地址，移除 src 属性防止报错
                 v.removeAttribute('src');
-                console.warn(`  ⚠ 第 ${index + 1} 个节点无视频地址，1秒后跳过`);
-
-                // 模拟播放延迟，自动跳到下一个
-                if (index + 1 < currentComposite.events.length) {
-                    setTimeout(() => playTraceVideo(index + 1), 1000);
-                }
+                console.warn(`  ⚠ 第 ${index + 1} 个节点无视频地址`);
+                // 已移除自动跳到下一个视频的功能
             }
         }
 

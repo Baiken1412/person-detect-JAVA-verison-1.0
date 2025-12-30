@@ -77,10 +77,18 @@ public class CompositeEvent extends BaseEntity
     @Excel(name = "路径")
     private String pathAreas;
 
+    /** 行为描述（经过说明） */
+    private String behaviorDescription;
+
+    /** 处理状态：待处理/已通知/处理中/已完成/已归档 */
+    private String processStatus;
+
     /** 是否包含非工作时间：0=否，1=是 */
+    @Excel(name = "非工作时间", readConverterExp = "0=否,1=是")
     private Integer hasNonworktime;
 
     /** 是否人员异常：0=否，1=是 */
+    @Excel(name = "人数是否异常", readConverterExp = "0=否,1=是")
     private Integer hasAbnormalPerson;
 
     /** 包含的轨迹ID列表（逗号分隔） */
@@ -271,6 +279,22 @@ public class CompositeEvent extends BaseEntity
     public void setEventCount(Integer eventCount)
     {
         this.eventCount = eventCount;
+    }
+
+    public String getBehaviorDescription() {
+        return behaviorDescription;
+    }
+
+    public void setBehaviorDescription(String behaviorDescription) {
+        this.behaviorDescription = behaviorDescription;
+    }
+
+    public String getProcessStatus() {
+        return processStatus;
+    }
+
+    public void setProcessStatus(String processStatus) {
+        this.processStatus = processStatus;
     }
 }
 

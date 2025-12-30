@@ -16,7 +16,6 @@
             font-family: 'Microsoft YaHei', Arial, sans-serif;
             background: #f5f7fa;
             color: #333;
-            padding: 20px;
         }
 
         .container {
@@ -25,19 +24,72 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
             color: white;
-            padding: 25px 30px;
-            border-radius: 8px 8px 0 0;
-            margin-bottom: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 40px 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
         }
 
-        .header h1 {
-            font-size: 28px;
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-logo {
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        .header-logo img {
+            height: 80px;
+            width: auto;
+            mix-blend-mode: multiply;
+            /* 如果multiply效果不好，可以尝试 screen 或 darken */
+        }
+
+        .header-text h1 {
+            font-size: 32px;
             font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header-text p {
+            font-size: 16px;
+            opacity: 0.95;
+            letter-spacing: 1px;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
         }
 
         .date-selector {
@@ -245,6 +297,11 @@
             color: #c92a2a;
         }
 
+        .event-status.processing {
+            background: #fff3bf;
+            color: #e67700;
+        }
+
         .event-details {
             font-size: 14px;
             color: #666;
@@ -317,9 +374,30 @@
     </style>
 </head>
 <body>
+    <div class="header">
+        <div class="header-content">
+            <div class="header-logo"><img src="/图片1.png" alt="系统Logo"></div>
+            <div class="header-text">
+                <h1 id="systemTitle">资产视频分析插件</h1>
+                <p id="systemSubtitle">人员活动自动识别与追溯管理系统</p>
+            </div>
+            <div style="margin-left: auto; display: flex; gap: 10px;">
+                <button onclick="goToEvents()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                    🏠 事件页面
+                </button>
+                <button onclick="goToEventList()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                    📝 轨迹页面
+                </button>
+                <button style="background: rgba(255,255,255,0.4); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: default; font-size: 14px; font-weight: bold;">
+                    📊 每日报告
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
-        <div class="header">
-            <h1>📊 每日情况概览</h1>
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 30px; border-radius: 8px 8px 0 0; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+            <h2 style="font-size: 24px; font-weight: 600;">📊 每日情况概览</h2>
             <div class="date-selector">
                 <input type="date" id="reportDate" />
                 <button onclick="loadReport()">查看</button>
@@ -380,6 +458,16 @@
                     <div class="event-list" id="suspiciousEventList"></div>
                 </div>
 
+                <!-- 正常事件概览 -->
+                <div class="section">
+                    <div class="section-title">
+                        <span class="icon">✅</span>
+                        正常事件概览
+                        <span class="count" id="normalCount">0</span>
+                    </div>
+                    <div class="event-list" id="normalEventList"></div>
+                </div>
+
                 <!-- 管理建议 -->
                 <div class="suggestions-grid">
                     <div class="suggestion-box">
@@ -395,9 +483,39 @@
         </div>
     </div>
 
+    <div class="footer">
+        Copyright © 2023-2024 某科技公司 版权所有
+    </div>
+
     <script>
+        // 加载系统配置（标题等）
+        function loadSystemConfig() {
+            fetch('/system/config/info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0 && data.data) {
+                        document.getElementById('systemTitle').textContent = data.data.title;
+                        document.getElementById('systemSubtitle').textContent = data.data.subtitle;
+                        document.title = '每日报告 - ' + data.data.title;
+                    }
+                })
+                .catch(error => {
+                    console.error('加载系统配置失败:', error);
+                });
+        }
+
+        // 导航函数
+        function goToEvents() {
+            window.location.href = '/caseapp/track';
+        }
+
+        function goToEventList() {
+            window.location.href = '/caseapp/track/eventList';
+        }
+
         // 初始化：加载今日报告
         window.addEventListener('DOMContentLoaded', () => {
+            loadSystemConfig();
             loadTodayReport();
         });
 
@@ -472,6 +590,10 @@
             document.getElementById('suspiciousCount').textContent = data.suspiciousEvents || 0;
             renderEventList('suspiciousEventList', data.suspiciousEventList, 'suspicious');
 
+            // 正常事件列表
+            document.getElementById('normalCount').textContent = data.normalEvents || 0;
+            renderEventList('normalEventList', data.normalEventList, 'normal');
+
             // 管理建议
             renderSuggestionList('managementSuggestions', data.managementSuggestions);
 
@@ -489,27 +611,29 @@
             }
 
             container.innerHTML = events.map(event => {
-                const statusClass = event.bzzt === '1' ? 'labeled' : 'unlabeled';
-                const statusText = event.bzzt === '1' ? '已标注' : '待处理';
-
                 let typeText = '';
                 if (event.hasNonworktime === 1) typeText += '🌙 非工作时间 ';
                 if (event.hasAbnormalPerson === 1) typeText += '👥 人数异常 ';
                 if (event.wlry) typeText += '🔶 外来人员 ';
                 if (event.duration > 1800) typeText += '⏰ 持续时间长 ';
 
+                // 处理状态标签（只显示处理状态，避免与标注状态重复）
+                const processStatus = event.processStatus || '待处理';
+                const processStatusClass = getProcessStatusClass(processStatus);
+
                 return `
                     <div class="event-item ${type}">
                         <div class="event-header">
                             <div class="event-type">${typeText || '活动事件'}</div>
-                            <div class="event-status ${statusClass}">${statusText}</div>
+                            <div class="event-status ${processStatusClass}">${processStatus}</div>
                         </div>
                         <div class="event-details">
                             <div>⏱️ 时间：${formatDateTime(event.startTime)} ~ ${formatTime(event.endTime)} （${formatDuration(event.duration || 0)}）</div>
                             <div>📍 区域：${event.pathAreas || event.qymc || '未知'}</div>
+                            ${event.behaviorDescription ? `<div>📋 经过说明：${event.behaviorDescription}</div>` : ''}
                             ${event.ryxm ? `<div>👤 人员：${event.ryxm}</div>` : ''}
                             ${event.wlry ? `<div>🔶 外来人员：${event.wlry}</div>` : ''}
-                            ${event.xwyy ? `<div>📝 说明：${event.xwyy}</div>` : ''}
+                            ${event.xwyy ? `<div>📝 标注说明：${event.xwyy}</div>` : ''}
                         </div>
                     </div>
                 `;
@@ -536,6 +660,18 @@
                 'abnormal': '❌'
             };
             return icons[status] || '📊';
+        }
+
+        // 获取处理状态的CSS类
+        function getProcessStatusClass(status) {
+            const classMap = {
+                '待处理': 'unlabeled',
+                '已通知': 'processing',
+                '处理中': 'processing',
+                '已完成': 'labeled',
+                '已归档': 'labeled'
+            };
+            return classMap[status] || 'unlabeled';
         }
 
         // 获取状态文本

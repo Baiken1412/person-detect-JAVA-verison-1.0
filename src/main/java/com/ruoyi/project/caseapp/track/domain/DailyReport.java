@@ -42,6 +42,9 @@ public class DailyReport extends BaseEntity
     /** 可疑事件列表（待标注的事件） */
     private List<CompositeEvent> suspiciousEventList;
 
+    /** 正常事件列表（展示部分正常事件） */
+    private List<CompositeEvent> normalEventList;
+
     /** 管理建议列表 */
     private List<String> managementSuggestions;
 
@@ -138,6 +141,16 @@ public class DailyReport extends BaseEntity
     public void setSuspiciousEventList(List<CompositeEvent> suspiciousEventList)
     {
         this.suspiciousEventList = suspiciousEventList;
+    }
+
+    public List<CompositeEvent> getNormalEventList()
+    {
+        return normalEventList;
+    }
+
+    public void setNormalEventList(List<CompositeEvent> normalEventList)
+    {
+        this.normalEventList = normalEventList;
     }
 
     public List<String> getManagementSuggestions()

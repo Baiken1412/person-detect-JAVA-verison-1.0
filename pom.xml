@@ -281,6 +281,13 @@
             <version>4.5.13</version>
         </dependency>
 
+        <!-- Apache PDFBox (PDF生成) -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.29</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -292,6 +299,29 @@
                 <configuration>
                     <fork>true</fork> <!-- 如果没有该配置，devtools不会生效 -->
                     <includeSystemScope>true</includeSystemScope>
+                </configuration>
+            </plugin>
+            <!-- Maven Exec Plugin (解决中文乱码问题) -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                    <systemProperties>
+                        <systemProperty>
+                            <key>file.encoding</key>
+                            <value>UTF-8</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <key>sun.stdout.encoding</key>
+                            <value>UTF-8</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <key>sun.stderr.encoding</key>
+                            <value>UTF-8</value>
+                        </systemProperty>
+                    </systemProperties>
                 </configuration>
             </plugin>
             <!-- YUI Compressor (CSS/JS压缩) 
