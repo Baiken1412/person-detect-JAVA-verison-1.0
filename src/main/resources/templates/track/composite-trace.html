@@ -833,7 +833,10 @@
             .then(data => {
                 $.modal.closeLoading();
                 if (data.code === 0) {
-                    $.modal.msgSuccess('导出成功！<br>文件已保存至：<br>' + data.data);
+                    // 下载ZIP文件（和台账导出一样）
+                    const fileName = encodeURI(data.msg);
+                    window.location.href = ctx + 'common/download?fileName=' + fileName + '&delete=true';
+                    $.modal.msgSuccess('导出成功！正在下载事件包...');
                 } else {
                     $.modal.alertError('导出失败：' + (data.msg || '未知错误'));
                 }

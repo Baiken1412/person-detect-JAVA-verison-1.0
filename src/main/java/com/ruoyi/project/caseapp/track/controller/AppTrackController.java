@@ -582,6 +582,7 @@ public class AppTrackController extends BaseController
 
     /**
      * 导出事件包（HTML报告 + 图片 + 视频 + JSON数据）
+     * 导出为ZIP文件，通过浏览器下载
      */
     @Log(title = "导出事件包", businessType = BusinessType.EXPORT)
     @PostMapping("/compositeEvents/export/{eventId}")
@@ -590,16 +591,18 @@ public class AppTrackController extends BaseController
     {
         try
         {
-            // 导出路径使用配置的profile路径下的exports目录
-            String exportBasePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + "事件包导出";
+            // 使用RuoYi下载目录
+            String exportBasePath = com.ruoyi.framework.config.RuoYiConfig.getDownloadPath();
             File exportDir = new File(exportBasePath);
             if (!exportDir.exists())
             {
                 exportDir.mkdirs();
             }
 
-            String exportPath = compositeEventService.exportEventPackage(eventId, exportBasePath);
-            return AjaxResult.success("导出成功", exportPath);
+            // 导出事件包（返回ZIP文件名）
+            String zipFileName = compositeEventService.exportEventPackage(eventId, exportBasePath);
+
+            return AjaxResult.success(zipFileName);
         }
         catch (Exception e)
         {
@@ -609,7 +612,8 @@ public class AppTrackController extends BaseController
     }
 
     /**
-     * 批量导出事件包（支持多个事件ID，导出到文件夹）
+     * 批量导出事件包（支持多个事件ID，导出为ZIP文件）
+     * 导出为ZIP文件，通过浏览器下载
      *
      * @param eventIds 事件ID列表（逗号分隔）
      * @return 导出结果
@@ -626,8 +630,8 @@ public class AppTrackController extends BaseController
                 return AjaxResult.error("请选择要导出的复合事件");
             }
 
-            // 导出路径
-            String exportBasePath = System.getProperty("user.home") + File.separator + "Desktop" + File.separator + "事件包导出";
+            // 使用RuoYi下载目录
+            String exportBasePath = com.ruoyi.framework.config.RuoYiConfig.getDownloadPath();
             File exportDir = new File(exportBasePath);
             if (!exportDir.exists())
             {
@@ -654,9 +658,10 @@ public class AppTrackController extends BaseController
                 return AjaxResult.error("没有有效的事件ID");
             }
 
-            // 批量导出事件包
-            String exportPath = compositeEventService.batchExportEventPackages(eventIdList, exportBasePath);
-            return AjaxResult.success("导出成功，共导出 " + eventIdList.size() + " 个事件包", exportPath);
+            // 批量导出事件包（返回ZIP文件名）
+            String zipFileName = compositeEventService.batchExportEventPackages(eventIdList, exportBasePath);
+
+            return AjaxResult.success(zipFileName);
         }
         catch (Exception e)
         {

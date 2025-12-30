@@ -2118,7 +2118,10 @@
                     document.body.removeChild(loadingMsg);
                 }
                 if (data.code === 0) {
-                    alert('✅ ' + data.msg + '\n\n文件位置：' + data.data);
+                    // 下载ZIP文件
+                    const fileName = encodeURI(data.msg);
+                    window.location.href = ctx + 'common/download?fileName=' + fileName + '&delete=true';
+                    alert('✅ 导出成功！正在下载事件包...');
 
                     // 取消选中
                     checkboxes.forEach(cb => cb.checked = false);

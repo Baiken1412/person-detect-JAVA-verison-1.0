@@ -801,11 +801,11 @@ public class CompositeEventServiceImpl implements ICompositeEventService
 
     /**
      * 导出事件包（HTML报告 + 图片 + 视频 + JSON数据）
-     * 生成包含事件完整信息的离线可查看文件夹
+     * 生成包含事件完整信息的ZIP压缩包，供浏览器下载
      *
      * @param eventId 复合事件ID
-     * @param exportPath 导出根路径
-     * @return 导出路径
+     * @param exportPath 导出根路径（下载目录）
+     * @return ZIP文件名（用于浏览器下载）
      */
     @Override
     public String exportEventPackage(Long eventId, String exportPath) throws Exception
@@ -845,11 +845,14 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                 }
             }
 
-            // 3. 创建导出目录
+            // 3. 创建临时导出目录
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
             String timestamp = sdf.format(new Date());
             String folderName = String.format("事件包_COMP%d_%s", event.getEventId(), timestamp);
-            Path packagePath = Paths.get(exportPath, folderName);
+
+            // 使用系统临时目录
+            Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
+            Path packagePath = tempDir.resolve(folderName);
             Files.createDirectories(packagePath);
             Files.createDirectories(packagePath.resolve("images"));
             Files.createDirectories(packagePath.resolve("videos"));
@@ -870,7 +873,18 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             // 8. 生成PDF说明文档
             generatePdfReport(event, tracks, packagePath);
 
-            return packagePath.toString();
+            // 9. 将文件夹打包成ZIP文件
+            String zipFileName = folderName + ".zip";
+            Path zipFilePath = Paths.get(exportPath, zipFileName);
+            zipFolder(packagePath, zipFilePath);
+
+            // 10. 删除临时文件夹
+            deleteDirectory(packagePath.toFile());
+
+            logger.info("事件包导出成功：{}", zipFilePath);
+
+            // 返回ZIP文件名（仅文件名，不含路径）
+            return zipFileName;
         }
         catch (Exception e)
         {
@@ -1689,7 +1703,10 @@ public class CompositeEventServiceImpl implements ICompositeEventService
 
         String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String batchFolderName = "batch_events_" + timestamp;
-        Path batchFolder = Paths.get(exportBasePath, batchFolderName);
+
+        // 使用系统临时目录
+        Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
+        Path batchFolder = tempDir.resolve(batchFolderName);
 
         // 创建目录并处理可能的异常
         try {
@@ -1698,25 +1715,58 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             throw new Exception("创建导出目录失败: " + e.getMessage(), e);
         }
 
-
-
-
-
-                logger.info("开始批量导出事件包，共 {} 个事件，导出目录: {}", eventIds.size(), batchFolder);
+        logger.info("开始批量导出事件包，共 {} 个事件，导出目录: {}", eventIds.size(), batchFolder);
 
         int successCount = 0;
         int failCount = 0;
         StringBuilder errorLog = new StringBuilder();
 
-        // 为每个事件导出单独的事件包
+        // 为每个事件导出单独的事件包（解压后的文件夹）
         for (Long eventId : eventIds)
         {
             try
             {
                 logger.info("正在导出事件 {}/{}: eventId={}", successCount + failCount + 1, eventIds.size(), eventId);
 
-                // 导出单个事件包到批量文件夹下
-                String singlePackagePath = exportEventPackage(eventId, batchFolder.toString());
+                // 查询复合事件数据
+                CompositeEvent event = selectCompositeEventByEventId(eventId);
+                if (event == null) {
+                    event = selectCompositeEventById(eventId);
+                    if (event == null) {
+                        throw new Exception("复合事件不存在：ID=" + eventId);
+                    }
+                }
+
+                Long compositeEventId = event.getId();
+                List<Long> trackIds = relationMapper.selectTrackIdsByEventId(compositeEventId);
+                if (trackIds == null || trackIds.isEmpty()) {
+                    throw new Exception("复合事件无关联轨迹：compositeEventId=" + compositeEventId);
+                }
+
+                List<AppTrack> tracks = new ArrayList<>();
+                for (Long trackId : trackIds) {
+                    AppTrack track = appTrackMapper.selectAppTrackById(trackId);
+                    if (track != null) {
+                        tracks.add(track);
+                    }
+                }
+
+                // 创建事件包文件夹
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+                String eventTimestamp = sdf.format(new Date());
+                String folderName = String.format("事件包_COMP%d_%s", event.getEventId(), eventTimestamp);
+                Path packagePath = batchFolder.resolve(folderName);
+                Files.createDirectories(packagePath);
+                Files.createDirectories(packagePath.resolve("images"));
+                Files.createDirectories(packagePath.resolve("videos"));
+                Files.createDirectories(packagePath.resolve("data"));
+
+                // 生成文件
+                copyMediaFiles(tracks, packagePath);
+                generateJsonData(event, tracks, packagePath);
+                generateHtmlReport(event, tracks, packagePath);
+                generateReadme(event, packagePath);
+                generatePdfReport(event, tracks, packagePath);
 
                 successCount++;
                 logger.info("事件 {} 导出成功", eventId);
@@ -1730,9 +1780,21 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             }
         }
 
-        logger.info("批量导出完成！成功: {}, 失败: {}, 文件夹: {}", successCount, failCount, batchFolder);
+        // 生成批量导出摘要
+        generateBatchExportSummary(batchFolder, eventIds.size(), successCount, failCount, errorLog.toString());
 
-        return batchFolder.toString();
+        // 打包成ZIP文件
+        String zipFileName = batchFolderName + ".zip";
+        Path zipFilePath = Paths.get(exportBasePath, zipFileName);
+        zipFolder(batchFolder, zipFilePath);
+
+        // 删除临时文件夹
+        deleteDirectory(batchFolder.toFile());
+
+        logger.info("批量导出完成！成功: {}, 失败: {}, ZIP文件: {}", successCount, failCount, zipFilePath);
+
+        // 返回ZIP文件名（仅文件名，不含路径）
+        return zipFileName;
     }
 
     /**
