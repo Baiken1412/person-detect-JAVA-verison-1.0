@@ -456,7 +456,11 @@
                     if (data.code === 0 && data.data) {
                         // 查找匹配的复合事件
                         const composite = data.data.find((comp, currentIndex) => {
-                            // 优先使用eventId匹配
+                            // 优先使用主键ID匹配
+                            if (comp.id && comp.id == id) {
+                                return true;
+                            }
+                            // 兼容eventId匹配
                             if (comp.eventId && comp.eventId == id) {
                                 return true;
                             }
@@ -474,24 +478,58 @@
                             return;
                         }
                         
-                        // 转换数据格式
+                        // 转换数据格式 - 轨迹基本信息
                         const events = composite.events.map(item => ({
                             id: item.id,
                             time: formatDateTime(item.pssj),
+                            endTime: formatDateTime(item.jssj),
                             pssj: item.pssj, // 原始时间，用于判断工作时间
+                            jssj: item.jssj, // 结束时间
                             rysl: item.rysl || 0, // 人员数量
                             area: item.qymc || '',
                             videoUrl: item.spdz || '',
-                            imageUrl: item.pstp || '', // 截图路径
+                            imageUrl: item.pstp || '', // 第一张截图路径（兼容）
+                            screenshots: item.screenshots || [], // 所有截图
+                            jscs: item.jscs || 1, // 检测次数
                             status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
                             reason: item.xwyy || '',
                             spsc: item.spsc || ''
                         }));
+
+                        // 将所有轨迹的截图展开成一个平面数组，用于轮播
+                        const allScreenshots = [];
+                        events.forEach((event, trackIndex) => {
+                            if (event.screenshots && event.screenshots.length > 0) {
+                                event.screenshots.forEach(screenshot => {
+                                    allScreenshots.push({
+                                        image: screenshot.screenshotUrl,
+                                        time: formatDateTime(screenshot.screenshotTime),
+                                        area: event.area,
+                                        rysl: event.rysl,
+                                        trackIndex: trackIndex,
+                                        order: screenshot.screenshotOrder,
+                                        trackId: event.id
+                                    });
+                                });
+                            } else if (event.imageUrl) {
+                                // 兼容旧数据：如果没有截图记录，使用pstp
+                                allScreenshots.push({
+                                    image: event.imageUrl,
+                                    time: event.time,
+                                    area: event.area,
+                                    rysl: event.rysl,
+                                    trackIndex: trackIndex,
+                                    order: 1,
+                                    trackId: event.id
+                                });
+                            }
+                        });
                         
                         currentComposite = {
                             id: id,
                             eventId: composite.eventId,
                             events: events,
+                            screenshots: allScreenshots, // 所有截图的平面数组
                             startTime: formatDateTime(composite.startTime),
                             endTime: formatDateTime(composite.endTime),
                             path: events.map(e => e.area),
@@ -506,12 +544,14 @@
                         // 调试：输出复合事件数据
                         console.log('========== 复合事件数据加载成功 ==========');
                         console.log('复合事件ID:', currentComposite.eventId);
-                        console.log('事件数量:', currentComposite.events.length);
+                        console.log('轨迹数量:', currentComposite.events.length);
+                        console.log('截图总数:', currentComposite.screenshots.length);
                         console.log('时间范围:', currentComposite.startTime, '~', currentComposite.endTime);
                         console.log('路径:', currentComposite.path.join(' → '));
-                        console.log('\n关联事件详情:');
+                        console.log('\n关联轨迹详情:');
                         currentComposite.events.forEach((e, i) => {
-                            console.log(`  [${i + 1}] ID=${e.id}, 区域=${e.area}, 时间=${e.time}`);
+                            console.log(`  [${i + 1}] ID=${e.id}, 区域=${e.area}, 时间=${e.time} ~ ${e.endTime}`);
+                            console.log(`      截图数: ${e.screenshots.length}, 检测次数: ${e.jscs}`);
                             console.log(`      视频URL: "${e.videoUrl}" (长度: ${e.videoUrl ? e.videoUrl.length : 0})`);
                             console.log(`      状态: ${e.status}, 时长: ${e.spsc}秒`);
                         });
@@ -598,7 +638,7 @@
 
             document.getElementById('compositeInfo').innerHTML = `
                 <div class="composite-info-title">
-                    复合事件 #${currentComposite.eventId || currentComposite.id} - ${currentComposite.eventCount || currentComposite.events.length} 个关联事件
+                    复合事件 #${currentComposite.id} - ${currentComposite.eventCount || currentComposite.events.length} 个关联事件
                     <span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px;">${statusText}</span>
                 </div>
                 <div class="composite-info-detail">
@@ -617,12 +657,12 @@
                     const prevEvent = i > 0 ? currentComposite.events[i - 1] : null;
                     const duration = prevEvent ? calculateDuration(prevEvent.time, e.time) : '';
 
-                    // 检查是否非工作时间（8:00-18:00之外）
+                    // 检查是否非工作时间（工作时间为9:00-17:00）
                     let isNonWorktime = false;
                     if (e.pssj) {
                         const eventTime = new Date(e.pssj);
                         const hour = eventTime.getHours();
-                        isNonWorktime = (hour < 8 || hour >= 18);
+                        isNonWorktime = (hour < 9 || hour >= 17);
                     }
 
                     // 检查人员异常（<2人或≥3人）
@@ -850,14 +890,14 @@
 
         // ===== 截图轮播功能 =====
 
-        // 更新截图显示
+        // 更新截图显示 - 使用所有截图的平面数组
         function updateCarouselImage(index) {
-            if (!currentComposite || !currentComposite.events || currentComposite.events.length === 0) {
+            if (!currentComposite || !currentComposite.screenshots || currentComposite.screenshots.length === 0) {
                 return;
             }
 
             currentImageIndex = index;
-            const event = currentComposite.events[index];
+            const screenshot = currentComposite.screenshots[index];
             const img = document.getElementById('carouselImage');
             const placeholder = document.getElementById('noImagePlaceholder');
             const counter = document.getElementById('imageCounter');
@@ -865,47 +905,46 @@
             const prevBtn = document.getElementById('prevImageBtn');
             const nextBtn = document.getElementById('nextImageBtn');
 
-            // 更新计数器
-            counter.textContent = `${index + 1} / ${currentComposite.events.length}`;
+            // 更新计数器 - 显示总截图数
+            counter.textContent = `${index + 1} / ${currentComposite.screenshots.length}`;
 
             // 更新按钮状态
             prevBtn.disabled = (index === 0);
-            nextBtn.disabled = (index === currentComposite.events.length - 1);
+            nextBtn.disabled = (index === currentComposite.screenshots.length - 1);
 
-            // 更新图片信息
-            imageInfo.querySelector('.info-time').textContent = `🕐 ${event.time}`;
-            imageInfo.querySelector('.info-area').textContent = `📍 ${event.area}${event.rysl ? ` (${event.rysl}人)` : ''}`;
+            // 更新图片信息 - 显示检测顺序
+            imageInfo.querySelector('.info-time').textContent = `🕐 ${screenshot.time}`;
+            imageInfo.querySelector('.info-area').textContent = `📍 ${screenshot.area}${screenshot.rysl ? ` (${screenshot.rysl}人)` : ''} [第${screenshot.order}次检测]`;
 
             // 更新图片
-            if (event.imageUrl && event.imageUrl.trim() !== '') {
-                img.src = event.imageUrl;
+            if (screenshot.image && screenshot.image.trim() !== '') {
+                img.src = screenshot.image;
                 img.style.display = 'block';
                 placeholder.style.display = 'none';
-                console.log(`显示截图 ${index + 1}: ${event.imageUrl}`);
+                console.log(`显示截图 ${index + 1}/${currentComposite.screenshots.length}: 第${screenshot.order}次检测, ${screenshot.image}`);
             } else {
                 img.style.display = 'none';
                 placeholder.style.display = 'flex';
-                console.log(`第 ${index + 1} 个节点无截图`);
+                console.log(`第 ${index + 1} 张截图无图片`);
+            }
+
+            // 同步高亮对应的轨迹节点
+            if (screenshot.trackIndex !== undefined) {
+                highlightTraceNode(screenshot.trackIndex);
             }
         }
 
         // 显示上一张截图
         function showPrevImage() {
             if (currentImageIndex > 0) {
-                const newIndex = currentImageIndex - 1;
-                updateCarouselImage(newIndex);
-                // 同步高亮时间线节点
-                highlightTraceNode(newIndex);
+                updateCarouselImage(currentImageIndex - 1);
             }
         }
 
         // 显示下一张截图
         function showNextImage() {
-            if (currentComposite && currentImageIndex < currentComposite.events.length - 1) {
-                const newIndex = currentImageIndex + 1;
-                updateCarouselImage(newIndex);
-                // 同步高亮时间线节点
-                highlightTraceNode(newIndex);
+            if (currentComposite && currentImageIndex < currentComposite.screenshots.length - 1) {
+                updateCarouselImage(currentImageIndex + 1);
             }
         }
 

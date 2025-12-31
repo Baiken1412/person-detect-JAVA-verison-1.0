@@ -527,6 +527,9 @@
                 <button onclick="goToDailyReport()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
                     📊 每日报告
                 </button>
+                <button onclick="goToShelfTrajectory()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                    📦 货架轨迹查询
+                </button>
             </div>
         </div>
     </div>
@@ -595,14 +598,53 @@
         </div>
 
         <!-- 轨迹详情弹窗 -->
-        <div id="eventDetailModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
-            <div style="background: white; border-radius: 8px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
-                    <h2 style="margin: 0; font-size: 20px;">📋 轨迹详情</h2>
-                    <button onclick="closeEventDetailModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 24px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer;">×</button>
+        <div id="eventDetailModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
+            <div style="background: white; border-radius: 12px; width: 90%; max-width: 1000px; max-height: 90vh; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+                <!-- 标题栏 -->
+                <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; padding: 24px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #3498db;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: 0.5px;">
+                            <i class="fa fa-file-text-o"></i> 活动轨迹详情
+                        </h2>
+                        <p style="margin: 5px 0 0 0; font-size: 13px; opacity: 0.8;">Activity Trajectory Details</p>
+                    </div>
+                    <button onclick="closeEventDetailModal()" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 24px; width: 40px; height: 40px; border-radius: 8px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">×</button>
                 </div>
-                <div id="eventDetailContent" style="padding: 20px;">
+
+                <!-- 内容区域 -->
+                <div id="eventDetailContent" style="padding: 30px; max-height: calc(90vh - 120px); overflow-y: auto;">
                     <!-- 详情内容将通过JavaScript动态填充 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 图片浏览器模态框 -->
+        <div id="imageViewerModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 10000; justify-content: center; align-items: center;">
+            <div style="position: relative; width: 90%; height: 90%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <!-- 关闭按钮 -->
+                <button onclick="closeImageViewer()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 32px; width: 50px; height: 50px; border-radius: 8px; cursor: pointer; transition: all 0.3s; z-index: 10001;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">×</button>
+
+                <!-- 左箭头 -->
+                <button id="prevImageBtn" onclick="navigateImage(-1)" style="position: absolute; left: 30px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 40px; width: 60px; height: 60px; border-radius: 8px; cursor: pointer; transition: all 0.3s; z-index: 10001;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">‹</button>
+
+                <!-- 图片显示区域 -->
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative;">
+                    <img id="viewerImage" src="" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
+                </div>
+
+                <!-- 右箭头 -->
+                <button id="nextImageBtn" onclick="navigateImage(1)" style="position: absolute; right: 30px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 40px; width: 60px; height: 60px; border-radius: 8px; cursor: pointer; transition: all 0.3s; z-index: 10001;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">›</button>
+
+                <!-- 图片信息栏 -->
+                <div style="margin-top: 20px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 15px 30px; border-radius: 8px; color: white; display: flex; justify-content: space-between; align-items: center; min-width: 400px;">
+                    <div>
+                        <span id="imageCounter" style="font-size: 16px; font-weight: bold;">1 / 1</span>
+                        <span style="margin: 0 15px; opacity: 0.5;">|</span>
+                        <span id="imageInfo" style="font-size: 14px; opacity: 0.9;">第 1 次检测</span>
+                    </div>
+                    <div id="imageTime" style="font-size: 13px; opacity: 0.8;">
+                        <i class="fa fa-clock-o"></i> --:--:--
+                    </div>
                 </div>
             </div>
         </div>
@@ -623,6 +665,10 @@
         let isLoading = false; // 是否正在加载
         let hasMore = true; // 是否还有更多数据
         let currentFilters = {}; // 当前筛选条件
+
+        // 图片浏览器变量
+        let currentImageIndex = 0;
+        let currentScreenshots = [];
 
         // 区域邻接关系（定义哪些区域是相邻的）
         const areaAdjacency = {
@@ -1013,11 +1059,15 @@
                         
                         // 应用特殊筛选（如果有）
                         let filteredEvents = eventsData;
+                        let filteredNewEvents = newEvents;
                         if (currentFilters.specialFilter && currentFilters.specialFilter.length > 0) {
                             filteredEvents = filterEventsBySpecial(eventsData, currentFilters.specialFilter);
+                            if (append) {
+                                filteredNewEvents = filterEventsBySpecial(newEvents, currentFilters.specialFilter);
+                            }
                         }
-                        
-                        renderEvents(filteredEvents);
+
+                        renderEvents(filteredEvents, append, filteredNewEvents);
                     } else {
                         if (!append) {
                             eventsData = [];
@@ -1189,10 +1239,10 @@
         }
 
         // 渲染事件列表
-        function renderEvents(events) {
+        function renderEvents(events, append = false, newEvents = null) {
             const grid = document.getElementById('eventsGrid');
 
-            if (events.length === 0) {
+            if (events.length === 0 && !append) {
                 grid.innerHTML = `
                     <div class="no-events">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -1210,7 +1260,11 @@
                 loadingTip.remove();
             }
 
-            grid.innerHTML = events.map(event => {
+            // 如果是追加模式,只渲染新事件
+            const eventsToRender = append && newEvents ? newEvents : events;
+            const renderMethod = append ? 'append' : 'replace';
+
+            const eventsHTML = eventsToRender.map(event => {
                 // 检查是否满足工作时间警告条件（已废弃，改用人员异常判断）
                 const isWarning = isWorktimeWarning(event);
                 // 检查是否满足非工作时间警告条件
@@ -1257,7 +1311,16 @@
                 </div>
             `;
             }).join('');
-            
+
+            // 根据模式选择渲染方式
+            if (append) {
+                // 追加模式:将新HTML追加到现有内容
+                grid.insertAdjacentHTML('beforeend', eventsHTML);
+            } else {
+                // 替换模式:完全替换内容
+                grid.innerHTML = eventsHTML;
+            }
+
             // 如果还有更多数据，显示加载提示
             if (hasMore) {
                 const loadingTip = document.createElement('div');
@@ -1268,8 +1331,8 @@
                 const loadingTip = document.createElement('div');
                 loadingTip.className = 'loading-tip';
                 // 如果应用了特殊筛选，显示筛选后的实际数量；否则显示总数
-                const displayCount = (currentFilters.specialFilter && currentFilters.specialFilter.length > 0) 
-                    ? events.length 
+                const displayCount = (currentFilters.specialFilter && currentFilters.specialFilter.length > 0)
+                    ? events.length
                     : totalCount;
                 loadingTip.innerHTML = '<p>已加载全部数据（共 ' + displayCount + ' 条）</p>';
                 grid.appendChild(loadingTip);
@@ -1278,84 +1341,236 @@
 
         // 查看轨迹详情
         function viewEventDetail(eventId) {
-            // 从 eventsData 中查找对应的轨迹
-            const event = eventsData.find(e => e.id == eventId);
-            if (!event) {
-                alert('未找到该轨迹信息');
-                return;
-            }
-
-            // 构建详情HTML
-            let detailHTML = `
-                <div style="line-height: 1.8;">
-                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
-                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📅 拍摄时间</div>
-                        <div style="color: #6c757d;">${event.time}</div>
-                    </div>
-
-                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
-                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📍 区域位置</div>
-                        <div style="color: #6c757d;">${event.area || '未知'}</div>
-                    </div>
-
-                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
-                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">👥 人员数量</div>
-                        <div style="color: #6c757d;">${event.rysl || 0} 人</div>
-                    </div>
-
-                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
-                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📌 标注状态</div>
-                        <div>
-                            <span style="background: ${event.status === 'labeled' ? '#51cf66' : '#ff6b6b'}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 14px;">
-                                ${event.status === 'labeled' ? '✓ 已标注' : '○ 待标注'}
-                            </span>
-                        </div>
-                    </div>
+            // 显示加载提示
+            document.getElementById('eventDetailContent').innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fa fa-spinner fa-spin" style="font-size: 32px; margin-bottom: 15px;"></i>
+                    <p>加载中...</p>
+                </div>
             `;
-
-            // 如果已标注，显示标注信息
-            if (event.status === 'labeled') {
-                detailHTML += `
-                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
-                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📝 行为原因</div>
-                        <div style="color: #6c757d;">${event.reason || '未填写'}</div>
-                    </div>
-
-                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
-                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">👤 管理员</div>
-                        <div style="color: #6c757d;">${event.ryxm || '未填写'}</div>
-                    </div>
-
-                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
-                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">🚶 外来人员</div>
-                        <div style="color: #6c757d;">${event.wlry || '无'}</div>
-                    </div>
-
-                    ${event.remark ? `
-                        <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
-                            <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">💬 备注</div>
-                            <div style="color: #6c757d;">${event.remark}</div>
-                        </div>
-                    ` : ''}
-
-                    <div style="margin-bottom: 15px;">
-                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">⏰ 标注时间</div>
-                        <div style="color: #6c757d;">${event.operateTime || '未记录'}</div>
-                    </div>
-                `;
-            }
-
-            detailHTML += `</div>`;
-
-            // 显示弹窗
-            document.getElementById('eventDetailContent').innerHTML = detailHTML;
             const modal = document.getElementById('eventDetailModal');
             modal.style.display = 'flex';
+
+            // 调用接口获取完整的轨迹详情（包括截图）
+            fetch('/caseapp/track/detailData/' + eventId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0) {
+                        const trajectory = data.trajectory;
+                        const screenshots = data.screenshots || [];
+
+                        // 存储截图数据供图片浏览器使用
+                        window.currentTrajectoryScreenshots = screenshots;
+
+                        // 构建详情HTML
+                        let detailHTML = `
+                            <div style="line-height: 1.8;">
+                                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📅 开始时间</div>
+                                    <div style="color: #6c757d;">${formatDateTime(trajectory.pssj)}</div>
+                                </div>
+
+                                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">🏁 结束时间</div>
+                                    <div style="color: #6c757d;">${formatDateTime(trajectory.jssj)}</div>
+                                </div>
+
+                                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📍 区域位置</div>
+                                    <div style="color: #6c757d;">${trajectory.qymc || '未知'}</div>
+                                </div>
+
+                                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">🔢 检测次数</div>
+                                    <div style="color: #6c757d;">
+                                        <span style="background: #e3f2fd; color: #1976d2; padding: 4px 12px; border-radius: 12px; font-weight: bold;">
+                                            ${trajectory.jscs || 1} 次
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">👥 人员数量</div>
+                                    <div style="color: #6c757d;">${trajectory.rysl || 0} 人</div>
+                                </div>
+
+                                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📌 标注状态</div>
+                                    <div>
+                                        <span style="background: ${trajectory.bzzt === '1' ? '#51cf66' : '#ff6b6b'}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 14px;">
+                                            ${trajectory.bzzt === '1' ? '✓ 已标注' : '○ 待标注'}
+                                        </span>
+                                    </div>
+                                </div>
+                        `;
+
+                        // 如果已标注，显示标注信息
+                        if (trajectory.bzzt === '1') {
+                            detailHTML += `
+                                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">📝 行为原因</div>
+                                    <div style="color: #6c757d;">${trajectory.xwyy || '未填写'}</div>
+                                </div>
+
+                                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">👤 管理员</div>
+                                    <div style="color: #6c757d;">${trajectory.ryxm || '未填写'}</div>
+                                </div>
+
+                                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">🚶 外来人员</div>
+                                    <div style="color: #6c757d;">${trajectory.wlry || '无'}</div>
+                                </div>
+
+                                ${trajectory.remark ? `
+                                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">💬 备注</div>
+                                        <div style="color: #6c757d;">${trajectory.remark}</div>
+                                    </div>
+                                ` : ''}
+
+                                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">⏰ 标注时间</div>
+                                    <div style="color: #6c757d;">${trajectory.bzsj || '未记录'}</div>
+                                </div>
+                            `;
+                        }
+
+                        // 显示截图列表
+                        if (screenshots.length > 0) {
+                            detailHTML += `
+                                <div style="margin-bottom: 15px;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 12px; font-size: 16px;">
+                                        📸 活动截图 (${screenshots.length})
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;">
+                            `;
+
+                            screenshots.forEach((screenshot, index) => {
+                                detailHTML += `
+                                    <div style="position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;"
+                                         onclick="openImageViewer(${index}, window.currentTrajectoryScreenshots)"
+                                         onmouseover="this.style.transform='scale(1.05)'"
+                                         onmouseout="this.style.transform='scale(1)'">
+                                        <img src="${screenshot.screenshotUrl}"
+                                             style="width: 100%; height: 120px; object-fit: cover; display: block;"
+                                             onerror="this.src='/img/no-image.png'">
+                                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: white; padding: 8px 6px; font-size: 11px;">
+                                            <div style="font-weight: bold;">第 ${screenshot.screenshotOrder} 次</div>
+                                            <div style="font-size: 10px; opacity: 0.9;">${formatTime(screenshot.screenshotTime)}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+
+                            detailHTML += `
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            detailHTML += `
+                                <div style="margin-bottom: 15px;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 12px;">📸 活动截图</div>
+                                    <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px; color: #999;">
+                                        暂无截图数据
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        detailHTML += `</div>`;
+
+                        // 更新弹窗内容
+                        document.getElementById('eventDetailContent').innerHTML = detailHTML;
+                    } else {
+                        document.getElementById('eventDetailContent').innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #ff6b6b;">
+                                <i class="fa fa-exclamation-triangle" style="font-size: 32px; margin-bottom: 15px;"></i>
+                                <p>加载失败：${data.msg || '未知错误'}</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('加载轨迹详情失败:', error);
+                    document.getElementById('eventDetailContent').innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #ff6b6b;">
+                            <i class="fa fa-exclamation-triangle" style="font-size: 32px; margin-bottom: 15px;"></i>
+                            <p>网络请求失败</p>
+                        </div>
+                    `;
+                });
+        }
+
+        // 格式化日期时间
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // 格式化时间（只显示时分秒）
+        function formatTime(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
         }
 
         // 关闭详情弹窗
         function closeEventDetailModal() {
             document.getElementById('eventDetailModal').style.display = 'none';
+        }
+
+        // 打开图片浏览器
+        function openImageViewer(index, screenshots) {
+            currentImageIndex = index;
+            currentScreenshots = screenshots;
+            updateImageViewer();
+            document.getElementById('imageViewerModal').style.display = 'flex';
+        }
+
+        // 更新图片浏览器显示
+        function updateImageViewer() {
+            if (currentScreenshots.length === 0) return;
+
+            const screenshot = currentScreenshots[currentImageIndex];
+            document.getElementById('viewerImage').src = screenshot.screenshotUrl;
+            document.getElementById('imageCounter').textContent = `${currentImageIndex + 1} / ${currentScreenshots.length}`;
+            document.getElementById('imageInfo').textContent = `第 ${screenshot.screenshotOrder} 次检测`;
+            document.getElementById('imageTime').innerHTML = `<i class="fa fa-clock-o"></i> ${formatTime(screenshot.screenshotTime)}`;
+
+            // 控制左右按钮的显示
+            document.getElementById('prevImageBtn').style.display = currentScreenshots.length > 1 ? 'block' : 'none';
+            document.getElementById('nextImageBtn').style.display = currentScreenshots.length > 1 ? 'block' : 'none';
+        }
+
+        // 导航到上一张/下一张图片
+        function navigateImage(direction) {
+            currentImageIndex += direction;
+
+            // 循环浏览
+            if (currentImageIndex < 0) {
+                currentImageIndex = currentScreenshots.length - 1;
+            }
+            if (currentImageIndex >= currentScreenshots.length) {
+                currentImageIndex = 0;
+            }
+
+            updateImageViewer();
+        }
+
+        // 关闭图片浏览器
+        function closeImageViewer() {
+            document.getElementById('imageViewerModal').style.display = 'none';
         }
 
         // 跳转到复合事件页面
@@ -1366,6 +1581,11 @@
         // 跳转到每日报告页面
         function goToDailyReport() {
             window.location.href = '/caseapp/track/dailyReport';
+        }
+
+        // 跳转到货架轨迹查询页面
+        function goToShelfTrajectory() {
+            window.location.href = '/caseapp/track/shelfTrajectory';
         }
 
         // 应用筛选
@@ -1421,6 +1641,32 @@
 
             loadEvents(today, today, '', '', [], 1, false);
         }
+
+        // 键盘事件监听
+        document.addEventListener('keydown', function(e) {
+            const imageViewer = document.getElementById('imageViewerModal');
+            if (imageViewer.style.display === 'flex') {
+                // ESC键关闭图片浏览器
+                if (e.key === 'Escape') {
+                    closeImageViewer();
+                }
+                // 左箭头键 - 上一张
+                else if (e.key === 'ArrowLeft') {
+                    navigateImage(-1);
+                }
+                // 右箭头键 - 下一张
+                else if (e.key === 'ArrowRight') {
+                    navigateImage(1);
+                }
+            }
+        });
+
+        // 点击图片浏览器背景关闭
+        document.getElementById('imageViewerModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeImageViewer();
+            }
+        });
 
         // 页面加载完成后初始化
         window.addEventListener('DOMContentLoaded', init);

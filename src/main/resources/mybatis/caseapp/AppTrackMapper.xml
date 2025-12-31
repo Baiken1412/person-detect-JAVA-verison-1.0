@@ -21,10 +21,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="ryxm"    column="ryxm"    />
         <result property="wlry"    column="wlry"    />
         <result property="rysl"    column="rysl"    />
+        <result property="jscs"    column="jscs"    />
     </resultMap>
 
     <sql id="selectAppTrackVo">
-        select id, pssj, jssj, pstp, qyid, qymc, sxtmx, spdz, spsc, jqzt, bzzt, bzsj, xwyy, ryxm, wlry, rysl from app_track
+        select id, pssj, jssj, pstp, qyid, qymc, sxtmx, spdz, spsc, jqzt, bzzt, bzsj, xwyy, ryxm, wlry, rysl, jscs from app_track
     </sql>
 
     <select id="selectAppTrackList" parameterType="AppTrack" resultMap="AppTrackResult">

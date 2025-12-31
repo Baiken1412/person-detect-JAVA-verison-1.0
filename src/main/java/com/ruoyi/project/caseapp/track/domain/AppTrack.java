@@ -1,6 +1,7 @@
 package com.ruoyi.project.caseapp.track.domain;
 
 import java.util.Date;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -79,6 +80,13 @@ public class AppTrack extends BaseEntity
 
     /** 人员数量 */
     private int rysl;
+
+    /** 检测次数 */
+    @Excel(name = "检测次数")
+    private Integer jscs;
+
+    /** 截图列表（不保存到数据库，仅用于传输） */
+    private List<AppTrackScreenshot> screenshots;
 
     public void setId(Long id)
     {
@@ -241,5 +249,21 @@ public class AppTrack extends BaseEntity
 
     public void setJssj(Date jssj) {
         this.jssj = jssj;
+    }
+
+    public Integer getJscs() {
+        return jscs;
+    }
+
+    public void setJscs(Integer jscs) {
+        this.jscs = jscs;
+    }
+
+    public List<AppTrackScreenshot> getScreenshots() {
+        return screenshots;
+    }
+
+    public void setScreenshots(List<AppTrackScreenshot> screenshots) {
+        this.screenshots = screenshots;
     }
 }

@@ -47,3 +47,5 @@ nbdist/
 
 **/application-druid.yml
 
+**/nul
+

@@ -1,0 +1,26 @@
+基于货架位置的人员活动轨迹查询设计（2025.12.30李明宽，李子安）
+1.设计说明
+为支持通过货架位置查询人员活动相关的视频记录，系统在现有整体架构基础上补充位置语义映射能力。
+系统新增货架位置表（app_location)，用于维护库区内各货架或存放位置的基础信息，包括位置编码、位置名称及所属区域等。相关位置数据由人工统一维护，作为管理和查询使用的空间语义信息。鉴于实际场景中，一个摄像头可能覆盖多个货架位置，同时同一位置也可能被多个摄像头覆盖，系统采用多对多方式描述摄像头与位置之间的对应关系，通过新增摄像头与位置关系表(app_camera_location_rel)进行配置，避免使用字符串或逗号分隔等非结构化方式存储位置关系。
+在查询实现过程中，当用户选择某一货架位置并提交查询条件后，系统首先根据该位置获取其关联的摄像头集合，再结合指定的时间范围条件，从轨迹表中检索这些摄像头下已形成的人员活动轨迹记录。查询结果以轨迹为最小展示单元，仅展示实际检测到人员活动的轨迹数据。
+轨迹查询结果可直接关联并展示对应的关键帧截图、活动时间段信息以及系统已生成的视频片段（如轨迹视频或事件级短视频），不重新生成视频内容，也不对现有轨迹或事件数据结构作任何调整。
+该功能本质上是一种基于人工配置的“位置 → 摄像头 → 人员活动轨迹”的空间语义查询能力，主要用于事后核查、情况说明以及相关视频素材的快速定位，不涉及实时监控场景，也不作为自动责任认定或异常判定的依据。
+2.表结构及索引
+CREATE TABLE app_location (
+    location_id    BIGINT PRIMARY KEY AUTO_INCREMENT,
+    location_code  VARCHAR(64)  NOT NULL COMMENT '位置编码，如 A01-03-02',
+    location_name  VARCHAR(128) NOT NULL COMMENT '位置名称',
+    area_name      VARCHAR(64)  COMMENT '所属区域，如 A区、B区',
+    remark         VARCHAR(255) COMMENT '备注说明',
+    create_time    DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+);
+CREATE TABLE app_camera_location_rel (
+    id           BIGINT PRIMARY KEY AUTO_INCREMENT,
+    camera_id    BIGINT NOT NULL COMMENT '摄像头ID',
+    location_id  BIGINT NOT NULL COMMENT '位置ID',
+    create_time  DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+);
+CREATE INDEX idx_clr_camera_id
+ON app_camera_location_rel (camera_id);
+CREATE INDEX idx_clr_location_id
+ON app_camera_location_rel (location_id);

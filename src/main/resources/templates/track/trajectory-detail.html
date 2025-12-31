@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>轨迹详情 - 资产视频分析插件</title>
+    <th:block th:include="include :: header('轨迹详情')" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .btn-back {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            background: rgba(255,255,255,0.25);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 30px;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        .info-card h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+            color: #2c5364;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .info-label {
+            font-size: 13px;
+            color: #999;
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-size: 15px;
+            color: #333;
+            font-weight: 400;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .badge-primary {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .screenshot-item {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .screenshot-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .screenshot-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .screenshot-info {
+            padding: 15px;
+        }
+
+        .screenshot-order {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c5364;
+            margin-bottom: 8px;
+        }
+
+        .screenshot-time {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .no-data i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        /* 图片预览模态框 */
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+        }
+
+        .image-modal-content {
+            position: relative;
+            margin: auto;
+            max-width: 90%;
+            max-height: 90%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .modal-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10000;
+        }
+
+        .close-modal:hover {
+            color: #ccc;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .error {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部 -->
+    <div class="header">
+        <div class="header-content">
+            <h1>轨迹详情</h1>
+            <button class="btn-back" onclick="window.history.back()">
+                <i class="fa fa-arrow-left"></i> 返回
+            </button>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 轨迹基本信息 -->
+        <div class="info-card" id="trajectoryInfo">
+            <h2>基本信息</h2>
+            <div class="loading" id="infoLoading">
+                <i class="fa fa-spinner fa-spin"></i> 加载中...
+            </div>
+            <div class="info-grid" id="infoContent" style="display:none;">
+                <!-- 动态填充 -->
+            </div>
+        </div>
+
+        <!-- 截图列表 -->
+        <div class="info-card" id="screenshotsCard">
+            <h2>活动截图 (<span id="screenshotCount">0</span>)</h2>
+            <div class="loading" id="screenshotsLoading">
+                <i class="fa fa-spinner fa-spin"></i> 加载中...
+            </div>
+            <div class="screenshots-grid" id="screenshotsGrid" style="display:none;">
+                <!-- 动态填充 -->
+            </div>
+            <div class="no-data" id="noScreenshots" style="display:none;">
+                <i class="fa fa-image"></i>
+                <p>暂无截图数据</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片预览模态框 -->
+    <div id="imageModal" class="image-modal">
+        <span class="close-modal" onclick="closeImageModal()">&times;</span>
+        <div class="image-modal-content">
+            <img class="modal-image" id="modalImage">
+        </div>
+    </div>
+
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        const trajectoryId = /*[[${trajectory.id}]]*/ 0;
+
+        // 页面加载完成后获取数据
+        $(document).ready(function() {
+            loadTrajectoryDetail();
+        });
+
+        // 加载轨迹详情数据
+        function loadTrajectoryDetail() {
+            $.ajax({
+                url: ctx + 'caseapp/track/detailData/' + trajectoryId,
+                type: 'GET',
+                success: function(response) {
+                    if (response.code === 0) {
+                        renderTrajectoryInfo(response.trajectory);
+                        renderScreenshots(response.screenshots);
+                    } else {
+                        showError('加载数据失败：' + (response.msg || '未知错误'));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showError('网络请求失败：' + error);
+                }
+            });
+        }
+
+        // 渲染轨迹基本信息
+        function renderTrajectoryInfo(trajectory) {
+            $('#infoLoading').hide();
+
+            const infoHtml = `
+                <div class="info-item">
+                    <div class="info-label">轨迹ID</div>
+                    <div class="info-value">${trajectory.id || '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">摄像头名称</div>
+                    <div class="info-value">${trajectory.sxtmx || '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">区域名称</div>
+                    <div class="info-value">${trajectory.qymc || '-'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">开始时间</div>
+                    <div class="info-value">${formatDateTime(trajectory.pssj)}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">结束时间</div>
+                    <div class="info-value">${formatDateTime(trajectory.jssj)}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">检测次数</div>
+                    <div class="info-value"><span class="badge badge-primary">${trajectory.jscs || 1}</span></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">人员数量</div>
+                    <div class="info-value">${trajectory.rysl || 0} 人</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">人员姓名</div>
+                    <div class="info-value">${trajectory.ryxm || '未标注'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">标注状态</div>
+                    <div class="info-value">${trajectory.bzzt === '1' ? '已标注' : '未标注'}</div>
+                </div>
+            `;
+
+            $('#infoContent').html(infoHtml).show();
+        }
+
+        // 渲染截图列表
+        function renderScreenshots(screenshots) {
+            $('#screenshotsLoading').hide();
+
+            if (!screenshots || screenshots.length === 0) {
+                $('#noScreenshots').show();
+                $('#screenshotCount').text('0');
+                return;
+            }
+
+            $('#screenshotCount').text(screenshots.length);
+
+            let html = '';
+            screenshots.forEach(screenshot => {
+                html += `
+                    <div class="screenshot-item" onclick="showImageModal('${screenshot.screenshotUrl}')">
+                        <img src="${screenshot.screenshotUrl}"
+                             class="screenshot-image"
+                             alt="截图 ${screenshot.screenshotOrder}"
+                             onerror="this.src='${ctx}img/no-image.png'">
+                        <div class="screenshot-info">
+                            <div class="screenshot-order">第 ${screenshot.screenshotOrder} 次检测</div>
+                            <div class="screenshot-time">
+                                <i class="fa fa-clock-o"></i> ${formatDateTime(screenshot.screenshotTime)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            $('#screenshotsGrid').html(html).show();
+        }
+
+        // 显示图片预览
+        function showImageModal(imageUrl) {
+            $('#modalImage').attr('src', imageUrl);
+            $('#imageModal').fadeIn(300);
+        }
+
+        // 关闭图片预览
+        function closeImageModal() {
+            $('#imageModal').fadeOut(300);
+        }
+
+        // 点击模态框背景关闭
+        $('#imageModal').click(function(e) {
+            if (e.target === this) {
+                closeImageModal();
+            }
+        });
+
+        // ESC键关闭模态框
+        $(document).keydown(function(e) {
+            if (e.keyCode === 27) {
+                closeImageModal();
+            }
+        });
+
+        // 格式化日期时间
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            $('#infoLoading, #screenshotsLoading').hide();
+            const errorHtml = `
+                <div class="error">
+                    <i class="fa fa-exclamation-triangle"></i> ${message}
+                </div>
+            `;
+            $('#trajectoryInfo').append(errorHtml);
+        }
+    </script>
+</body>
+</html>

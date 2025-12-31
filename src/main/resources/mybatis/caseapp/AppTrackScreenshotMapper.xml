@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.project.caseapp.track.mapper.AppTrackScreenshotMapper">
+
+    <resultMap type="com.ruoyi.project.caseapp.track.domain.AppTrackScreenshot" id="AppTrackScreenshotResult">
+        <result property="id"    column="id"    />
+        <result property="trackId"    column="track_id"    />
+        <result property="screenshotUrl"    column="screenshot_url"    />
+        <result property="screenshotTime"    column="screenshot_time"    />
+        <result property="screenshotOrder"    column="screenshot_order"    />
+        <result property="createTime"    column="create_time"    />
+    </resultMap>
+
+    <sql id="selectAppTrackScreenshotVo">
+        select id, track_id, screenshot_url, screenshot_time, screenshot_order, create_time
+        from app_track_screenshot
+    </sql>
+
+    <select id="selectAppTrackScreenshotList" parameterType="com.ruoyi.project.caseapp.track.domain.AppTrackScreenshot" resultMap="AppTrackScreenshotResult">
+        <include refid="selectAppTrackScreenshotVo"/>
+        <where>
+            <if test="trackId != null "> and track_id = #{trackId}</if>
+            <if test="screenshotUrl != null  and screenshotUrl != ''"> and screenshot_url = #{screenshotUrl}</if>
+            <if test="screenshotTime != null "> and screenshot_time = #{screenshotTime}</if>
+            <if test="screenshotOrder != null "> and screenshot_order = #{screenshotOrder}</if>
+        </where>
+        order by screenshot_order asc
+    </select>
+
+    <select id="selectAppTrackScreenshotById" parameterType="Long" resultMap="AppTrackScreenshotResult">
+        <include refid="selectAppTrackScreenshotVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectScreenshotsByTrackId" parameterType="Long" resultMap="AppTrackScreenshotResult">
+        <include refid="selectAppTrackScreenshotVo"/>
+        where track_id = #{trackId}
+        order by screenshot_order asc
+    </select>
+
+    <insert id="insertAppTrackScreenshot" parameterType="com.ruoyi.project.caseapp.track.domain.AppTrackScreenshot" useGeneratedKeys="true" keyProperty="id">
+        insert into app_track_screenshot
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="trackId != null">track_id,</if>
+            <if test="screenshotUrl != null and screenshotUrl != ''">screenshot_url,</if>
+            <if test="screenshotTime != null">screenshot_time,</if>
+            <if test="screenshotOrder != null">screenshot_order,</if>
+            <if test="createTime != null">create_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="trackId != null">#{trackId},</if>
+            <if test="screenshotUrl != null and screenshotUrl != ''">#{screenshotUrl},</if>
+            <if test="screenshotTime != null">#{screenshotTime},</if>
+            <if test="screenshotOrder != null">#{screenshotOrder},</if>
+            <if test="createTime != null">#{createTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateAppTrackScreenshot" parameterType="com.ruoyi.project.caseapp.track.domain.AppTrackScreenshot">
+        update app_track_screenshot
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="trackId != null">track_id = #{trackId},</if>
+            <if test="screenshotUrl != null and screenshotUrl != ''">screenshot_url = #{screenshotUrl},</if>
+            <if test="screenshotTime != null">screenshot_time = #{screenshotTime},</if>
+            <if test="screenshotOrder != null">screenshot_order = #{screenshotOrder},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteAppTrackScreenshotById" parameterType="Long">
+        delete from app_track_screenshot where id = #{id}
+    </delete>
+
+    <delete id="deleteAppTrackScreenshotByIds" parameterType="String">
+        delete from app_track_screenshot where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

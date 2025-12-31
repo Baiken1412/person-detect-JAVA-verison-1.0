@@ -28,9 +28,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.ruoyi.framework.aspectj.lang.annotation.Log;
 import com.ruoyi.framework.aspectj.lang.enums.BusinessType;
 import com.ruoyi.project.caseapp.track.domain.AppTrack;
+import com.ruoyi.project.caseapp.track.domain.AppTrackScreenshot;
 import com.ruoyi.project.caseapp.track.domain.CompositeEvent;
 import com.ruoyi.project.caseapp.track.domain.DailyReport;
 import com.ruoyi.project.caseapp.track.service.IAppTrackService;
+import com.ruoyi.project.caseapp.track.service.IAppTrackScreenshotService;
 import com.ruoyi.project.caseapp.track.service.ICompositeEventService;
 import com.ruoyi.project.caseapp.track.service.IDailyReportService;
 import com.ruoyi.project.caseapp.track.mapper.EventTrackRelationMapper;
@@ -81,6 +83,15 @@ public class AppTrackController extends BaseController
 
     @Autowired
     private IDailyReportService dailyReportService;
+
+    @Autowired
+    private IAppTrackScreenshotService screenshotService;
+
+    @Autowired
+    private com.ruoyi.project.caseapp.location.mapper.AppLocationMapper locationMapper;
+
+    @Autowired
+    private com.ruoyi.project.caseapp.location.mapper.AppCameraLocationRelMapper cameraLocationRelMapper;
 
     //首页 - 复合事件页面
     @GetMapping()
@@ -324,6 +335,18 @@ public class AppTrackController extends BaseController
     public AjaxResult getCompositeEventsList(AppTrack appTrack)
     {
         List<CompositeEvent> list = appTrackService.selectCompositeEvents(appTrack);
+
+        // 为每个复合事件的轨迹添加截图信息
+        for (CompositeEvent event : list) {
+            if (event.getEvents() != null) {
+                for (AppTrack track : event.getEvents()) {
+                    // 查询该轨迹的所有截图
+                    List<AppTrackScreenshot> screenshots = screenshotService.selectScreenshotsByTrackId(track.getId());
+                    track.setScreenshots(screenshots);
+                }
+            }
+        }
+
         return AjaxResult.success().put("data", list);
     }
 
@@ -417,7 +440,11 @@ public class AppTrackController extends BaseController
     {
         try
         {
+            logger.info("开始同步复合事件，参数：{}", appTrack != null ? appTrack.getParams() : "null");
+
             int count = compositeEventService.syncAllCompositeEvents(appTrack);
+
+            logger.info("同步复合事件完成，共处理 {} 个复合事件", count);
             return AjaxResult.success("同步成功，共处理 " + count + " 个复合事件");
         }
         catch (Exception e)
@@ -548,7 +575,8 @@ public class AppTrackController extends BaseController
             List<CompositeEvent> compositeEvents = new ArrayList<>();
             for (Long eventId : eventIdList)
             {
-                CompositeEvent event = compositeEventService.selectCompositeEventByEventId(eventId);
+                // 注意：前端传递的是复合事件的主键ID，而不是eventId字段
+                CompositeEvent event = compositeEventService.selectCompositeEventById(eventId);
                 if (event != null)
                 {
                     // 从关系表查询轨迹详情
@@ -567,6 +595,17 @@ public class AppTrackController extends BaseController
                     event.setEvents(tracks);
                     compositeEvents.add(event);
                 }
+                else
+                {
+                    logger.warn("未找到eventId为 " + eventId + " 的复合事件");
+                }
+            }
+
+            logger.info("准备导出 " + compositeEvents.size() + " 条复合事件数据");
+
+            if (compositeEvents.isEmpty())
+            {
+                return AjaxResult.error("未查询到有效的复合事件数据，请检查是否已生成复合事件");
             }
 
             // 使用ExcelUtil导出
@@ -667,6 +706,236 @@ public class AppTrackController extends BaseController
         {
             logger.error("批量导出事件包失败", e);
             return AjaxResult.error("导出失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 跳转到轨迹详情页面
+     *
+     * @param id 轨迹ID
+     * @param mmap ModelMap
+     * @return 页面路径
+     */
+    @GetMapping("/detail/{id}")
+    public String trajectoryDetail(@PathVariable("id") Long id, ModelMap mmap)
+    {
+        AppTrack trajectory = appTrackService.selectAppTrackById(id);
+        if (trajectory == null)
+        {
+            return "error/404";
+        }
+        mmap.put("trajectory", trajectory);
+        return prefix + "/trajectory-detail";
+    }
+
+    /**
+     * 获取轨迹详情数据（包括所有截图）
+     *
+     * @param id 轨迹ID
+     * @return 轨迹详情（包括基本信息和截图列表）
+     */
+    @GetMapping("/detailData/{id}")
+    @ResponseBody
+    public AjaxResult getTrajectoryDetail(@PathVariable("id") Long id)
+    {
+        try
+        {
+            // 查询轨迹基本信息
+            AppTrack trajectory = appTrackService.selectAppTrackById(id);
+            if (trajectory == null)
+            {
+                return AjaxResult.error("轨迹不存在");
+            }
+
+            // 查询该轨迹的所有截图
+            List<com.ruoyi.project.caseapp.track.domain.AppTrackScreenshot> screenshots =
+                screenshotService.selectScreenshotsByTrackId(id);
+
+            return AjaxResult.success()
+                .put("trajectory", trajectory)
+                .put("screenshots", screenshots);
+        }
+        catch (Exception e)
+        {
+            logger.error("获取轨迹详情失败", e);
+            return AjaxResult.error("获取轨迹详情失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 跳转到货架轨迹查询页面
+     */
+    @GetMapping("/shelfTrajectory")
+    public String shelfTrajectoryPage()
+    {
+        return "track/shelf-trajectory";
+    }
+
+    /**
+     * 根据货架位置和时间范围查询轨迹
+     *
+     * @param locationCode 货架位置编码（如 A01-03-02）
+     * @param beginTime 开始时间
+     * @param endTime 结束时间
+     * @return 轨迹列表（包含截图）
+     */
+    @PostMapping("/queryShelfTrajectory")
+    @ResponseBody
+    public AjaxResult queryShelfTrajectory(String locationCode, String beginTime, String endTime)
+    {
+        try
+        {
+            logger.info("查询货架轨迹：货架位置={}, 开始时间={}, 结束时间={}", locationCode, beginTime, endTime);
+
+            List<AppTrack> trajectories = new java.util.ArrayList<>();
+
+            if (StringUtils.isNotEmpty(locationCode))
+            {
+                // 步骤1：根据货架位置编码查询位置ID
+                com.ruoyi.project.caseapp.location.domain.AppLocation location = locationMapper.selectByLocationCode(locationCode);
+
+                if (location != null)
+                {
+                    logger.info("找到货架位置：locationId={}, locationName={}", location.getLocationId(), location.getLocationName());
+
+                    // 步骤2：根据位置ID查询关联的摄像头ID列表（即qyid）
+                    List<Long> cameraIds = cameraLocationRelMapper.selectCameraIdsByLocationId(location.getLocationId());
+                    logger.info("找到关联的摄像头ID列表：{}", cameraIds);
+
+                    if (cameraIds != null && !cameraIds.isEmpty())
+                    {
+                        // 步骤3：根据摄像头ID（qyid）查询轨迹
+                        for (Long cameraId : cameraIds)
+                        {
+                            AppTrack queryParam = new AppTrack();
+                            queryParam.setQyid(cameraId);
+
+                            // 设置时间范围
+                            if (StringUtils.isNotEmpty(beginTime) && StringUtils.isNotEmpty(endTime))
+                            {
+                                queryParam.getParams().put("beginPssj", beginTime);
+                                queryParam.getParams().put("endPssj", endTime);
+                            }
+
+                            // 查询该摄像头的轨迹
+                            List<AppTrack> cameraTrajectories = appTrackService.selectAppTrackList(queryParam);
+                            trajectories.addAll(cameraTrajectories);
+                        }
+                    }
+                    else
+                    {
+                        logger.warn("该货架位置未关联任何摄像头");
+                    }
+                }
+                else
+                {
+                    logger.warn("未找到货架位置：{}", locationCode);
+                }
+            }
+
+            // 为每个轨迹查询截图
+            for (AppTrack trajectory : trajectories)
+            {
+                List<AppTrackScreenshot> screenshots = screenshotService.selectScreenshotsByTrackId(trajectory.getId());
+                trajectory.setScreenshots(screenshots);
+            }
+
+            logger.info("查询到 {} 条轨迹记录", trajectories.size());
+
+            return AjaxResult.success()
+                .put("data", trajectories)
+                .put("total", trajectories.size());
+        }
+        catch (Exception e)
+        {
+            logger.error("查询货架轨迹失败", e);
+            return AjaxResult.error("查询失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取区域列表（用于前端下拉框）
+     *
+     * @return 区域列表
+     */
+    @GetMapping("/getAreaList")
+    @ResponseBody
+    public AjaxResult getAreaList()
+    {
+        try
+        {
+            // 查询所有区域
+            List<AppRoomip> areas = appRoomipService.selectAppRoomipList(new AppRoomip());
+
+            return AjaxResult.success().put("data", areas);
+        }
+        catch (Exception e)
+        {
+            logger.error("获取区域列表失败", e);
+            return AjaxResult.error("获取区域列表失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取货架位置列表（用于前端下拉框）
+     *
+     * @param areaName 区域名称（可选，用于筛选）
+     * @return 货架位置列表
+     */
+    @GetMapping("/getLocationList")
+    @ResponseBody
+    public AjaxResult getLocationList(String areaName)
+    {
+        try
+        {
+            com.ruoyi.project.caseapp.location.domain.AppLocation queryParam =
+                new com.ruoyi.project.caseapp.location.domain.AppLocation();
+
+            if (StringUtils.isNotEmpty(areaName))
+            {
+                queryParam.setAreaName(areaName);
+            }
+
+            List<com.ruoyi.project.caseapp.location.domain.AppLocation> locations =
+                locationMapper.selectAppLocationList(queryParam);
+
+            return AjaxResult.success().put("data", locations);
+        }
+        catch (Exception e)
+        {
+            logger.error("获取货架位置列表失败", e);
+            return AjaxResult.error("获取货架位置列表失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取所有区域（去重）
+     *
+     * @return 区域名称列表
+     */
+    @GetMapping("/getAreaNames")
+    @ResponseBody
+    public AjaxResult getAreaNames()
+    {
+        try
+        {
+            List<com.ruoyi.project.caseapp.location.domain.AppLocation> locations =
+                locationMapper.selectAppLocationList(new com.ruoyi.project.caseapp.location.domain.AppLocation());
+
+            // 去重并提取区域名称
+            List<String> areaNames = locations.stream()
+                .map(com.ruoyi.project.caseapp.location.domain.AppLocation::getAreaName)
+                .filter(name -> name != null && !name.trim().isEmpty())
+                .distinct()
+                .sorted()
+                .collect(java.util.stream.Collectors.toList());
+
+            return AjaxResult.success().put("data", areaNames);
+        }
+        catch (Exception e)
+        {
+            logger.error("获取区域名称列表失败", e);
+            return AjaxResult.error("获取区域名称列表失败：" + e.getMessage());
         }
     }
 

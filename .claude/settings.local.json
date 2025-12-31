@@ -29,7 +29,15 @@
       "Bash(ls:*)",
       "Bash(dir:*)",
       "Bash(schtasks:*)",
-      "Bash(wmic process:*)"
+      "Bash(wmic process:*)",
+      "Bash(taskkill //F //PID 30472)",
+      "Bash(taskkill:*)",
+      "Bash(taskkill //F //PID 16284)",
+      "Bash(taskkill //F //PID 39600)",
+      "Bash(start:*)",
+      "Bash(iconv:*)",
+      "Bash(cd:*)",
+      "Bash(python3:*)"
     ]
   }
 }

@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基于货架位置的人员活动轨迹查询</title>
+    <th:block th:include="include :: header('货架轨迹查询')" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-wrapper {
+            flex: 1 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            padding: 40px 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-logo {
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        .header-logo img {
+            height: 80px;
+            width: auto;
+            mix-blend-mode: multiply;
+        }
+
+        .header-text h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header-text p {
+            font-size: 16px;
+            opacity: 0.95;
+            letter-spacing: 1px;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 30px;
+        }
+
+        .content-card {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .query-section {
+            padding: 30px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #606266;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-group label .required {
+            color: #f56c6c;
+            margin-right: 4px;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #5568d3;
+        }
+
+        .btn-secondary {
+            background-color: #f4f4f5;
+            color: #606266;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e8e8e8;
+        }
+
+        .results-section {
+            padding: 30px;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .results-header h2 {
+            font-size: 18px;
+            color: #303133;
+            font-weight: 500;
+        }
+
+        .results-count {
+            color: #909399;
+            font-size: 14px;
+        }
+
+        .results-count .count {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #909399;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px dashed #dcdfe6;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 15px;
+            opacity: 0.4;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .trajectory-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .trajectory-card {
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .trajectory-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+
+        .trajectory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .trajectory-id {
+            font-size: 16px;
+            font-weight: 600;
+            color: #303133;
+        }
+
+        .trajectory-time {
+            color: #909399;
+            font-size: 13px;
+        }
+
+        .trajectory-content {
+            display: grid;
+            grid-template-columns: 250px 1fr 450px;
+            gap: 20px;
+        }
+
+        .trajectory-right {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .trajectory-image {
+            position: relative;
+        }
+
+        .trajectory-image img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 6px;
+            background-color: #f5f7fa;
+        }
+
+        .play-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            cursor: pointer;
+        }
+
+        .trajectory-image:hover .play-overlay {
+            opacity: 1;
+        }
+
+        .play-button {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play-button svg {
+            width: 24px;
+            height: 24px;
+            fill: #667eea;
+            margin-left: 4px;
+        }
+
+        .trajectory-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: flex-start;
+            font-size: 14px;
+        }
+
+        .info-label {
+            min-width: 100px;
+            color: #606266;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #303133;
+            flex: 1;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 8px;
+            margin-bottom: 4px;
+        }
+
+        .tag-location {
+            background-color: #ecf5ff;
+            color: #409eff;
+        }
+
+        .tag-camera {
+            background-color: #f0f9ff;
+            color: #67c23a;
+        }
+
+        .duration-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: #f4f4f5;
+            border-radius: 3px;
+            font-size: 13px;
+            color: #909399;
+        }
+
+        .video-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: 1px solid #dcdfe6;
+            background-color: white;
+            color: #606266;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-small:hover {
+            color: #667eea;
+            border-color: #667eea;
+        }
+
+        .video-screenshots {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .screenshots-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .screenshots-title {
+            font-size: 13px;
+            color: #606266;
+            font-weight: 500;
+        }
+
+        .screenshots-count {
+            font-size: 12px;
+            color: #909399;
+        }
+
+        .screenshots-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            padding-bottom: 10px;
+        }
+
+        .screenshots-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .screenshots-scroll::-webkit-scrollbar-track {
+            background: #f5f7fa;
+            border-radius: 3px;
+        }
+
+        .screenshots-scroll::-webkit-scrollbar-thumb {
+            background: #dcdfe6;
+            border-radius: 3px;
+        }
+
+        .screenshots-scroll::-webkit-scrollbar-thumb:hover {
+            background: #c0c4cc;
+        }
+
+        .screenshot-item {
+            position: relative;
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            flex-shrink: 0;
+            width: 200px;
+        }
+
+        .screenshot-item:hover {
+            border-color: #667eea;
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .screenshot-item img {
+            width: 200px;
+            height: 150px;
+            object-fit: cover;
+            display: block;
+            background-color: #f5f7fa;
+        }
+
+        .screenshot-time {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+            color: white;
+            font-size: 11px;
+            padding: 8px 8px 6px;
+            text-align: center;
+        }
+
+        .screenshot-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background-color: rgba(102, 126, 234, 0.9);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #909399;
+        }
+
+        .loading::after {
+            content: "加载中...";
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0%, 100% { content: "加载中..."; }
+            33% { content: "加载中.."; }
+            66% { content: "加载中."; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+    <!-- 头部 -->
+    <div class="header">
+        <div class="header-content">
+            <div class="header-logo"><img src="/图片1.png" alt="系统Logo"></div>
+            <div class="header-text">
+                <h1>资产视频分析插件</h1>
+                <p>基于货架位置的人员活动轨迹查询系统</p>
+            </div>
+            <div style="margin-left: auto; display: flex; gap: 10px;">
+                <button onclick="window.location.href='/caseapp/track'" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                    🏠 事件页面
+                </button>
+                <button onclick="window.location.href='/caseapp/track/eventList'" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                    📝 轨迹页面
+                </button>
+                <button onclick="window.location.href='/caseapp/track/dailyReport'" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                    📊 每日报告
+                </button>
+                <button style="background: rgba(255,255,255,0.4); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: default; font-size: 14px; font-weight: bold;">
+                    📦 货架轨迹查询
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 查询条件区域 -->
+        <div class="content-card">
+        <div class="query-section">
+            <form id="queryForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><span class="required">*</span>所属区域（库区）</label>
+                        <select id="areaSelect" required onchange="onAreaChange()">
+                            <option value="">请选择区域</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>货架位置（可选）</label>
+                        <select id="locationSelect">
+                            <option value="">请先选择区域</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><span class="required">*</span>开始时间</label>
+                        <input type="datetime-local" id="startTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label><span class="required">*</span>结束时间</label>
+                        <input type="datetime-local" id="endTime" required>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">
+                        <span>查询轨迹</span>
+                    </button>
+                    <button type="reset" class="btn btn-secondary">重置</button>
+                </div>
+            </form>
+        </div>
+        </div>
+
+        <!-- 查询结果区域 -->
+        <div class="content-card" id="resultsCard">
+        <div class="results-section">
+            <div class="results-header">
+                <h2>查询结果</h2>
+                <div class="results-count">
+                    共找到 <span class="count" id="resultCount">0</span> 条轨迹记录
+                </div>
+            </div>
+
+            <!-- 空状态 -->
+            <div class="empty-state" id="emptyState">
+                <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M512 128C300.8 128 128 300.8 128 512s172.8 384 384 384 384-172.8 384-384S723.2 128 512 128z m0 704c-176.448 0-320-143.552-320-320s143.552-320 320-320 320 143.552 320 320-143.552 320-320 320z" fill="currentColor"/>
+                    <path d="M512 288c-17.664 0-32 14.336-32 32v224c0 17.664 14.336 32 32 32s32-14.336 32-32V320c0-17.664-14.336-32-32-32zM512 640c-17.664 0-32 14.336-32 32v32c0 17.664 14.336 32 32 32s32-14.336 32-32v-32c0-17.664-14.336-32-32-32z" fill="currentColor"/>
+                </svg>
+                <p>请选择查询条件后点击"查询轨迹"按钮开始查询</p>
+            </div>
+
+            <!-- 加载状态 -->
+            <div class="loading" id="loadingState" style="display: none;"></div>
+
+            <!-- 轨迹列表 -->
+            <div class="trajectory-list" id="trajectoryList" style="display: none;">
+                <!-- 轨迹卡片将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        // DOM元素
+        const queryForm = document.getElementById('queryForm');
+        const areaSelect = document.getElementById('areaSelect');
+        const emptyState = document.getElementById('emptyState');
+        const loadingState = document.getElementById('loadingState');
+        const trajectoryList = document.getElementById('trajectoryList');
+        const resultCount = document.getElementById('resultCount');
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initDateTime();
+            loadAreas();
+        });
+
+        // 设置默认时间
+        function initDateTime() {
+            const now = new Date();
+            const endTime = document.getElementById('endTime');
+            endTime.value = formatDateTime(now);
+
+            const startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            const startTime = document.getElementById('startTime');
+            startTime.value = formatDateTime(startDate);
+        }
+
+        function formatDateTime(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        function formatDisplayDateTime(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // 加载区域列表
+        function loadAreas() {
+            fetch('/caseapp/track/getAreaNames')
+                .then(response => response.json())
+                .then(result => {
+                    if (result.code === 0 && result.data) {
+                        areaSelect.innerHTML = '<option value="">请选择区域</option>';
+                        result.data.forEach(areaName => {
+                            const option = document.createElement('option');
+                            option.value = areaName;
+                            option.textContent = areaName;
+                            areaSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('加载区域列表失败:', error);
+                });
+        }
+
+        // 区域改变时加载对应的货架位置
+        function onAreaChange() {
+            const areaName = areaSelect.value;
+            const locationSelect = document.getElementById('locationSelect');
+
+            if (!areaName) {
+                locationSelect.innerHTML = '<option value="">请先选择区域</option>';
+                return;
+            }
+
+            // 加载该区域的货架位置
+            fetch('/caseapp/track/getLocationList?areaName=' + encodeURIComponent(areaName))
+                .then(response => response.json())
+                .then(result => {
+                    if (result.code === 0 && result.data) {
+                        locationSelect.innerHTML = '<option value="">全部货架位置</option>';
+                        result.data.forEach(location => {
+                            const option = document.createElement('option');
+                            option.value = location.locationCode;
+                            option.textContent = `${location.locationCode} - ${location.locationName}`;
+                            option.setAttribute('data-name', location.locationName);
+                            locationSelect.appendChild(option);
+                        });
+                    } else {
+                        locationSelect.innerHTML = '<option value="">该区域暂无货架位置</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('加载货架位置失败:', error);
+                    locationSelect.innerHTML = '<option value="">加载失败</option>';
+                });
+        }
+
+        // 处理查询表单提交
+        queryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const areaName = areaSelect.value;
+            const locationCode = document.getElementById('locationSelect').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+
+            if (!areaName || !locationCode || !startTime || !endTime) {
+                alert('请填写完整的查询条件（区域、货架位置、时间范围）');
+                return;
+            }
+
+            // 显示加载状态
+            emptyState.style.display = 'none';
+            trajectoryList.style.display = 'none';
+            loadingState.style.display = 'block';
+
+            // 构建查询参数
+            const formData = new FormData();
+            // 传递货架位置编码（locationCode）
+            if (locationCode) {
+                formData.append('locationCode', locationCode);
+            } else {
+                alert('请选择货架位置');
+                loadingState.style.display = 'none';
+                return;
+            }
+            formData.append('beginTime', startTime.replace('T', ' ') + ':00');
+            formData.append('endTime', endTime.replace('T', ' ') + ':59');
+
+            // 调用后端接口
+            fetch('/caseapp/track/queryShelfTrajectory', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                loadingState.style.display = 'none';
+
+                if (result.code === 0 && result.data) {
+                    if (result.data.length > 0) {
+                        renderTrajectories(result.data);
+                        resultCount.textContent = result.data.length;
+                        trajectoryList.style.display = 'grid';
+                    } else {
+                        emptyState.querySelector('p').textContent = '未找到符合条件的轨迹记录';
+                        emptyState.style.display = 'block';
+                        resultCount.textContent = '0';
+                    }
+                } else {
+                    alert('查询失败：' + (result.msg || '未知错误'));
+                    emptyState.querySelector('p').textContent = '查询失败，请重试';
+                    emptyState.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                loadingState.style.display = 'none';
+                console.error('查询失败:', error);
+                alert('查询失败：' + error);
+                emptyState.querySelector('p').textContent = '查询失败，请重试';
+                emptyState.style.display = 'block';
+            });
+        });
+
+        // 渲染轨迹列表
+        function renderTrajectories(data) {
+            trajectoryList.innerHTML = '';
+
+            data.forEach(trajectory => {
+                const card = document.createElement('div');
+                card.className = 'trajectory-card';
+
+                // 计算时长
+                const duration = calculateDuration(trajectory.pssj, trajectory.jssj);
+
+                // 获取第一张截图作为关键帧
+                const keyframeUrl = trajectory.screenshots && trajectory.screenshots.length > 0
+                    ? trajectory.screenshots[0].screenshotUrl
+                    : (trajectory.pstp || '');
+
+                // 生成截图HTML
+                let screenshotsHtml = '';
+                if (trajectory.screenshots && trajectory.screenshots.length > 0) {
+                    screenshotsHtml = trajectory.screenshots.map(screenshot => `
+                        <div class="screenshot-item" onclick="viewScreenshot(${trajectory.id}, ${screenshot.screenshotOrder})">
+                            <img src="${screenshot.screenshotUrl}" alt="视频截图 ${screenshot.screenshotOrder}" onerror="this.src='/img/profile.jpg'">
+                            <div class="screenshot-badge">#${screenshot.screenshotOrder}</div>
+                            <div class="screenshot-time">${formatDisplayDateTime(screenshot.screenshotTime)}</div>
+                        </div>
+                    `).join('');
+                }
+
+                card.innerHTML = `
+                    <div class="trajectory-header">
+                        <div class="trajectory-id">轨迹编号: ${trajectory.id}</div>
+                        <div class="trajectory-time">
+                            ${formatDisplayDateTime(trajectory.pssj)} ~ ${formatDisplayDateTime(trajectory.jssj)}
+                        </div>
+                    </div>
+                    <div class="trajectory-content">
+                        <div class="trajectory-image">
+                            <img src="${keyframeUrl}" alt="关键帧截图" onerror="this.src='/img/profile.jpg'">
+                            <div class="play-overlay" onclick="playVideo(${trajectory.id})">
+                                <div class="play-button">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="trajectory-info">
+                            <div class="info-row">
+                                <div class="info-label">货架位置:</div>
+                                <div class="info-value">
+                                    <span class="tag tag-location">${trajectory.qymc || '未知区域'}</span>
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">关联摄像头:</div>
+                                <div class="info-value">
+                                    <span class="tag tag-camera">${trajectory.sxtmx || '摄像头信息'}</span>
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">活动时长:</div>
+                                <div class="info-value">
+                                    <span class="duration-badge">${duration}</span>
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">检测次数:</div>
+                                <div class="info-value">共 ${trajectory.jscs || 1} 次检测</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">人员数量:</div>
+                                <div class="info-value">${trajectory.rysl > 0 ? trajectory.rysl + ' 人' : '未检测'}</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">视频片段:</div>
+                                <div class="info-value">
+                                    <div class="video-actions">
+                                        <button class="btn-small" onclick="playVideo(${trajectory.id})">播放视频</button>
+                                        <button class="btn-small" onclick="viewDetails(${trajectory.id})">查看详情</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="trajectory-right">
+                            <div class="video-screenshots">
+                                <div class="screenshots-header">
+                                    <div class="screenshots-title">视频截图时间轴</div>
+                                    <div class="screenshots-count">${trajectory.screenshots ? trajectory.screenshots.length : 0} 张</div>
+                                </div>
+                                <div class="screenshots-scroll">
+                                    ${screenshotsHtml}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                trajectoryList.appendChild(card);
+            });
+        }
+
+        // 计算时长
+        function calculateDuration(startTime, endTime) {
+            if (!startTime || !endTime) return '未知';
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            const diffSeconds = Math.floor((end - start) / 1000);
+
+            if (diffSeconds < 60) {
+                return diffSeconds + '秒';
+            } else if (diffSeconds < 3600) {
+                const mins = Math.floor(diffSeconds / 60);
+                const secs = diffSeconds % 60;
+                return `${mins}分${secs}秒`;
+            } else {
+                const hours = Math.floor(diffSeconds / 3600);
+                const mins = Math.floor((diffSeconds % 3600) / 60);
+                const secs = diffSeconds % 60;
+                return `${hours}小时${mins}分${secs}秒`;
+            }
+        }
+
+        // 视频播放功能
+        function playVideo(trajectoryId) {
+            // 跳转到复合事件详情页面（已有视频播放功能）
+            window.location.href = '/caseapp/track/detail/' + trajectoryId;
+        }
+
+        // 查看详情功能
+        function viewDetails(trajectoryId) {
+            window.location.href = '/caseapp/track/detail/' + trajectoryId;
+        }
+
+        // 查看截图功能
+        function viewScreenshot(trajectoryId, screenshotIndex) {
+            // 可以实现图片预览弹窗
+            console.log(`查看轨迹 ${trajectoryId} 的第 ${screenshotIndex} 张截图`);
+            viewDetails(trajectoryId);
+        }
+
+        // 重置表单
+        queryForm.addEventListener('reset', function() {
+            setTimeout(() => {
+                initDateTime();
+                emptyState.querySelector('p').textContent = '请选择查询条件后点击"查询轨迹"按钮开始查询';
+                emptyState.style.display = 'block';
+                trajectoryList.style.display = 'none';
+                resultCount.textContent = '0';
+            }, 0);
+        });
+    </script>
+    </div>
+    </div>
+
+    <!-- 页脚 -->
+    <div class="footer">
+        Copyright © 2023-2024 某科技公司 版权所有
+    </div>
+
+    <th:block th:include="include :: footer" />
+</body>
+</html>

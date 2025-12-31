@@ -252,13 +252,13 @@ public class DailyReportServiceImpl implements IDailyReportService
             suggestions.add("有 " + outsiderCount + " 个外来人员访问记录，建议核实访问原因");
         }
 
-        // 建议3：非工作时间活动
+        // 建议3：非工作时间活动（工作时间为9:00-17:00）
         long nonworktimeCount = abnormalEvents.stream()
                 .filter(e -> e.getHasNonworktime() != null && e.getHasNonworktime() == 1)
                 .count();
         if (nonworktimeCount > 0)
         {
-            suggestions.add("有 " + nonworktimeCount + " 个非工作时间活动记录，建议检查是否为正常加班或巡检");
+            suggestions.add("有 " + nonworktimeCount + " 个非工作时间活动记录（工作时间：9:00-17:00），建议检查是否为正常加班或巡检");
         }
 
         // 建议4：长时间活动
@@ -296,7 +296,7 @@ public class DailyReportServiceImpl implements IDailyReportService
             tips.add("数据统计时间范围：当日00:00 - 23:59");
 
             // 提示2：异常判定规则
-            tips.add("异常事件判定规则：非工作时间活动、多人同时出现、外来人员进入、持续时间>30分钟");
+            tips.add("异常事件判定规则：非工作时间活动（工作时间为9:00-17:00）、多人同时出现、外来人员进入、持续时间>30分钟");
 
             // 提示3：历史对比
             String historyComparison = generateHistoryComparison(currentDate, report.getAbnormalEvents());

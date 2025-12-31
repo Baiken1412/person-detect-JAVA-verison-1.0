@@ -294,6 +294,7 @@ public class ShiroConfig
         filterChainDefinitionMap.put("/caseapp/track/**", "anon");
         filterChainDefinitionMap.put("/caseapp/person/**", "anon");
         filterChainDefinitionMap.put("/caseapp/roomip/**", "anon");
+        filterChainDefinitionMap.put("/caseapp/location/**", "anon");
         filterChainDefinitionMap.put("/sy", "anon");
         filterChainDefinitionMap.put("/profile/**", "anon");
         // 系统配置接口允许匿名访问（用于页面标题等配置）

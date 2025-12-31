@@ -569,6 +569,9 @@
                 <button onclick="goToDailyReport()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
                     📊 每日报告
                 </button>
+                <button onclick="goToShelfTrajectory()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                    📦 货架轨迹查询
+                </button>
             </div>
         </div>
     </div>
@@ -658,7 +661,8 @@
         let pageSize = 10; // 每页显示数量
         let totalCount = 0; // 总记录数
         let hasMore = true; // 是否还有更多数据
-        let isLoading = false; // 是否正在加载中
+        let isLoading = false; // 是否正在加载
+        let renderedCount = 0; // 已渲染的事件数量中
         let currentFilters = {}; // 当前筛选条件
 
         // 区域邻接关系（定义哪些区域是相邻的）
@@ -1010,7 +1014,7 @@
             
             formData.append('params[beginPssj]', beginPssj);
             formData.append('params[endPssj]', endPssj);
-            
+
             fetch('/caseapp/track/events', {
                 method: 'POST',
                 body: formData
@@ -1160,14 +1164,14 @@
         }
 
         // 检查是否满足非工作时间提示条件
-        // 条件：拍摄时间不在 9:00-18:00 之间 且 rysl >= 1
+        // 条件：拍摄时间不在 9:00-17:00 之间 且 rysl >= 1
         function isNonWorktimeWarning(event) {
             if (!event.pssj) return false;
-            
-            // 检查时间是否不在9时-18时之间
+
+            // 检查时间是否不在9时-17时之间（工作时间为9:00-17:00）
             const date = new Date(event.pssj);
             const hour = date.getHours();
-            if (hour >= 9 && hour < 18) {
+            if (hour >= 9 && hour < 17) {
                 return false;
             }
             
@@ -1338,9 +1342,9 @@
             }
         }
 
-        // 打开事件详情（跳转到标注页面）
+        // 打开事件详情（跳转到轨迹详情页面）
         function openEventDetail(eventId) {
-            window.location.href = '/caseapp/track/eventAnnotation?id=' + eventId;
+            window.location.href = '/caseapp/track/detail/' + eventId;
         }
 
         // 应用筛选
@@ -1542,13 +1546,21 @@
             loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px 40px; border-radius: 8px; z-index: 9999; font-size: 16px;';
             document.body.appendChild(loadingMsg);
 
+            console.log('发送同步请求，参数：', beginPssj, '~', endPssj);
+
             fetch('/caseapp/track/syncCompositeEvents', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('收到响应，状态码：', response.status);
+                return response.json();
+            })
             .then(data => {
-                document.body.removeChild(loadingMsg);
+                console.log('同步响应数据：', data);
+                if (loadingMsg.parentNode) {
+                    document.body.removeChild(loadingMsg);
+                }
                 if (data.code === 0) {
                     alert('✅ ' + data.msg);
                     // 重新加载复合事件列表
@@ -1558,8 +1570,10 @@
                 }
             })
             .catch(error => {
-                document.body.removeChild(loadingMsg);
                 console.error('同步复合事件失败:', error);
+                if (loadingMsg.parentNode) {
+                    document.body.removeChild(loadingMsg);
+                }
                 alert('❌ 同步失败：' + error);
             });
         }
@@ -1579,6 +1593,7 @@
                 currentPage = 1;
                 hasMore = true;
                 compositeEvents = [];
+                renderedCount = 0; // 重置已渲染计数
             }
             // 从日期选择框获取最新的筛选条件
             let beginDateFilter = document.getElementById('beginDateFilter').value;
@@ -1667,6 +1682,9 @@
                         hasMore = rows.length >= pageSize;
 
                         // 转换后端数据格式为前端需要的格式（分页接口已经按时间排序）
+                        // 计算全局索引的起始值（追加模式下从已有事件数量开始）
+                        const startIndex = append ? compositeEvents.length : 0;
+
                         const newEvents = rows.map((comp, index) => {
                             // 将后端的事件列表转换为前端格式
                             const events = (comp.events || []).map(item => ({
@@ -1720,21 +1738,17 @@
                             // 检查特殊情况（优先使用后端字段，否则前端计算）
                             const specialTags = [];
 
-                            // 非工作时间：优先使用后端hasNonworktime字段
-                            if (comp.hasNonworktime === 1 || comp.hasNonworktime === '1') {
-                                specialTags.push('非工作时间');
-                            } else {
-                                // 前端兜底检查
-                                events.forEach(event => {
-                                    const eventTime = new Date(event.pssj);
-                                    const hour = eventTime.getHours();
-                                    if (hour < 8 || hour >= 18) {
-                                        if (!specialTags.includes('非工作时间')) {
-                                            specialTags.push('非工作时间');
-                                        }
+                            // 非工作时间：使用前端实时计算（工作时间为9:00-17:00）
+                            // 不再依赖后端hasNonworktime字段，避免旧数据影响
+                            events.forEach(event => {
+                                const eventTime = new Date(event.pssj);
+                                const hour = eventTime.getHours();
+                                if (hour < 9 || hour >= 17) {
+                                    if (!specialTags.includes('非工作时间')) {
+                                        specialTags.push('非工作时间');
                                     }
-                                });
-                            }
+                                }
+                            });
 
                             // 人员异常：优先使用后端hasAbnormalPerson字段
                             if (comp.hasAbnormalPerson === 1 || comp.hasAbnormalPerson === '1') {
@@ -1751,9 +1765,9 @@
                             }
 
                             return {
-                                id: comp.eventId || ('COMP' + (index + 1)), // 优先使用真实eventId
-                                eventId: comp.eventId, // 保留原始eventId用于其他用途
-                                eventIndex: index + 1, // 按时间顺序的编号（从1开始）
+                                id: comp.id, // 主键ID
+                                eventId: comp.eventId, // 事件ID（第一条轨迹的ID）
+                                eventIndex: startIndex + index + 1, // 按时间顺序的动态编号
                                 events: events,
                                 startTime: formatDateTime(comp.startTime),
                                 endTime: formatDateTime(comp.endTime),
@@ -1803,6 +1817,11 @@
                             compositeEvents = filteredNewEvents;
                         }
 
+                        // 重新计算所有事件的编号,确保从1开始连续编号
+                        compositeEvents.forEach((event, index) => {
+                            event.eventIndex = index + 1;
+                        });
+
                         // 渲染
                         if (append) {
                             renderCompositeEvents(true);
@@ -1850,8 +1869,16 @@
 
             section.style.display = 'block';
 
-            // 计算需要渲染的事件（追加模式只渲染新增的）
-            const eventsToRender = append ? compositeEvents.slice(-pageSize) : compositeEvents;
+            // 计算需要渲染的事件
+            let eventsToRender;
+            if (append) {
+                // 追加模式：只渲染从 renderedCount 开始的新事件
+                eventsToRender = compositeEvents.slice(renderedCount);
+            } else {
+                // 全量渲染模式：渲染所有事件，并重置已渲染计数
+                eventsToRender = compositeEvents;
+                renderedCount = 0;
+            }
 
             const htmlContent = eventsToRender.map(comp => {
                 const duration = calculateDuration(comp.startTime, comp.endTime);
@@ -1895,14 +1922,14 @@
                     : '';
 
                 return `
-                    <div class="composite-card" id="composite-card-${comp.eventId}">
+                    <div class="composite-card" id="composite-card-${comp.id}">
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
-                            <input type="checkbox" class="composite-checkbox" data-event-id="${comp.eventId}"
+                            <input type="checkbox" class="composite-checkbox" data-event-id="${comp.id}"
                                    style="margin-top: 15px; width: 18px; height: 18px; cursor: pointer;"
                                    onclick="event.stopPropagation();">
                             <div style="flex: 1;">
                                 <div class="composite-header" onclick="openCompositeTrace('${comp.id}')">
-                                    <div class="composite-title">复合事件 #${comp.eventIndex || (comp.eventId || '')}${statusBadge}${specialTagsHtml}${ryslMaxHtml}</div>
+                                    <div class="composite-title">复合事件 #${comp.eventIndex} <span style="color: #868e96; font-size: 13px; font-weight: normal;">(ID: ${comp.id})</span>${statusBadge}${specialTagsHtml}${ryslMaxHtml}</div>
                                     <div class="composite-badge">${comp.eventCount || comp.events.length} 个关联事件</div>
                                 </div>
                         <div onclick="openCompositeTrace('${comp.id}')">
@@ -1932,8 +1959,12 @@
             // 追加或替换内容
             if (append) {
                 list.innerHTML += htmlContent;
+                // 更新已渲染数量
+                renderedCount = compositeEvents.length;
             } else {
                 list.innerHTML = htmlContent;
+                // 全量渲染后，更新已渲染数量
+                renderedCount = compositeEvents.length;
             }
 
             // 添加加载提示
@@ -1992,6 +2023,11 @@
         // 跳转到每日报告页面
         function goToDailyReport() {
             window.location.href = '/caseapp/track/dailyReport';
+        }
+
+        // 跳转到货架轨迹查询页面
+        function goToShelfTrajectory() {
+            window.location.href = '/caseapp/track/shelfTrajectory';
         }
 
         // ==================== 复合事件导出功能 ====================

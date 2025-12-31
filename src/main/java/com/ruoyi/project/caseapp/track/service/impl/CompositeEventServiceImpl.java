@@ -26,9 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.project.caseapp.track.domain.CompositeEvent;
 import com.ruoyi.project.caseapp.track.domain.AppTrack;
+import com.ruoyi.project.caseapp.track.domain.AppTrackScreenshot;
 import com.ruoyi.project.caseapp.track.domain.EventTrackRelation;
 import com.ruoyi.project.caseapp.track.mapper.CompositeEventMapper;
 import com.ruoyi.project.caseapp.track.mapper.AppTrackMapper;
+import com.ruoyi.project.caseapp.track.mapper.AppTrackScreenshotMapper;
 import com.ruoyi.project.caseapp.track.mapper.EventTrackRelationMapper;
 import com.ruoyi.project.caseapp.track.service.ICompositeEventService;
 
@@ -49,6 +51,9 @@ public class CompositeEventServiceImpl implements ICompositeEventService
 
     @Autowired
     private AppTrackMapper appTrackMapper;
+
+    @Autowired
+    private AppTrackScreenshotMapper screenshotMapper;
 
     @Autowired
     private EventTrackRelationMapper relationMapper;
@@ -274,19 +279,41 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             queryParam.getParams().put("beginTime", appTrack.getParams().get("beginPssj"));
             queryParam.getParams().put("endTime", appTrack.getParams().get("endPssj"));
             List<CompositeEvent> oldEvents = compositeEventMapper.selectCompositeEventList(queryParam);
+
+            System.out.println("========== 删除旧复合事件 ==========");
+            System.out.println("时间范围：" + appTrack.getParams().get("beginPssj") + " ~ " + appTrack.getParams().get("endPssj"));
+            System.out.println("查询到 " + oldEvents.size() + " 个旧事件");
+
             for (CompositeEvent oldEvent : oldEvents)
             {
+                System.out.println("删除事件 ID=" + oldEvent.getId() +
+                    ", eventId=" + oldEvent.getEventId() +
+                    ", 时间=" + oldEvent.getStartTime() +
+                    ", 标注状态=" + oldEvent.getBzzt() +
+                    ", 人员=" + oldEvent.getRyxm());
+
                 // 删除复合事件（service方法会自动删除关系表记录）
                 deleteCompositeEventById(oldEvent.getId());
             }
+            System.out.println("旧事件删除完成");
+            System.out.println("=====================================\n");
         }
 
         // 4. 批量插入新事件，并保存到关系表
+        System.out.println("========== 插入新复合事件 ==========");
+        System.out.println("共 " + events.size() + " 个新事件");
+
         for (CompositeEvent event : events)
         {
+            System.out.println("插入事件 eventId=" + event.getEventId() +
+                ", 时间=" + event.getStartTime() +
+                ", 轨迹数=" + event.getTrackCount());
+
             // 插入复合事件，获取自增ID
             compositeEventMapper.insertCompositeEvent(event);
             Long compositeEventId = event.getId();
+
+            System.out.println("  插入成功，获得主键 ID=" + compositeEventId);
 
             // 保存到关系表：建立事件与轨迹的关联
             if (compositeEventId != null && event.getTrackIds() != null && !event.getTrackIds().isEmpty())
@@ -315,7 +342,9 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             }
         }
 
+        System.out.println("=====================================");
         System.out.println("同步完成，共生成 " + events.size() + " 个复合事件，已回填轨迹关联");
+        System.out.println("=====================================\n");
         return events.size();
     }
 
@@ -453,36 +482,11 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         long durationMillis = lastTrack.getJssj().getTime() - firstTrack.getPssj().getTime();
         event.setDuration((int) (durationMillis / 1000));
 
-        // 聚合管理员信息（去重）
-        Set<String> ryxmSet = new HashSet<>();
-        Set<String> wlrySet = new HashSet<>();
-        for (AppTrack track : tracks)
-        {
-            if (StringUtils.isNotEmpty(track.getRyxm()))
-            {
-                String[] names = track.getRyxm().split(",");
-                for (String name : names)
-                {
-                    if (StringUtils.isNotEmpty(name.trim()))
-                    {
-                        ryxmSet.add(name.trim());
-                    }
-                }
-            }
-            if (StringUtils.isNotEmpty(track.getWlry()))
-            {
-                String[] names = track.getWlry().split(",");
-                for (String name : names)
-                {
-                    if (StringUtils.isNotEmpty(name.trim()))
-                    {
-                        wlrySet.add(name.trim());
-                    }
-                }
-            }
-        }
-        event.setRyxm(String.join(",", ryxmSet));
-        event.setWlry(String.join(",", wlrySet));
+        // 注意：不从轨迹聚合标注信息（ryxm, wlry）
+        // 这些字段应该保持为空，等待用户手动标注复合事件
+        // 如果从轨迹聚合，会导致重新同步时旧标注数据无法清除
+        event.setRyxm(null);
+        event.setWlry(null);
 
         // 聚合区域信息
         Set<String> areasSet = new LinkedHashSet<>(); // 保持顺序
@@ -515,42 +519,46 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         int hasNonworktime = 0;
         int hasAbnormal = 0;
 
+        // 判断非工作时间：只检查复合事件的开始时间，而不是检查每条轨迹
+        // 工作时间为9:00-17:00，其他时间为非工作时间
+        // 注意：必须使用GMT+8时区，与数据库时区保持一致
+        Calendar cal = Calendar.getInstance(java.util.TimeZone.getTimeZone("GMT+8"));
+        cal.setTime(event.getStartTime());
+        int startHour = cal.get(Calendar.HOUR_OF_DAY);
+        int startMinute = cal.get(Calendar.MINUTE);
+
+        System.out.println("【非工作时间判断】事件ID=" + event.getEventId() +
+            ", 开始时间=" + event.getStartTime() +
+            ", GMT+8小时=" + startHour +
+            ", 分钟=" + startMinute +
+            ", 是否非工作时间=" + (startHour < 9 || startHour >= 17));
+
+        if (startHour < 9 || startHour >= 17)
+        {
+            hasNonworktime = 1;
+        }
+
+        // 判断人员异常：检查所有轨迹中是否有人数异常情况
+        // 双人操作要求，人数<2（单人）或≥3（超员）
         for (AppTrack track : tracks)
         {
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(track.getPssj());
-            int hour = cal.get(Calendar.HOUR_OF_DAY);
-
-            // 非工作时间：18:00-08:00
-            if (hour < 8 || hour >= 18)
-            {
-                hasNonworktime = 1;
-            }
-
-            // 人员异常：双人操作要求，人数<2（单人）或≥3（超员）
             // 注意：rysl为int类型，默认值为0，0表示无人员数据
             if (track.getRysl() > 0)
             {
                 if (track.getRysl() < 2 || track.getRysl() >= 3)
                 {
                     hasAbnormal = 1;
+                    break; // 找到一个异常即可，无需继续检查
                 }
             }
         }
         event.setHasNonworktime(hasNonworktime);
         event.setHasAbnormalPerson(hasAbnormal);
 
-        // 判断标注状态
-        boolean allLabeled = tracks.stream()
-                .allMatch(track -> "1".equals(track.getBzzt()));
-        event.setBzzt(allLabeled ? "1" : "0");
-
-        // 聚合行为原因
-        Set<String> xwyySet = tracks.stream()
-                .filter(track -> StringUtils.isNotEmpty(track.getXwyy()))
-                .map(AppTrack::getXwyy)
-                .collect(Collectors.toSet());
-        event.setXwyy(String.join(";", xwyySet));
+        // 标注状态和行为原因不从轨迹聚合，保持为未标注状态
+        // 避免重新同步时从轨迹表带回旧的标注数据
+        event.setBzzt("0"); // 未标注
+        event.setXwyy(null); // 行为原因为空
 
         // 保存轨迹ID列表
         String trackIds = tracks.stream()
@@ -562,8 +570,8 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         String behaviorDescription = generateBehaviorDescription(event, tracks);
         event.setBehaviorDescription(behaviorDescription);
 
-        // 设置初始处理状态
-        event.setProcessStatus(allLabeled ? "已完成" : "待处理");
+        // 设置初始处理状态为待处理（新生成的事件都是未标注的）
+        event.setProcessStatus("待处理");
 
         return event;
     }
@@ -691,42 +699,10 @@ public class CompositeEventServiceImpl implements ICompositeEventService
 
         System.out.println("已标注复合事件 #" + eventId + ": " + xwyy);
 
-        // 3. 从关系表查询该复合事件下的所有轨迹ID
-        List<Long> trackIds = relationMapper.selectTrackIdsByEventId(compositeEvent.getId());
-
-        if (trackIds != null && !trackIds.isEmpty())
-        {
-            int updatedCount = 0;
-
-            // 4. 更新所有轨迹的标注信息
-            for (Long trackId : trackIds)
-            {
-                try
-                {
-                    AppTrack trackToUpdate = new AppTrack();
-                    trackToUpdate.setId(trackId);
-                    trackToUpdate.setBzzt("1"); // 已标注
-                    trackToUpdate.setXwyy(xwyy);
-                    trackToUpdate.setRyxm(ryxm);
-                    trackToUpdate.setWlry(wlry);
-                    trackToUpdate.setRemark(remark);
-                    trackToUpdate.setBzsj(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
-
-                    appTrackMapper.updateAppTrack(trackToUpdate);
-                    updatedCount++;
-                }
-                catch (Exception e)
-                {
-                    System.err.println("更新轨迹 " + trackId + " 失败: " + e.getMessage());
-                }
-            }
-
-            System.out.println("已同步更新 " + updatedCount + " 条轨迹的标注信息");
-        }
-        else
-        {
-            System.out.println("警告：复合事件 #" + eventId + " 没有关联的轨迹");
-        }
+        // 注意：标注信息只存储在复合事件表中，不写入轨迹表
+        // 原因：重新同步时会删除复合事件但保留轨迹，如果标注信息存在轨迹表中，
+        // 新生成的复合事件会从轨迹中聚合到旧的标注数据，导致标注无法清除
+        // 因此标注数据应该只属于复合事件层面，不应下沉到轨迹层面
     }
 
     /**
@@ -858,14 +834,21 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             Files.createDirectories(packagePath.resolve("videos"));
             Files.createDirectories(packagePath.resolve("data"));
 
-            // 4. 复制图片和视频文件
-            copyMediaFiles(tracks, packagePath);
+            // 4. 复制图片和视频文件（返回所有截图信息）
+            Map<Long, List<Map<String, String>>> trackScreenshotsMap = copyMediaFiles(tracks, packagePath);
+
+            // Debug: 验证截图数量
+            logger.info("DEBUG - 复制文件后检查截图数量:");
+            for (AppTrack t : tracks) {
+                List<Map<String, String>> screenshots = trackScreenshotsMap.get(t.getId());
+                logger.info("  Track {}: {} 张截图", t.getId(), screenshots != null ? screenshots.size() : 0);
+            }
 
             // 5. 生成JSON数据文件
-            generateJsonData(event, tracks, packagePath);
+            generateJsonData(event, tracks, trackScreenshotsMap, packagePath);
 
             // 6. 生成HTML报告
-            generateHtmlReport(event, tracks, packagePath);
+            generateHtmlReport(event, tracks, trackScreenshotsMap, packagePath);
 
             // 7. 生成README文件
             generateReadme(event, packagePath);
@@ -894,39 +877,93 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     }
 
     /**
-     * 复制媒体文件（图片和视频）
+     * 复制媒体文件（图片和视频） - 包含所有截图
+     * 返回一个Map，key是轨迹ID，value是该轨迹的所有截图信息列表
      */
-    private void copyMediaFiles(List<AppTrack> tracks, Path packagePath) throws IOException
+    private Map<Long, List<Map<String, String>>> copyMediaFiles(List<AppTrack> tracks, Path packagePath) throws IOException
     {
         int imageIndex = 1;
         int videoIndex = 1;
+        Map<Long, List<Map<String, String>>> trackScreenshotsMap = new HashMap<>();
 
         for (AppTrack track : tracks)
         {
-            // 复制图片
-            if (StringUtils.isNotEmpty(track.getPstp()))
+            List<Map<String, String>> screenshots = new ArrayList<>();
+
+            // 查询该轨迹的所有截图
+            List<AppTrackScreenshot> screenshotList = screenshotMapper.selectScreenshotsByTrackId(track.getId());
+
+            if (screenshotList != null && !screenshotList.isEmpty())
             {
-                String imagePath = track.getPstp();
-                // 移除URL前缀，获取实际文件路径
-                if (imagePath.startsWith("http"))
+                // 复制所有截图
+                for (AppTrackScreenshot screenshot : screenshotList)
                 {
-                    int profileIndex = imagePath.indexOf("/profile/");
-                    if (profileIndex != -1)
+                    if (StringUtils.isNotEmpty(screenshot.getScreenshotUrl()))
                     {
-                        imagePath = imagePath.substring(profileIndex);
+                        String imagePath = screenshot.getScreenshotUrl();
+                        // 移除URL前缀，获取实际文件路径
+                        if (imagePath.startsWith("http"))
+                        {
+                            int profileIndex = imagePath.indexOf("/profile/");
+                            if (profileIndex != -1)
+                            {
+                                imagePath = imagePath.substring(profileIndex);
+                            }
+                        }
+                        File sourceImage = new File(uploadPath + imagePath.replace("/profile", ""));
+                        if (sourceImage.exists())
+                        {
+                            int dotIndex = imagePath.lastIndexOf(".");
+                            String ext = (dotIndex != -1) ? imagePath.substring(dotIndex) : ".jpg";
+                            String newName = String.format("track_%03d%s", imageIndex++, ext);
+                            Path targetImage = packagePath.resolve("images").resolve(newName);
+                            Files.copy(sourceImage.toPath(), targetImage, StandardCopyOption.REPLACE_EXISTING);
+
+                            // 保存截图信息
+                            Map<String, String> screenshotInfo = new HashMap<>();
+                            screenshotInfo.put("path", "images/" + newName);
+                            screenshotInfo.put("time", screenshot.getScreenshotTime() != null ?
+                                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(screenshot.getScreenshotTime()) : "");
+                            screenshotInfo.put("order", String.valueOf(screenshot.getScreenshotOrder()));
+                            screenshots.add(screenshotInfo);
+                        }
                     }
                 }
-                File sourceImage = new File(uploadPath + imagePath.replace("/profile", ""));
-                if (sourceImage.exists())
+            }
+            else
+            {
+                // 如果没有找到截图记录，使用第一张图片（兼容旧数据）
+                if (StringUtils.isNotEmpty(track.getPstp()))
                 {
-                    int dotIndex = imagePath.lastIndexOf(".");
-                    String ext = (dotIndex != -1) ? imagePath.substring(dotIndex) : ".jpg";
-                    String newName = String.format("track_%03d%s", imageIndex++, ext);
-                    Path targetImage = packagePath.resolve("images").resolve(newName);
-                    Files.copy(sourceImage.toPath(), targetImage, StandardCopyOption.REPLACE_EXISTING);
-                    track.setPstp("images/" + newName);  // 更新为相对路径
+                    String imagePath = track.getPstp();
+                    if (imagePath.startsWith("http"))
+                    {
+                        int profileIndex = imagePath.indexOf("/profile/");
+                        if (profileIndex != -1)
+                        {
+                            imagePath = imagePath.substring(profileIndex);
+                        }
+                    }
+                    File sourceImage = new File(uploadPath + imagePath.replace("/profile", ""));
+                    if (sourceImage.exists())
+                    {
+                        int dotIndex = imagePath.lastIndexOf(".");
+                        String ext = (dotIndex != -1) ? imagePath.substring(dotIndex) : ".jpg";
+                        String newName = String.format("track_%03d%s", imageIndex++, ext);
+                        Path targetImage = packagePath.resolve("images").resolve(newName);
+                        Files.copy(sourceImage.toPath(), targetImage, StandardCopyOption.REPLACE_EXISTING);
+
+                        Map<String, String> screenshotInfo = new HashMap<>();
+                        screenshotInfo.put("path", "images/" + newName);
+                        screenshotInfo.put("time", track.getPssj() != null ?
+                            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(track.getPssj()) : "");
+                        screenshotInfo.put("order", "1");
+                        screenshots.add(screenshotInfo);
+                    }
                 }
             }
+
+            trackScreenshotsMap.put(track.getId(), screenshots);
 
             // 复制视频
             if (StringUtils.isNotEmpty(track.getSpdz()))
@@ -952,16 +989,20 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                 }
             }
         }
+
+        return trackScreenshotsMap;
     }
 
     /**
      * 生成JSON数据文件
      */
-    private void generateJsonData(CompositeEvent event, List<AppTrack> tracks, Path packagePath) throws IOException
+    private void generateJsonData(CompositeEvent event, List<AppTrack> tracks,
+                                   Map<Long, List<Map<String, String>>> trackScreenshotsMap, Path packagePath) throws IOException
     {
         Map<String, Object> data = new HashMap<>();
         data.put("event", event);
         data.put("tracks", tracks);
+        data.put("screenshots", trackScreenshotsMap);
         data.put("exportTime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
 
         String json = JSON.toJSONString(data, true);
@@ -1002,10 +1043,11 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     /**
      * 生成HTML报告（将在下一步实现）
      */
-    private void generateHtmlReport(CompositeEvent event, List<AppTrack> tracks, Path packagePath) throws IOException
+    private void generateHtmlReport(CompositeEvent event, List<AppTrack> tracks,
+                                      Map<Long, List<Map<String, String>>> trackScreenshotsMap, Path packagePath) throws IOException
     {
         // HTML模板将在后续创建
-        String html = buildHtmlTemplate(event, tracks);
+        String html = buildHtmlTemplate(event, tracks, trackScreenshotsMap);
         Path htmlFile = packagePath.resolve("index.html");
         Files.write(htmlFile, html.getBytes("UTF-8"));
     }
@@ -1013,7 +1055,8 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     /**
      * 构建HTML模板内容
      */
-    private String buildHtmlTemplate(CompositeEvent event, List<AppTrack> tracks)
+    private String buildHtmlTemplate(CompositeEvent event, List<AppTrack> tracks,
+                                      Map<Long, List<Map<String, String>>> trackScreenshotsMap)
     {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         StringBuilder html = new StringBuilder();
@@ -1039,18 +1082,34 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         String statusText = "1".equals(event.getBzzt()) ? "已标注" : "待标注";
         String statusColor = "1".equals(event.getBzzt()) ? "#51cf66" : "#ff6b6b";
 
+        // 计算总截图数
+        int totalScreenshots = 0;
+        for (List<Map<String, String>> screenshots : trackScreenshotsMap.values()) {
+            totalScreenshots += screenshots != null ? screenshots.size() : 0;
+        }
+
         html.append("            <div class='composite-info'>\n");
         html.append("                <div class='composite-info-title'>\n");
-        html.append("                    复合事件 #COMP").append(event.getEventId()).append(" - ").append(tracks.size()).append(" 个关联事件\n");
+        html.append("                    复合事件 #COMP").append(event.getEventId()).append(" - ").append(tracks.size()).append(" 个关联轨迹，").append(totalScreenshots).append(" 张截图\n");
         html.append("                    <span style='background: ").append(statusColor).append("; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px;'>").append(statusText).append("</span>\n");
         html.append("                </div>\n");
-        // 格式化时间显示
-        String startTimeStr = event.getStartTime() != null ? sdf.format(event.getStartTime()) : "";
+
+        // 使用轨迹的实际开始时间和结束时间
+        String startTimeStr = "";
         String endTimeStr = "";
-        if (event.getEndTime() != null) {
-            String fullEndTime = sdf.format(event.getEndTime());
-            String[] parts = fullEndTime.split(" ");
-            endTimeStr = parts.length > 1 ? parts[1] : fullEndTime;
+        if (!tracks.isEmpty()) {
+            // 获取第一条轨迹的开始时间和最后一条轨迹的结束时间
+            AppTrack firstTrack = tracks.get(0);
+            AppTrack lastTrack = tracks.get(tracks.size() - 1);
+
+            startTimeStr = firstTrack.getPssj() != null ? sdf.format(firstTrack.getPssj()) : "";
+            // 使用jssj而不是固定的5秒后
+            endTimeStr = lastTrack.getJssj() != null ? sdf.format(lastTrack.getJssj()) : "";
+
+            // 如果jssj为空，使用pssj
+            if (StringUtils.isEmpty(endTimeStr) && lastTrack.getPssj() != null) {
+                endTimeStr = sdf.format(lastTrack.getPssj());
+            }
         }
 
         html.append("                <div class='composite-info-detail'>\n");
@@ -1096,7 +1155,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         html.append("            <div class='image-carousel'>\n");
         html.append("                <div class='carousel-header'>\n");
         html.append("                    <h3>📸 轨迹截图</h3>\n");
-        html.append("                    <span class='carousel-counter' id='imageCounter'>1 / ").append(tracks.size()).append("</span>\n");
+        html.append("                    <span class='carousel-counter' id='imageCounter'>1 / ").append(totalScreenshots).append("</span>\n");
         html.append("                </div>\n");
         html.append("                <div class='carousel-container'>\n");
         html.append("                    <button class='carousel-btn prev' id='prevImageBtn' onclick='showPrevImage()'>◀</button>\n");
@@ -1143,7 +1202,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
 
         // JavaScript
         html.append("    <script>\n");
-        html.append(getHtmlScripts(tracks));
+        html.append(getHtmlScripts(tracks, trackScreenshotsMap));
         html.append("    </script>\n");
         html.append("</body>\n");
         html.append("</html>");
@@ -1195,37 +1254,70 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     }
 
     /**
-     * HTML脚本
+     * HTML脚本 - 生成包含所有截图的JavaScript
      */
-    private String getHtmlScripts(List<AppTrack> tracks)
+    private String getHtmlScripts(List<AppTrack> tracks, Map<Long, List<Map<String, String>>> trackScreenshotsMap)
     {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         StringBuilder js = new StringBuilder();
+
+        // 生成轨迹数组（用于时间线）
         js.append("const tracks = [\n");
         for (int i = 0; i < tracks.size(); i++)
         {
             AppTrack track = tracks.get(i);
-            // 格式化时间
             String trackTime = track.getPssj() != null ? sdf.format(track.getPssj()) : "";
 
-            js.append("    { image: '").append(track.getPstp() != null ? track.getPstp() : "").append("', ");
-            js.append("video: '").append(track.getSpdz() != null ? track.getSpdz() : "").append("', ");
+            js.append("    { video: '").append(track.getSpdz() != null ? track.getSpdz() : "").append("', ");
             js.append("time: '").append(trackTime).append("', ");
             js.append("area: '").append(track.getQymc()).append("', ");
-            js.append("rysl: ").append(track.getRysl()).append(" }");
+            js.append("rysl: ").append(track.getRysl()).append(", ");
+            js.append("trackId: ").append(track.getId()).append(" }");
             if (i < tracks.size() - 1) js.append(",");
             js.append("\n");
         }
         js.append("];\n\n");
+
+        // 生成所有截图的扁平数组
+        js.append("const screenshots = [\n");
+        boolean firstScreenshot = true;
+        for (int i = 0; i < tracks.size(); i++)
+        {
+            AppTrack track = tracks.get(i);
+            List<Map<String, String>> trackScreenshots = trackScreenshotsMap.get(track.getId());
+
+            if (trackScreenshots != null && !trackScreenshots.isEmpty())
+            {
+                for (Map<String, String> screenshot : trackScreenshots)
+                {
+                    if (!firstScreenshot) js.append(",\n");
+                    firstScreenshot = false;
+
+                    js.append("    { image: '").append(screenshot.get("path")).append("', ");
+                    js.append("time: '").append(screenshot.get("time")).append("', ");
+                    js.append("area: '").append(track.getQymc()).append("', ");
+                    js.append("rysl: ").append(track.getRysl()).append(", ");
+                    js.append("trackIndex: ").append(i).append(", ");
+                    js.append("order: ").append(screenshot.get("order")).append(" }");
+                }
+            }
+        }
+        js.append("\n];\n\n");
         js.append("let currentImageIndex = 0;\n\n");
 
-        // 播放视频函数
-        js.append("function playTraceVideo(index) {\n");
-        js.append("    if (index >= tracks.length) return;\n");
+        // 播放视频函数 - 点击时间线节点时调用
+        js.append("function playTraceVideo(trackIndex) {\n");
+        js.append("    if (trackIndex >= tracks.length) return;\n");
         js.append("    const v = document.getElementById('traceVideo');\n");
-        js.append("    const track = tracks[index];\n");
-        js.append("    highlightTraceNode(index);\n");
-        js.append("    updateCarouselImage(index);\n");
+        js.append("    const track = tracks[trackIndex];\n");
+        js.append("    highlightTraceNode(trackIndex);\n");
+        js.append("    // 找到该轨迹的第一张截图并显示\n");
+        js.append("    for (let i = 0; i < screenshots.length; i++) {\n");
+        js.append("        if (screenshots[i].trackIndex === trackIndex) {\n");
+        js.append("            updateCarouselImage(i);\n");
+        js.append("            break;\n");
+        js.append("        }\n");
+        js.append("    }\n");
         js.append("    if (track.video && track.video.trim() !== '') {\n");
         js.append("        v.src = track.video;\n");
         js.append("        v.play();\n");
@@ -1235,33 +1327,35 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         js.append("}\n\n");
 
         // 高亮节点函数
-        js.append("function highlightTraceNode(index) {\n");
+        js.append("function highlightTraceNode(trackIndex) {\n");
         js.append("    document.querySelectorAll('.trace-node').forEach(n => n.classList.remove('active'));\n");
-        js.append("    const node = document.getElementById('traceNode' + index);\n");
+        js.append("    const node = document.getElementById('traceNode' + trackIndex);\n");
         js.append("    if (node) {\n");
         js.append("        node.classList.add('active');\n");
         js.append("        node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });\n");
         js.append("    }\n");
         js.append("}\n\n");
 
-        // 更新截图轮播
-        js.append("function updateCarouselImage(index) {\n");
-        js.append("    if (index >= tracks.length) return;\n");
-        js.append("    currentImageIndex = index;\n");
-        js.append("    const track = tracks[index];\n");
+        // 更新截图轮播 - 使用screenshots数组
+        js.append("function updateCarouselImage(screenshotIndex) {\n");
+        js.append("    if (screenshotIndex >= screenshots.length || screenshotIndex < 0) return;\n");
+        js.append("    currentImageIndex = screenshotIndex;\n");
+        js.append("    const screenshot = screenshots[screenshotIndex];\n");
         js.append("    const img = document.getElementById('carouselImage');\n");
         js.append("    const placeholder = document.getElementById('noImagePlaceholder');\n");
         js.append("    const counter = document.getElementById('imageCounter');\n");
         js.append("    const imageInfo = document.getElementById('imageInfo');\n");
         js.append("    const prevBtn = document.getElementById('prevImageBtn');\n");
         js.append("    const nextBtn = document.getElementById('nextImageBtn');\n");
-        js.append("    counter.textContent = (index + 1) + ' / ' + tracks.length;\n");
-        js.append("    prevBtn.disabled = (index === 0);\n");
-        js.append("    nextBtn.disabled = (index === tracks.length - 1);\n");
-        js.append("    imageInfo.querySelector('.info-time').textContent = '🕐 ' + track.time;\n");
-        js.append("    imageInfo.querySelector('.info-area').textContent = '📍 ' + track.area + (track.rysl ? ' (' + track.rysl + '人)' : '');\n");
-        js.append("    if (track.image && track.image.trim() !== '') {\n");
-        js.append("        img.src = track.image;\n");
+        js.append("    counter.textContent = (screenshotIndex + 1) + ' / ' + screenshots.length;\n");
+        js.append("    prevBtn.disabled = (screenshotIndex === 0);\n");
+        js.append("    nextBtn.disabled = (screenshotIndex === screenshots.length - 1);\n");
+        js.append("    imageInfo.querySelector('.info-time').textContent = '🕐 ' + screenshot.time;\n");
+        js.append("    imageInfo.querySelector('.info-area').textContent = '📍 ' + screenshot.area + (screenshot.rysl ? ' (' + screenshot.rysl + '人)' : '') + ' [第' + screenshot.order + '次检测]';\n");
+        js.append("    // 高亮对应的轨迹节点\n");
+        js.append("    highlightTraceNode(screenshot.trackIndex);\n");
+        js.append("    if (screenshot.image && screenshot.image.trim() !== '') {\n");
+        js.append("        img.src = screenshot.image;\n");
         js.append("        img.style.display = 'block';\n");
         js.append("        placeholder.style.display = 'none';\n");
         js.append("    } else {\n");
@@ -1273,18 +1367,14 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         // 上一张截图
         js.append("function showPrevImage() {\n");
         js.append("    if (currentImageIndex > 0) {\n");
-        js.append("        const newIndex = currentImageIndex - 1;\n");
-        js.append("        updateCarouselImage(newIndex);\n");
-        js.append("        highlightTraceNode(newIndex);\n");
+        js.append("        updateCarouselImage(currentImageIndex - 1);\n");
         js.append("    }\n");
         js.append("}\n\n");
 
         // 下一张截图
         js.append("function showNextImage() {\n");
-        js.append("    if (currentImageIndex < tracks.length - 1) {\n");
-        js.append("        const newIndex = currentImageIndex + 1;\n");
-        js.append("        updateCarouselImage(newIndex);\n");
-        js.append("        highlightTraceNode(newIndex);\n");
+        js.append("    if (currentImageIndex < screenshots.length - 1) {\n");
+        js.append("        updateCarouselImage(currentImageIndex + 1);\n");
         js.append("    }\n");
         js.append("}\n\n");
 
@@ -1762,9 +1852,9 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                 Files.createDirectories(packagePath.resolve("data"));
 
                 // 生成文件
-                copyMediaFiles(tracks, packagePath);
-                generateJsonData(event, tracks, packagePath);
-                generateHtmlReport(event, tracks, packagePath);
+                Map<Long, List<Map<String, String>>> trackScreenshotsMap = copyMediaFiles(tracks, packagePath);
+                generateJsonData(event, tracks, trackScreenshotsMap, packagePath);
+                generateHtmlReport(event, tracks, trackScreenshotsMap, packagePath);
                 generateReadme(event, packagePath);
                 generatePdfReport(event, tracks, packagePath);
 
