@@ -241,6 +241,30 @@
 
     <!-- 主容器 -->
     <div class="container">
+        <!-- 视频播放区域 -->
+        <div class="info-card" id="videoCard">
+            <h2>轨迹视频录像</h2>
+            <div class="video-container">
+                <video id="trajectoryVideo" controls muted style="width: 100%; max-height: 600px; background: #000; border-radius: 8px;">
+                    <source src="" type="video/mp4">
+                    您的浏览器不支持视频播放。
+                </video>
+                <div class="video-controls" style="padding: 12px; background: #f8f9fa; border-radius: 0 0 8px 8px; margin-top: -4px;">
+                    <button class="volume-btn muted" id="volumeBtn" onclick="toggleVolume()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        🔇 点击开启声音
+                    </button>
+                    <span style="color: #666; font-size: 12px; margin-left: 12px;">
+                        💡 视频默认静音，如需声音请点击左侧按钮
+                    </span>
+                </div>
+                <div id="noVideo" class="no-data" style="display: none;">
+                    <i class="fa fa-video-camera"></i>
+                    <p>该轨迹暂无视频录像</p>
+                    <p style="font-size: 12px; color: #999; margin-top: 8px;">视频正在后台处理中，请稍后刷新页面查看</p>
+                </div>
+            </div>
+        </div>
+
         <!-- 轨迹基本信息 -->
         <div class="info-card" id="trajectoryInfo">
             <h2>基本信息</h2>
@@ -292,6 +316,7 @@
                 type: 'GET',
                 success: function(response) {
                     if (response.code === 0) {
+                        renderVideo(response.trajectory);
                         renderTrajectoryInfo(response.trajectory);
                         renderScreenshots(response.screenshots);
                     } else {
@@ -302,6 +327,48 @@
                     showError('网络请求失败：' + error);
                 }
             });
+        }
+
+        // 渲染视频播放器
+        function renderVideo(trajectory) {
+            const video = document.getElementById('trajectoryVideo');
+            const noVideo = document.getElementById('noVideo');
+
+            console.log('轨迹视频地址:', trajectory.spdz);
+
+            if (trajectory.spdz && trajectory.spdz.trim() !== '') {
+                video.querySelector('source').src = trajectory.spdz;
+                video.load();
+                video.style.display = 'block';
+                noVideo.style.display = 'none';
+
+                // 视频加载错误处理
+                video.onerror = function(e) {
+                    console.error('视频加载失败:', trajectory.spdz);
+                    video.style.display = 'none';
+                    noVideo.style.display = 'block';
+                    noVideo.querySelector('p').textContent = '视频加载失败，请检查视频文件是否存在';
+                };
+            } else {
+                video.style.display = 'none';
+                noVideo.style.display = 'block';
+            }
+        }
+
+        // 切换音量
+        function toggleVolume() {
+            const video = document.getElementById('trajectoryVideo');
+            const btn = document.getElementById('volumeBtn');
+
+            if (video.muted) {
+                video.muted = false;
+                btn.classList.remove('muted');
+                btn.innerHTML = '🔊 声音已开启';
+            } else {
+                video.muted = true;
+                btn.classList.add('muted');
+                btn.innerHTML = '🔇 点击开启声音';
+            }
         }
 
         // 渲染轨迹基本信息

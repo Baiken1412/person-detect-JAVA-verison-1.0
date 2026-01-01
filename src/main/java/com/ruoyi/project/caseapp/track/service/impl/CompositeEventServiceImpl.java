@@ -474,7 +474,13 @@ public class CompositeEventServiceImpl implements ICompositeEventService
 
         event.setEventId(firstTrack.getId());
         event.setStartTime(firstTrack.getPssj());
-        event.setEndTime(lastTrack.getJssj()); // 使用结束时间（开始时间+5秒）
+        Date maxEndTime = lastTrack.getJssj();
+        for (AppTrack track : tracks) {
+            if (track.getJssj() != null && track.getJssj().after(maxEndTime)) {
+                maxEndTime = track.getJssj();
+            }
+        }
+        event.setEndTime(maxEndTime); // 使用结束时间（开始时间+5秒）
         event.setTrackCount(tracks.size());
         event.setIsClosed(1); // 默认已结束
 
