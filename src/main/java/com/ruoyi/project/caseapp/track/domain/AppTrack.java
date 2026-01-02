@@ -78,6 +78,10 @@ public class AppTrack extends BaseEntity
     @Excel(name = "画面人员姓名", readConverterExp = "外=来人员")
     private String wlry;
 
+    /** 备注 */
+    @Excel(name = "备注")
+    private String remark;
+
     /** 人员数量 */
     private int rysl;
 
@@ -225,6 +229,15 @@ public class AppTrack extends BaseEntity
     {
         return wlry;
     }
+    public void setRemark(String remark)
+    {
+        this.remark = remark;
+    }
+
+    public String getRemark()
+    {
+        return remark;
+    }
     public void setRysl(int rysl)
     {
         this.rysl = rysl;
@@ -251,6 +264,7 @@ public class AppTrack extends BaseEntity
             .append("xwyy", getXwyy())
             .append("ryxm", getRyxm())
             .append("wlry", getWlry())
+            .append("remark", getRemark())
             .append("rysl", getRysl())
             .toString();
     }

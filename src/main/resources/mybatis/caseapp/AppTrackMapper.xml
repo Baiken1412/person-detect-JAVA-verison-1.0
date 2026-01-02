@@ -20,12 +20,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="xwyy"    column="xwyy"    />
         <result property="ryxm"    column="ryxm"    />
         <result property="wlry"    column="wlry"    />
+        <result property="remark"    column="remark"    />
         <result property="rysl"    column="rysl"    />
         <result property="jscs"    column="jscs"    />
     </resultMap>
 
     <sql id="selectAppTrackVo">
-        select id, pssj, jssj, pstp, qyid, qymc, sxtmx, spdz, spsc, jqzt, bzzt, bzsj, xwyy, ryxm, wlry, rysl, jscs from app_track
+        select id, pssj, jssj, pstp, qyid, qymc, sxtmx, spdz, spsc, jqzt, bzzt, bzsj, xwyy, ryxm, wlry, remark, rysl, jscs from app_track
     </sql>
 
     <select id="selectAppTrackList" parameterType="AppTrack" resultMap="AppTrackResult">
@@ -71,6 +72,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="xwyy != null">xwyy,</if>
             <if test="ryxm != null">ryxm,</if>
             <if test="wlry != null">wlry,</if>
+            <if test="remark != null">remark,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -88,6 +90,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="xwyy != null">#{xwyy},</if>
             <if test="ryxm != null">#{ryxm},</if>
             <if test="wlry != null">#{wlry},</if>
+            <if test="remark != null">#{remark},</if>
          </trim>
     </insert>
 
@@ -108,6 +111,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="xwyy != null">xwyy = #{xwyy},</if>
             <if test="ryxm != null">ryxm = #{ryxm},</if>
             <if test="wlry != null">wlry = #{wlry},</if>
+            <if test="remark != null">remark = #{remark},</if>
         </trim>
         where id = #{id}
     </update>

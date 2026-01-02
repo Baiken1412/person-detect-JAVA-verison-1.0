@@ -1423,12 +1423,10 @@
                                     <div style="color: #6c757d;">${trajectory.wlry || '无'}</div>
                                 </div>
 
-                                ${trajectory.remark ? `
-                                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
-                                        <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">💬 备注</div>
-                                        <div style="color: #6c757d;">${trajectory.remark}</div>
-                                    </div>
-                                ` : ''}
+                                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                    <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">💬 备注</div>
+                                    <div style="color: #6c757d;">${trajectory.remark || '无'}</div>
+                                </div>
 
                                 <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #e9ecef;">
                                     <div style="font-weight: bold; color: #495057; margin-bottom: 8px;">⏰ 标注时间</div>

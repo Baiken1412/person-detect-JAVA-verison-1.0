@@ -405,12 +405,24 @@
                     <div class="info-value">${trajectory.rysl || 0} 人</div>
                 </div>
                 <div class="info-item">
+                    <div class="info-label">标注状态</div>
+                    <div class="info-value">${trajectory.bzzt === '1' ? '已标注' : '未标注'}</div>
+                </div>
+                <div class="info-item">
                     <div class="info-label">人员姓名</div>
                     <div class="info-value">${trajectory.ryxm || '未标注'}</div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">标注状态</div>
-                    <div class="info-value">${trajectory.bzzt === '1' ? '已标注' : '未标注'}</div>
+                    <div class="info-label">行为原因</div>
+                    <div class="info-value">${trajectory.xwyy || '未标注'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">外来人员</div>
+                    <div class="info-value">${trajectory.wlry || '未标注'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">备注</div>
+                    <div class="info-value">${trajectory.remark || '无'}</div>
                 </div>
             `;
 
