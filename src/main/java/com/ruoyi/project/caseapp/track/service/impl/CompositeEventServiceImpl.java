@@ -406,22 +406,24 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                 System.out.println("  + 轨迹ID: " + current.getId() + ", 时间: " + current.getPssj() + ", 区域: " + current.getQymc() + " (距上一条" + timeDiffSeconds + "秒)");
             }
 
-            // 向前查看：检查当前轨迹之后30秒内是否还有轨迹
+            // 向前查看：检查当前轨迹结束后30秒内是否还有轨迹
             boolean hasNextTrackWithin30Sec = false;
             if (i < tracks.size() - 1)
             {
                 AppTrack nextTrack = tracks.get(i + 1);
-                long timeToNext = nextTrack.getPssj().getTime() - current.getPssj().getTime();
+                // 关键修改：使用当前轨迹的结束时间（jssj）而不是开始时间（pssj）
+                Date currentEndTime = current.getJssj() != null ? current.getJssj() : current.getPssj();
+                long timeToNext = nextTrack.getPssj().getTime() - currentEndTime.getTime();
                 long timeToNextSeconds = timeToNext / 1000;
 
                 if (timeToNext <= IDLE_THRESHOLD)
                 {
                     hasNextTrackWithin30Sec = true;
-                    System.out.println("    → 下一条轨迹在" + timeToNextSeconds + "秒后，事件继续");
+                    System.out.println("    → 下一条轨迹在" + timeToNextSeconds + "秒后（从当前轨迹结束算起），事件继续");
                 }
                 else
                 {
-                    System.out.println("    → 下一条轨迹在" + timeToNextSeconds + "秒后(>" + (IDLE_THRESHOLD/1000) + "秒)，30秒空闲，事件结束");
+                    System.out.println("    → 下一条轨迹在" + timeToNextSeconds + "秒后(>" + (IDLE_THRESHOLD/1000) + "秒，从当前轨迹结束算起)，30秒空闲，事件结束");
                 }
             }
             else
