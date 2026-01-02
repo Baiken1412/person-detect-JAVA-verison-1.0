@@ -508,26 +508,33 @@ public class AppTrackController extends BaseController
     @ResponseBody
     public AjaxResult annotateCompositeEvent(Long eventId, String xwyy, String ryxm, String wlry, String remark)
     {
+        logger.info("【控制器】接收到复合事件标注请求 - eventId: {}, xwyy: {}, ryxm: {}, wlry: {}, remark: {}",
+            eventId, xwyy, ryxm, wlry, remark);
+
         try
         {
             if (eventId == null)
             {
+                logger.warn("【控制器】参数验证失败 - 事件ID为空");
                 return AjaxResult.error("事件ID不能为空");
             }
 
             if (xwyy == null || xwyy.trim().isEmpty())
             {
+                logger.warn("【控制器】参数验证失败 - 行为原因为空");
                 return AjaxResult.error("行为原因不能为空");
             }
 
+            logger.info("【控制器】参数验证通过，调用服务层标注方法");
             // 调用服务层标注方法
             compositeEventService.annotateCompositeEvent(eventId, xwyy, ryxm, wlry, remark);
 
+            logger.info("【控制器】标注成功，返回成功响应");
             return AjaxResult.success("标注成功");
         }
         catch (Exception e)
         {
-            logger.error("标注复合事件失败", e);
+            logger.error("【控制器】标注复合事件失败", e);
             return AjaxResult.error("标注失败：" + e.getMessage());
         }
     }

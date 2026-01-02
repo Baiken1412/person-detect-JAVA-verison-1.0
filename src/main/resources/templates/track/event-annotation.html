@@ -477,27 +477,46 @@
                 });
         }
 
-        // 加载事件详情
+        // 加载事件详情（复合事件）
         function loadEventDetail(id) {
-            fetch('/caseapp/track/event/' + id)
+            // 查询复合事件列表，找到匹配的复合事件
+            const formData = new FormData();
+            fetch('/caseapp/track/compositeEvents/list', {
+                method: 'POST',
+                body: formData
+            })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.code === 0 && data.data) {
-                        const item = data.data;
+                    if (data.code === 0 && data.data && data.data.length > 0) {
+                        // 从复合事件列表中找到匹配的事件
+                        const compositeEvent = data.data.find(event =>
+                            event.eventId == id || event.id == id
+                        );
+
+                        if (!compositeEvent) {
+                            $.modal.alertError('未找到ID为 ' + id + ' 的复合事件');
+                            goBack();
+                            return;
+                        }
+
+                        const item = compositeEvent;
+                        // 使用第一个轨迹的信息作为展示
+                        const firstTrack = item.events && item.events.length > 0 ? item.events[0] : {};
+
                         currentEvent = {
-                            id: item.id,
-                            time: formatDateTime(item.pssj),
-                            endTime: formatDateTime(item.jssj),
-                            area: item.qymc || '',
-                            videoUrl: item.spdz || '',
+                            id: item.eventId,  // 使用复合事件的eventId
+                            time: formatDateTime(item.startTime),
+                            endTime: formatDateTime(item.endTime),
+                            area: item.qymc || (item.pathAreas ? item.pathAreas.split(',')[0] : ''),
+                            videoUrl: firstTrack.spdz || '',
                             status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
                             reason: item.xwyy || '',
                             reasonDetail: '',
                             persons: [],
                             operator: '',
-                            operateTime: item.bzsj || '',
-                            spsc: item.spsc || '',
-                            pstp: item.pstp || ''
+                            operateTime: '',
+                            spsc: item.duration ? (item.duration * 60) : '',  // 转换为秒
+                            pstp: firstTrack.pstp || ''
                         };
                         
                         // 解析人员信息
@@ -777,12 +796,14 @@
                 }
 
                 const formData = new FormData();
-                formData.append('id', currentEvent.id);
+                formData.append('eventId', eventId);  // 使用复合事件ID
                 formData.append('xwyy', xwyy);
                 formData.append('ryxm', ryxm || '');
                 formData.append('wlry', wlry || '');
+                formData.append('remark', '');  // 备注字段，暂时为空
 
-                fetch('/caseapp/track/edit', {
+                // 调用复合事件标注接口
+                fetch('/caseapp/track/annotateCompositeEvent', {
                     method: 'POST',
                     body: formData
                 })

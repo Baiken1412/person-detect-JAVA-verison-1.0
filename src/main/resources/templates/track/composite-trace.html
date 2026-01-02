@@ -717,7 +717,13 @@
             highlightTraceNode(index);
             // 只有手动点击时才更新截图显示
             if (manualTrigger) {
-                updateCarouselImage(index);
+                // 找到该轨迹的第一张截图在平面数组中的实际索引
+                const firstScreenshotIndex = currentComposite.screenshots.findIndex(
+                    screenshot => screenshot.trackIndex === index
+                );
+                if (firstScreenshotIndex !== -1) {
+                    updateCarouselImage(firstScreenshotIndex);
+                }
             }
 
             // 获取原始 URL 字符串

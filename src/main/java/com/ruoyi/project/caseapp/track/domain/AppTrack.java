@@ -108,10 +108,20 @@ public class AppTrack extends BaseEntity
     }
     public void setPstp(String pstp)
     {
-        this.pstp = pstp;
+        // 存储时自动转换为相对路径
+        this.pstp = com.ruoyi.common.utils.ImageUrlUtil.toRelativePath(pstp);
     }
 
     public String getPstp()
+    {
+        // 返回时自动拼接完整URL
+        return com.ruoyi.common.utils.ImageUrlUtil.toFullUrl(pstp);
+    }
+
+    /**
+     * 获取原始的相对路径（用于内部处理）
+     */
+    public String getPstpRaw()
     {
         return pstp;
     }
@@ -135,10 +145,20 @@ public class AppTrack extends BaseEntity
     }
     public void setSpdz(String spdz)
     {
-        this.spdz = spdz;
+        // 存储时自动转换为相对路径
+        this.spdz = com.ruoyi.common.utils.ImageUrlUtil.toRelativePath(spdz);
     }
 
     public String getSpdz()
+    {
+        // 返回时自动拼接完整URL
+        return com.ruoyi.common.utils.ImageUrlUtil.toFullUrl(spdz);
+    }
+
+    /**
+     * 获取原始的相对路径（用于内部处理）
+     */
+    public String getSpdzRaw()
     {
         return spdz;
     }

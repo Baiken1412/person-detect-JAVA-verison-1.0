@@ -682,17 +682,27 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     @Transactional
     public void annotateCompositeEvent(Long eventId, String xwyy, String ryxm, String wlry, String remark)
     {
+        logger.info("========== 开始标注复合事件 ==========");
+        logger.info("接收参数 - eventId: {}, xwyy: {}, ryxm: {}, wlry: {}, remark: {}",
+            eventId, xwyy, ryxm, wlry, remark);
+
         // 1. 查询复合事件
         CompositeEvent queryParam = new CompositeEvent();
         queryParam.setEventId(eventId);
+        logger.info("查询复合事件 - 使用 eventId={}", eventId);
+
         List<CompositeEvent> events = compositeEventMapper.selectCompositeEventList(queryParam);
+        logger.info("查询结果 - 找到 {} 条复合事件", events != null ? events.size() : 0);
 
         if (events == null || events.isEmpty())
         {
+            logger.error("未找到复合事件！eventId={}", eventId);
             throw new RuntimeException("未找到事件ID为 " + eventId + " 的复合事件");
         }
 
         CompositeEvent compositeEvent = events.get(0);
+        logger.info("找到复合事件 - 主键ID: {}, eventId: {}, 当前标注状态: {}",
+            compositeEvent.getId(), compositeEvent.getEventId(), compositeEvent.getBzzt());
 
         // 2. 更新复合事件的标注信息
         compositeEvent.setBzzt("1"); // 已标注
@@ -701,14 +711,47 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         compositeEvent.setRyxm(ryxm);
         compositeEvent.setWlry(wlry);
         compositeEvent.setRemark(remark);
-        compositeEventMapper.updateCompositeEvent(compositeEvent);
 
-        System.out.println("已标注复合事件 #" + eventId + ": " + xwyy);
+        logger.info("准备更新复合事件 - ID: {}, 设置 bzzt=1, xwyy={}", compositeEvent.getId(), xwyy);
+        int updateResult = compositeEventMapper.updateCompositeEvent(compositeEvent);
+        logger.info("更新结果 - 影响行数: {}", updateResult);
 
-        // 注意：标注信息只存储在复合事件表中，不写入轨迹表
-        // 原因：重新同步时会删除复合事件但保留轨迹，如果标注信息存在轨迹表中，
-        // 新生成的复合事件会从轨迹中聚合到旧的标注数据，导致标注无法清除
-        // 因此标注数据应该只属于复合事件层面，不应下沉到轨迹层面
+        if (updateResult > 0) {
+            logger.info("✓ 复合事件标注成功！eventId: {}, xwyy: {}", eventId, xwyy);
+        } else {
+            logger.error("✗ 复合事件标注失败！更新影响行数为0");
+        }
+
+        // 3. 同步更新该复合事件包含的所有轨迹的标注信息
+        logger.info("开始同步标注信息到关联轨迹...");
+        List<Long> trackIds = relationMapper.selectTrackIdsByEventId(compositeEvent.getId());
+        logger.info("找到 {} 条关联轨迹", trackIds != null ? trackIds.size() : 0);
+
+        if (trackIds != null && !trackIds.isEmpty()) {
+            int successCount = 0;
+            for (Long trackId : trackIds) {
+                AppTrack track = appTrackMapper.selectAppTrackById(trackId);
+                if (track != null) {
+                    track.setBzzt("1");
+                    track.setXwyy(xwyy);
+                    track.setRyxm(ryxm);
+                    track.setWlry(wlry);
+                    track.setRemark(remark);
+                    track.setBzsj(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+
+                    int result = appTrackMapper.updateAppTrack(track);
+                    if (result > 0) {
+                        successCount++;
+                        logger.info("  ✓ 轨迹 {} 标注信息已同步", trackId);
+                    } else {
+                        logger.warn("  ✗ 轨迹 {} 标注信息同步失败", trackId);
+                    }
+                }
+            }
+            logger.info("轨迹标注信息同步完成：{}/{} 成功", successCount, trackIds.size());
+        }
+
+        logger.info("========== 标注复合事件完成 ==========\n");
     }
 
     /**
@@ -899,14 +942,20 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             // 查询该轨迹的所有截图
             List<AppTrackScreenshot> screenshotList = screenshotMapper.selectScreenshotsByTrackId(track.getId());
 
+            logger.info("开始处理轨迹 {} 的截图，共 {} 张", track.getId(),
+                screenshotList != null ? screenshotList.size() : 0);
+
             if (screenshotList != null && !screenshotList.isEmpty())
             {
                 // 复制所有截图
+                int copiedCount = 0;
                 for (AppTrackScreenshot screenshot : screenshotList)
                 {
                     if (StringUtils.isNotEmpty(screenshot.getScreenshotUrl()))
                     {
-                        String imagePath = screenshot.getScreenshotUrl();
+                        String originalImagePath = screenshot.getScreenshotUrl();
+                        String imagePath = originalImagePath;
+
                         // 移除URL前缀，获取实际文件路径
                         if (imagePath.startsWith("http"))
                         {
@@ -916,7 +965,10 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                                 imagePath = imagePath.substring(profileIndex);
                             }
                         }
-                        File sourceImage = new File(uploadPath + imagePath.replace("/profile", ""));
+
+                        String fullPath = uploadPath + imagePath.replace("/profile", "");
+                        File sourceImage = new File(fullPath);
+
                         if (sourceImage.exists())
                         {
                             int dotIndex = imagePath.lastIndexOf(".");
@@ -932,16 +984,25 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                                 new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(screenshot.getScreenshotTime()) : "");
                             screenshotInfo.put("order", String.valueOf(screenshot.getScreenshotOrder()));
                             screenshots.add(screenshotInfo);
+                            copiedCount++;
+                        }
+                        else
+                        {
+                            logger.warn("  ✗ 截图文件不存在: {}", fullPath);
                         }
                     }
                 }
+                logger.info("轨迹 {} 截图复制完成: {}/{} 成功", track.getId(), copiedCount, screenshotList.size());
             }
             else
             {
                 // 如果没有找到截图记录，使用第一张图片（兼容旧数据）
+                logger.info("轨迹 {} 无截图记录，尝试使用pstp字段", track.getId());
                 if (StringUtils.isNotEmpty(track.getPstp()))
                 {
-                    String imagePath = track.getPstp();
+                    String originalImagePath = track.getPstp();
+                    String imagePath = originalImagePath;
+
                     if (imagePath.startsWith("http"))
                     {
                         int profileIndex = imagePath.indexOf("/profile/");
@@ -950,7 +1011,10 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                             imagePath = imagePath.substring(profileIndex);
                         }
                     }
-                    File sourceImage = new File(uploadPath + imagePath.replace("/profile", ""));
+
+                    String fullPath = uploadPath + imagePath.replace("/profile", "");
+                    File sourceImage = new File(fullPath);
+
                     if (sourceImage.exists())
                     {
                         int dotIndex = imagePath.lastIndexOf(".");
@@ -965,6 +1029,11 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                             new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(track.getPssj()) : "");
                         screenshotInfo.put("order", "1");
                         screenshots.add(screenshotInfo);
+                        logger.info("  ✓ 使用pstp字段的截图复制成功: {}", newName);
+                    }
+                    else
+                    {
+                        logger.warn("  ✗ pstp字段指定的截图文件不存在: {}", fullPath);
                     }
                 }
             }
@@ -974,16 +1043,26 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             // 复制视频
             if (StringUtils.isNotEmpty(track.getSpdz()))
             {
-                String videoPath = track.getSpdz();
+                String originalVideoPath = track.getSpdz();
+                String videoPath = originalVideoPath;
+
+                logger.info("处理轨迹 {} 的视频文件，原始路径: {}", track.getId(), originalVideoPath);
+
                 if (videoPath.startsWith("http"))
                 {
                     int profileIndex = videoPath.indexOf("/profile/");
                     if (profileIndex != -1)
                     {
                         videoPath = videoPath.substring(profileIndex);
+                        logger.info("  从HTTP URL提取路径: {}", videoPath);
                     }
                 }
-                File sourceVideo = new File(uploadPath + videoPath.replace("/profile", ""));
+
+                String fullPath = uploadPath + videoPath.replace("/profile", "");
+                File sourceVideo = new File(fullPath);
+                logger.info("  完整文件路径: {}", fullPath);
+                logger.info("  文件是否存在: {}", sourceVideo.exists());
+
                 if (sourceVideo.exists())
                 {
                     int dotIndex = videoPath.lastIndexOf(".");
@@ -992,7 +1071,18 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                     Path targetVideo = packagePath.resolve("videos").resolve(newName);
                     Files.copy(sourceVideo.toPath(), targetVideo, StandardCopyOption.REPLACE_EXISTING);
                     track.setSpdz("videos/" + newName);  // 更新为相对路径
+                    logger.info("  ✓ 视频复制成功: {} -> {}", sourceVideo.getName(), newName);
                 }
+                else
+                {
+                    // 文件不存在，清空视频路径，避免使用原始的绝对路径
+                    track.setSpdz("");
+                    logger.warn("  ✗ 视频文件不存在，已清空路径: {}", fullPath);
+                }
+            }
+            else
+            {
+                logger.info("轨迹 {} 无视频文件", track.getId());
             }
         }
 

@@ -528,7 +528,7 @@
                     📊 每日报告
                 </button>
                 <button onclick="goToShelfTrajectory()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
-                    📦 货架轨迹查询
+                    📦 货位位置查询
                 </button>
             </div>
         </div>
@@ -702,19 +702,20 @@
             loadDictData();
             loadPersonList();
 
-            // 设置默认日期：本月第一天到今天
+            // 设置默认日期：昨天到今天
             const today = new Date();
-            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
 
-            const firstDayStr = firstDayOfMonth.toISOString().split('T')[0];
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
             const todayStr = today.toISOString().split('T')[0];
 
-            document.getElementById('beginDateFilter').value = firstDayStr;
+            document.getElementById('beginDateFilter').value = yesterdayStr;
             document.getElementById('endDateFilter').value = todayStr;
 
             // 保存当前筛选条件
             currentFilters = {
-                beginDateFilter: firstDayStr,
+                beginDateFilter: yesterdayStr,
                 endDateFilter: todayStr,
                 areaFilter: '',
                 statusFilter: '',
@@ -729,8 +730,8 @@
                 allowClear: true
             });
 
-            // 加载本月的事件列表
-            loadEvents(firstDayStr, todayStr, '', '', [], 1, false);
+            // 自动加载昨天到今天的轨迹列表
+            loadEvents(yesterdayStr, todayStr, '', '', [], 1, false);
             setupScrollListener();
         }
         
@@ -1583,7 +1584,7 @@
             window.location.href = '/caseapp/track/dailyReport';
         }
 
-        // 跳转到货架轨迹查询页面
+        // 跳转到货位位置查询页面
         function goToShelfTrajectory() {
             window.location.href = '/caseapp/track/shelfTrajectory';
         }

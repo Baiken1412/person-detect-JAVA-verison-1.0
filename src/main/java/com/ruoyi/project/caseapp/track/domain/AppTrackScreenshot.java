@@ -59,10 +59,20 @@ public class AppTrackScreenshot extends BaseEntity
 
     public void setScreenshotUrl(String screenshotUrl)
     {
-        this.screenshotUrl = screenshotUrl;
+        // 存储时自动转换为相对路径
+        this.screenshotUrl = com.ruoyi.common.utils.ImageUrlUtil.toRelativePath(screenshotUrl);
     }
 
     public String getScreenshotUrl()
+    {
+        // 返回时自动拼接完整URL
+        return com.ruoyi.common.utils.ImageUrlUtil.toFullUrl(screenshotUrl);
+    }
+
+    /**
+     * 获取原始的相对路径（用于内部处理）
+     */
+    public String getScreenshotUrlRaw()
     {
         return screenshotUrl;
     }
