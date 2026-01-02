@@ -698,19 +698,20 @@
             loadDictData();
             loadPersonList();
 
-            // 设置默认日期：本月第一天到今天
+            // 设置默认日期：昨天到今天
             const today = new Date();
-            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
 
-            const firstDayStr = firstDayOfMonth.toISOString().split('T')[0];
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
             const todayStr = today.toISOString().split('T')[0];
 
-            document.getElementById('beginDateFilter').value = firstDayStr;
+            document.getElementById('beginDateFilter').value = yesterdayStr;
             document.getElementById('endDateFilter').value = todayStr;
 
             // 保存当前筛选条件
             currentFilters = {
-                beginDateFilter: firstDayStr,
+                beginDateFilter: yesterdayStr,
                 endDateFilter: todayStr,
                 areaFilter: '',
                 statusFilter: '',
@@ -1376,9 +1377,15 @@
 
         // 重置筛选
         function resetFilters() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('beginDateFilter').value = today;
-            document.getElementById('endDateFilter').value = today;
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            const todayStr = today.toISOString().split('T')[0];
+
+            document.getElementById('beginDateFilter').value = yesterdayStr;
+            document.getElementById('endDateFilter').value = todayStr;
             $('#areaFilter').val('').trigger('change');
             $('#statusFilter').val('').trigger('change');
             $('#personFilter').val(null).trigger('change');
@@ -1386,8 +1393,8 @@
 
             // 保存当前筛选条件
             currentFilters = {
-                beginDateFilter: today,
-                endDateFilter: today,
+                beginDateFilter: yesterdayStr,
+                endDateFilter: todayStr,
                 areaFilter: '',
                 statusFilter: '',
                 personFilter: [],
@@ -1398,7 +1405,7 @@
             currentPage = 1;
             hasMore = true;
 
-            loadEvents(today, today, '', '', [], 1, false);
+            loadEvents(yesterdayStr, todayStr, '', '', [], 1, false);
         }
 
         // 导出台账数据
@@ -1478,14 +1485,15 @@
 
         // 重置所有筛选条件
         function resetFilters() {
-            // 重置日期为本月第一天到今天
+            // 重置日期为昨天到今天
             const today = new Date();
-            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
 
-            const firstDayStr = firstDayOfMonth.toISOString().split('T')[0];
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
             const todayStr = today.toISOString().split('T')[0];
 
-            document.getElementById('beginDateFilter').value = firstDayStr;
+            document.getElementById('beginDateFilter').value = yesterdayStr;
             document.getElementById('endDateFilter').value = todayStr;
 
             // 重置其他筛选条件（使用select2的方式清空）
@@ -1496,7 +1504,7 @@
 
             // 更新当前筛选条件
             currentFilters = {
-                beginDateFilter: firstDayStr,
+                beginDateFilter: yesterdayStr,
                 endDateFilter: todayStr,
                 areaFilter: '',
                 statusFilter: '',
