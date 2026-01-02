@@ -1,12 +1,15 @@
 package com.ruoyi.project.caseapp.track.controller;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -632,8 +635,7 @@ public class AppTrackController extends BaseController
      */
     @Log(title = "导出事件包", businessType = BusinessType.EXPORT)
     @PostMapping("/compositeEvents/export/{eventId}")
-    @ResponseBody
-    public AjaxResult exportEventPackage(@PathVariable("eventId") Long eventId)
+    public void exportEventPackage(@PathVariable("eventId") Long eventId, HttpServletResponse response, HttpServletRequest request)
     {
         try
         {
@@ -645,15 +647,34 @@ public class AppTrackController extends BaseController
                 exportDir.mkdirs();
             }
 
-            // 导出事件包（返回ZIP文件名）
+            // 1. 调用Service生成ZIP文件
             String zipFileName = compositeEventService.exportEventPackage(eventId, exportBasePath);
 
-            return AjaxResult.success(zipFileName);
+            // 2. 获取文件的绝对路径
+            String filePath = exportBasePath + File.separator + zipFileName;
+
+            // 3. 设置响应头，告诉浏览器这是一个要下载的文件
+            response.setCharacterEncoding("utf-8");
+            response.setContentType("application/zip");
+            response.setHeader("Content-Disposition",
+                    "attachment;fileName=" + com.ruoyi.common.utils.file.FileUtils.setFileDownloadHeader(request, zipFileName));
+
+            // 4. 将文件字节写入响应流
+            com.ruoyi.common.utils.file.FileUtils.writeBytes(filePath, response.getOutputStream());
+
+            // 可选：下载后删除服务器上的临时文件
+            // new File(filePath).delete();
         }
         catch (Exception e)
         {
             logger.error("导出事件包失败", e);
-            return AjaxResult.error("导出失败：" + e.getMessage());
+            // 如果出错，尝试写入错误信息
+            try {
+                response.setContentType("text/html;charset=utf-8");
+                response.getWriter().print("导出失败：" + e.getMessage());
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
         }
     }
 
@@ -662,18 +683,16 @@ public class AppTrackController extends BaseController
      * 导出为ZIP文件，通过浏览器下载
      *
      * @param eventIds 事件ID列表（逗号分隔）
-     * @return 导出结果
      */
     @Log(title = "批量导出事件包", businessType = BusinessType.EXPORT)
     @PostMapping("/compositeEvents/batchExport")
-    @ResponseBody
-    public AjaxResult batchExportEventPackages(String eventIds)
+    public void batchExportEventPackages(String eventIds, HttpServletResponse response, HttpServletRequest request)
     {
         try
         {
             if (eventIds == null || eventIds.trim().isEmpty())
             {
-                return AjaxResult.error("请选择要导出的复合事件");
+                throw new RuntimeException("请选择要导出的复合事件");
             }
 
             // 使用RuoYi下载目录
@@ -701,18 +720,33 @@ public class AppTrackController extends BaseController
 
             if (eventIdList.isEmpty())
             {
-                return AjaxResult.error("没有有效的事件ID");
+                throw new RuntimeException("没有有效的事件ID");
             }
 
-            // 批量导出事件包（返回ZIP文件名）
+            // 1. 调用Service生成批量ZIP文件
             String zipFileName = compositeEventService.batchExportEventPackages(eventIdList, exportBasePath);
 
-            return AjaxResult.success(zipFileName);
+            // 2. 获取文件路径
+            String filePath = exportBasePath + File.separator + zipFileName;
+
+            // 3. 设置响应头
+            response.setCharacterEncoding("utf-8");
+            response.setContentType("application/zip");
+            response.setHeader("Content-Disposition",
+                    "attachment;fileName=" + com.ruoyi.common.utils.file.FileUtils.setFileDownloadHeader(request, zipFileName));
+
+            // 4. 写入文件流
+            com.ruoyi.common.utils.file.FileUtils.writeBytes(filePath, response.getOutputStream());
         }
         catch (Exception e)
         {
             logger.error("批量导出事件包失败", e);
-            return AjaxResult.error("导出失败：" + e.getMessage());
+            try {
+                response.setContentType("text/html;charset=utf-8");
+                response.getWriter().print("导出失败：" + e.getMessage());
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
         }
     }
 

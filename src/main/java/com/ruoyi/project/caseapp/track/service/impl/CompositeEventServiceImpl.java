@@ -1293,7 +1293,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         html.append("        </div>\n");
         html.append("    </div>\n");
         html.append("    <div class='footer'>\n");
-        html.append("        <p>资产视频分析系统 - 事件包导出 © ").append(new SimpleDateFormat("yyyy").format(new Date())).append("</p>\n");
+        html.append("        <p>Copyright © 2023-2024 某科技公司 版权所有");
         html.append("    </div>\n");
 
         // JavaScript

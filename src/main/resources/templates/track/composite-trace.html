@@ -870,28 +870,28 @@
                 return;
             }
 
+            // 提示：如果需要选择保存位置，请在浏览器设置中开启"下载前询问保存位置"
+            if (!sessionStorage.getItem('download_tip_shown')) {
+                $.modal.msg('💡 提示：如需选择保存位置，请在浏览器设置中开启<br>"下载前询问每个文件的保存位置"选项');
+                sessionStorage.setItem('download_tip_shown', 'true');
+            }
+
             $.modal.loading("正在导出事件包，请稍候...");
 
-            fetch('/caseapp/track/compositeEvents/export/' + compositeId, {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
+            // 使用表单提交方式触发下载
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/caseapp/track/compositeEvents/export/' + compositeId;
+            form.style.display = 'none';
+            document.body.appendChild(form);
+            form.submit();
+
+            // 延迟关闭加载提示
+            setTimeout(() => {
                 $.modal.closeLoading();
-                if (data.code === 0) {
-                    // 下载ZIP文件（和台账导出一样）
-                    const fileName = encodeURI(data.msg);
-                    window.location.href = ctx + 'common/download?fileName=' + fileName + '&delete=true';
-                    $.modal.msgSuccess('导出成功！正在下载事件包...');
-                } else {
-                    $.modal.alertError('导出失败：' + (data.msg || '未知错误'));
-                }
-            })
-            .catch(error => {
-                $.modal.closeLoading();
-                console.error('导出事件包失败:', error);
-                $.modal.alertError('导出失败，请稍后重试');
-            });
+                document.body.removeChild(form);
+                $.modal.msgSuccess('导出成功！正在下载事件包...');
+            }, 1000);
         }
 
         // ===== 截图轮播功能 =====

@@ -2140,38 +2140,33 @@
             loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px 40px; border-radius: 8px; z-index: 9999; font-size: 16px; text-align: center;';
             document.body.appendChild(loadingMsg);
 
-            // 调用批量导出接口
-            fetch('/caseapp/track/compositeEvents/batchExport', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'eventIds=' + encodeURIComponent(selectedEventIds.join(','))
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (loadingMsg.parentNode) {
-                    document.body.removeChild(loadingMsg);
-                }
-                if (data.code === 0) {
-                    // 下载ZIP文件
-                    const fileName = encodeURI(data.msg);
-                    window.location.href = ctx + 'common/download?fileName=' + fileName + '&delete=true';
-                    alert('✅ 导出成功！正在下载事件包...');
+            // 使用表单提交方式触发批量导出
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/caseapp/track/compositeEvents/batchExport';
+            form.style.display = 'none';
 
-                    // 取消选中
-                    checkboxes.forEach(cb => cb.checked = false);
-                } else {
-                    alert('❌ 导出失败：' + data.msg);
-                }
-            })
-            .catch(error => {
+            // 创建隐藏的input来传递eventIds参数
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'eventIds';
+            input.value = selectedEventIds.join(',');
+            form.appendChild(input);
+
+            document.body.appendChild(form);
+            form.submit();
+
+            // 延迟关闭加载提示
+            setTimeout(() => {
                 if (loadingMsg.parentNode) {
                     document.body.removeChild(loadingMsg);
                 }
-                console.error('导出事件包失败:', error);
-                alert('❌ 导出失败：' + error);
-            });
+                document.body.removeChild(form);
+                alert('✅ 导出成功！正在下载事件包...');
+
+                // 取消选中
+                checkboxes.forEach(cb => cb.checked = false);
+            }, 1000);
         }
 
         // 页面加载完成后初始化
