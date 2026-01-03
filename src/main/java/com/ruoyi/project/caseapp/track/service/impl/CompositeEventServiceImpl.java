@@ -20,11 +20,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.common.utils.spring.SpringUtils;
 import com.ruoyi.project.caseapp.track.domain.CompositeEvent;
 import com.ruoyi.project.caseapp.track.domain.AppTrack;
 import com.ruoyi.project.caseapp.track.domain.AppTrackScreenshot;
@@ -58,14 +58,6 @@ public class CompositeEventServiceImpl implements ICompositeEventService
 
     @Autowired
     private EventTrackRelationMapper relationMapper;
-
-    /**
-     * 注入自身代理对象，用于事务方法的正确调用
-     * @Lazy避免循环依赖
-     */
-    @Lazy
-    @Autowired
-    private CompositeEventServiceImpl self;
 
     // 空闲时间阈值：120秒（毫秒）- 轨迹间隔超过此值则分割为不同事件
     private static final long IDLE_THRESHOLD = 120 * 1000;
@@ -207,7 +199,8 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         {
             // 通过Spring代理对象调用事务方法
             // 注意：不能直接调用executeTransactionalUpdate，否则@Transactional不生效
-            self.executeTransactionalUpdate(track);
+            // 使用SpringUtils获取代理对象，确保@Transactional生效
+            SpringUtils.getBean(CompositeEventServiceImpl.class).executeTransactionalUpdate(track);
         }
     }
 
