@@ -2,6 +2,7 @@ package com.ruoyi.project.caseapp.track.domain;
 
 import java.util.Date;
 import java.util.List;
+import javax.validation.constraints.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -22,6 +23,7 @@ public class AppTrack extends BaseEntity
     private Long id;
 
     /** 拍摄时间 */
+    @NotNull(message = "拍摄时间不能为空")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "拍摄时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date pssj;
@@ -40,6 +42,8 @@ public class AppTrack extends BaseEntity
     private Long qyid;
 
     /** 区域名称（摄像头名称） */
+    @NotBlank(message = "区域名称不能为空")
+    @Size(max = 100, message = "区域名称最多100个字符")
     @Excel(name = "区域名称")
     private String qymc;
 
@@ -59,6 +63,7 @@ public class AppTrack extends BaseEntity
     private String jqzt;
 
     /** 标注状态（biz_annotation_status） */
+    @Pattern(regexp = "^[0-1]$", message = "标注状态只能是0或1")
     @Excel(name = "标注状态", readConverterExp = "biz_annotation_status")
     private String bzzt;
 
@@ -67,18 +72,22 @@ public class AppTrack extends BaseEntity
     private String bzsj;
 
     /** 行为原因 */
+    @Size(max = 200, message = "行为原因最多200个字符")
     @Excel(name = "行为原因")
     private String xwyy;
 
     /** 画面人员姓名（管理员） */
+    @Size(max = 50, message = "人员姓名最多50个字符")
     @Excel(name = "画面人员姓名", readConverterExp = "库=管员")
     private String ryxm;
 
     /** 画面人员姓名（外来人员） */
+    @Size(max = 50, message = "外来人员最多50个字符")
     @Excel(name = "画面人员姓名", readConverterExp = "外=来人员")
     private String wlry;
 
     /** 备注 */
+    @Size(max = 500, message = "备注最多500个字符")
     @Excel(name = "备注")
     private String remark;
 

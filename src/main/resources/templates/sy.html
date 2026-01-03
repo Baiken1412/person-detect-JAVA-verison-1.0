@@ -6,6 +6,7 @@
     <title>资产视频分析插件</title>
     <th:block th:include="include :: select2-css" />
     <th:block th:include="include :: bootstrap-select-css" />
+    <link th:href="@{/css/button-animations.css}" rel="stylesheet"/>
     <style>
         * {
             margin: 0;
@@ -239,11 +240,12 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
-            transition: background 0.3s;
+            /* 动画效果由 button-animations.css 提供 */
         }
 
         .toolbar button:hover {
             background: #1e3c72;
+            /* 悬停动画效果由 button-animations.css 提供 */
         }
 
         .events-grid {

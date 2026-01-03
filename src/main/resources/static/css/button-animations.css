@@ -1,0 +1,275 @@
+/**
+ * 按钮动画效果样式
+ * 为所有按钮添加交互反馈和动画效果
+ */
+
+/* ========== 基础按钮动画 ========== */
+
+/* 为所有按钮添加基础过渡效果 */
+button,
+.btn,
+[class*="btn-"],
+input[type="submit"],
+input[type="button"],
+input[type="reset"] {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+    will-change: transform;
+}
+
+/* 悬停效果 - 轻微提升和阴影增强 */
+button:not(:disabled):hover,
+.btn:not(:disabled):not(.disabled):hover,
+[class*="btn-"]:not(:disabled):not(.disabled):hover,
+input[type="submit"]:not(:disabled):hover,
+input[type="button"]:not(:disabled):hover,
+input[type="reset"]:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 点击效果 - 缩小并降低 */
+button:not(:disabled):active,
+.btn:not(:disabled):not(.disabled):active,
+[class*="btn-"]:not(:disabled):not(.disabled):active,
+input[type="submit"]:not(:disabled):active,
+input[type="button"]:not(:disabled):active,
+input[type="reset"]:not(:disabled):active {
+    transform: translateY(0) scale(0.95);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 禁用状态 - 移除动画 */
+button:disabled,
+.btn:disabled,
+.btn.disabled,
+[class*="btn-"]:disabled,
+[class*="btn-"].disabled,
+input[type="submit"]:disabled,
+input[type="button"]:disabled,
+input[type="reset"]:disabled {
+    transform: none !important;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* ========== 波纹效果 ========== */
+
+@keyframes ripple {
+    0% {
+        transform: scale(0);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+    }
+}
+
+/* 波纹容器 */
+button::before,
+.btn::before,
+[class*="btn-"]::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.5s, opacity 0.5s;
+    pointer-events: none;
+}
+
+/* 点击时触发波纹 */
+button:active::before,
+.btn:active::before,
+[class*="btn-"]:active::before {
+    animation: ripple 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========== 特定按钮类型增强 ========== */
+
+/* 主要按钮 */
+.btn-primary:not(:disabled):hover,
+button.primary:not(:disabled):hover {
+    box-shadow: 0 6px 16px rgba(42, 82, 152, 0.3);
+}
+
+/* 成功按钮 */
+.btn-success:not(:disabled):hover,
+button.success:not(:disabled):hover {
+    box-shadow: 0 6px 16px rgba(81, 207, 102, 0.3);
+}
+
+/* 危险/删除按钮 */
+.btn-danger:not(:disabled):hover,
+button.danger:not(:disabled):hover {
+    box-shadow: 0 6px 16px rgba(255, 107, 107, 0.3);
+}
+
+/* 警告按钮 */
+.btn-warning:not(:disabled):hover,
+button.warning:not(:disabled):hover {
+    box-shadow: 0 6px 16px rgba(255, 193, 7, 0.3);
+}
+
+/* 信息按钮 */
+.btn-info:not(:disabled):hover,
+button.info:not(:disabled):hover {
+    box-shadow: 0 6px 16px rgba(23, 162, 184, 0.3);
+}
+
+/* ========== 加载状态动画 ========== */
+
+@keyframes button-loading {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* 加载中的按钮 */
+button.loading,
+.btn.loading,
+[class*="btn-"].loading {
+    pointer-events: none;
+    position: relative;
+    color: transparent !important;
+}
+
+button.loading::after,
+.btn.loading::after,
+[class*="btn-"].loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: button-loading 0.6s linear infinite;
+}
+
+/* ========== 脉冲效果（用于重要操作按钮） ========== */
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(42, 82, 152, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(42, 82, 152, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(42, 82, 152, 0);
+    }
+}
+
+/* 为需要注意的按钮添加脉冲效果 */
+button.pulse,
+.btn.pulse,
+[class*="btn-"].pulse {
+    animation: pulse 2s infinite;
+}
+
+/* ========== 抖动效果（用于错误提示） ========== */
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-4px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(4px);
+    }
+}
+
+button.shake,
+.btn.shake,
+[class*="btn-"].shake {
+    animation: shake 0.5s;
+}
+
+/* ========== 图标按钮特殊效果 ========== */
+
+/* 图标旋转效果 */
+button:not(:disabled):hover i,
+.btn:not(:disabled):hover i,
+[class*="btn-"]:not(:disabled):hover i {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:not(:disabled):hover .fa-refresh,
+button:not(:disabled):hover .fa-sync,
+.btn:not(:disabled):hover .fa-refresh,
+.btn:not(:disabled):hover .fa-sync {
+    transform: rotate(180deg);
+}
+
+/* ========== 按钮组动画 ========== */
+
+.btn-group button,
+.btn-group .btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-group button:not(:disabled):hover,
+.btn-group .btn:not(:disabled):hover {
+    z-index: 2;
+    transform: scale(1.05);
+}
+
+/* ========== 响应式优化 ========== */
+
+/* 在移动设备上减少动画以提高性能 */
+@media (max-width: 768px) {
+    button::before,
+    .btn::before,
+    [class*="btn-"]::before {
+        display: none;
+    }
+}
+
+/* 尊重用户的动画偏好设置 */
+@media (prefers-reduced-motion: reduce) {
+    button,
+    .btn,
+    [class*="btn-"],
+    input[type="submit"],
+    input[type="button"],
+    input[type="reset"] {
+        transition: none;
+        animation: none;
+    }
+
+    button::before,
+    .btn::before,
+    [class*="btn-"]::before {
+        display: none;
+    }
+}
+
+/* ========== 焦点效果（键盘导航） ========== */
+
+button:focus-visible,
+.btn:focus-visible,
+[class*="btn-"]:focus-visible,
+input[type="submit"]:focus-visible,
+input[type="button"]:focus-visible,
+input[type="reset"]:focus-visible {
+    outline: 2px solid #2a5298;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.2);
+}

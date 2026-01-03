@@ -3,7 +3,6 @@ package com.ruoyi.project.caseapp.track.controller;
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -14,6 +13,8 @@ import javax.servlet.http.HttpServletResponse;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.ruoyi.project.caseapp.roomip.domain.AppRoomip;
+import com.ruoyi.project.caseapp.util.DateUtil;
+import com.ruoyi.common.utils.html.HTMLFilter;
 import com.ruoyi.project.caseapp.roomip.service.IAppRoomipService;
 import com.ruoyi.project.caseapp.core.util.HikVedioUtil;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -23,11 +24,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import javax.validation.Valid;
 import com.ruoyi.framework.aspectj.lang.annotation.Log;
 import com.ruoyi.framework.aspectj.lang.enums.BusinessType;
 import com.ruoyi.project.caseapp.track.domain.AppTrack;
@@ -129,6 +132,13 @@ public class AppTrackController extends BaseController
         AppRoomip appRoomip = new AppRoomip();
         appRoomip.setSblx("1");
         List<AppRoomip> appRoomips = appRoomipService.selectAppRoomipList(appRoomip);
+
+        // 空值检查：防止NPE
+        if (appRoomips == null || appRoomips.isEmpty())
+        {
+            return AjaxResult.error("未找到对应的摄像头配置");
+        }
+
         for (AppRoomip roomip : appRoomips) {
             if(StringUtils.isEmpty(roomip.getRtspssl())){
                 HikVedioUtil hikVedioUtil = new HikVedioUtil();
@@ -178,8 +188,16 @@ public class AppTrackController extends BaseController
     @Log(title = "轨迹", businessType = BusinessType.INSERT)
     @PostMapping("/add")
     @ResponseBody
-    public AjaxResult addSave(AppTrack appTrack, javax.servlet.http.HttpServletRequest request)
+    public AjaxResult addSave(@Valid AppTrack appTrack, BindingResult result, javax.servlet.http.HttpServletRequest request)
     {
+        // Bean Validation验证
+        if (result.hasErrors())
+        {
+            String errorMsg = result.getFieldError().getDefaultMessage();
+            logger.warn("参数验证失败: {}", errorMsg);
+            return AjaxResult.error(errorMsg);
+        }
+
         // 记录调用者信息（用于排查USB轨迹来源）
         String remoteAddr = request.getRemoteAddr();
         String userAgent = request.getHeader("User-Agent");
@@ -236,7 +254,7 @@ public class AppTrackController extends BaseController
         // 如果 xwyy 包含 "："，说明是"其他"原因，已经包含了详情
         event.setRyxm(appTrack.getRyxm());
         event.setWlry(appTrack.getWlry());
-        event.setBzsj(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+        event.setBzsj(DateUtil.now());
         
         int result = appTrackService.updateAppTrack(event);
         return result > 0 ? AjaxResult.success("标注成功") : AjaxResult.error("标注失败");
@@ -412,14 +430,13 @@ public class AppTrackController extends BaseController
             Date reportDate = null;
             if (dateStr != null && !dateStr.isEmpty())
             {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                reportDate = sdf.parse(dateStr);
+                reportDate = DateUtil.parseDate(dateStr);
             }
 
             DailyReport report = dailyReportService.generateDailyReport(reportDate);
             return AjaxResult.success().put("data", report);
         }
-        catch (ParseException e)
+        catch (IllegalArgumentException e)
         {
             return AjaxResult.error("日期格式错误，请使用 yyyy-MM-dd 格式");
         }
@@ -528,7 +545,41 @@ public class AppTrackController extends BaseController
                 return AjaxResult.error("行为原因不能为空");
             }
 
-            logger.info("【控制器】参数验证通过，调用服务层标注方法");
+            // XSS防护：对所有用户输入字段进行HTML过滤
+            HTMLFilter htmlFilter = new HTMLFilter();
+            xwyy = htmlFilter.filter(xwyy);
+            if (ryxm != null && !ryxm.trim().isEmpty())
+            {
+                ryxm = htmlFilter.filter(ryxm);
+            }
+            if (wlry != null && !wlry.trim().isEmpty())
+            {
+                wlry = htmlFilter.filter(wlry);
+            }
+            if (remark != null && !remark.trim().isEmpty())
+            {
+                remark = htmlFilter.filter(remark);
+            }
+
+            // 长度验证
+            if (xwyy.length() > 200)
+            {
+                return AjaxResult.error("行为原因最多200个字符");
+            }
+            if (ryxm != null && ryxm.length() > 50)
+            {
+                return AjaxResult.error("人员姓名最多50个字符");
+            }
+            if (wlry != null && wlry.length() > 50)
+            {
+                return AjaxResult.error("外来人员最多50个字符");
+            }
+            if (remark != null && remark.length() > 500)
+            {
+                return AjaxResult.error("备注最多500个字符");
+            }
+
+            logger.info("【控制器】参数验证和过滤通过，调用服务层标注方法");
             // 调用服务层标注方法
             compositeEventService.annotateCompositeEvent(eventId, xwyy, ryxm, wlry, remark);
 

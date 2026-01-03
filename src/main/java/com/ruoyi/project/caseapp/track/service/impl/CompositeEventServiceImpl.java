@@ -6,8 +6,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import java.io.*;
 import java.nio.file.*;
-import java.text.SimpleDateFormat;
 import java.awt.Color;
+import com.ruoyi.project.caseapp.util.DateUtil;
 import com.alibaba.fastjson.JSON;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -59,7 +59,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     private EventTrackRelationMapper relationMapper;
 
     // 空闲时间阈值：30秒（毫秒）
-    private static final long IDLE_THRESHOLD = 30 * 1000;
+    private static final long IDLE_THRESHOLD = 120 * 1000;
 
     /**
      * 查询复合事件
@@ -157,6 +157,19 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     }
 
     /**
+     * 并发控制锁对象
+     * 用于保护复合事件计算过程，防止并发场景下的数据不一致
+     *
+     * 锁策略：
+     * - 单机部署：使用synchronized方法锁，确保同一时间只有一个线程执行计算
+     * - 分布式部署：建议升级为Redis分布式锁（Redisson）
+     *
+     * 注意：当前锁粒度为方法级别，可能影响并发性能
+     * 优化方向：可以按区域（qyid）或时间窗口进行更细粒度的锁控制
+     */
+    private final Object compositeEventLock = new Object();
+
+    /**
      * 根据轨迹更新或创建复合事件（核心方法）
      * 应用层实时写入：当轨迹数据变化时，自动计算并更新复合事件
      *
@@ -165,11 +178,16 @@ public class CompositeEventServiceImpl implements ICompositeEventService
      * 2. 使用30秒算法重新计算复合事件
      * 3. 更新或创建数据库中的复合事件记录
      *
+     * 并发安全：
+     * - 使用synchronized锁保护整个计算流程
+     * - 防止多线程同时插入轨迹时导致的复合事件数据不一致
+     * - 适用于单机部署，分布式部署需升级为分布式锁
+     *
      * @param track 新增或修改的轨迹
      */
     @Override
     @Transactional
-    public void updateOrCreateCompositeEventByTrack(AppTrack track)
+    public synchronized void updateOrCreateCompositeEventByTrack(AppTrack track)
     {
         if (track == null || track.getPssj() == null)
         {
@@ -476,13 +494,27 @@ public class CompositeEventServiceImpl implements ICompositeEventService
 
         event.setEventId(firstTrack.getId());
         event.setStartTime(firstTrack.getPssj());
+
+        // 计算最大结束时间，处理null值
         Date maxEndTime = lastTrack.getJssj();
+        if (maxEndTime == null) {
+            // 如果最后一条轨迹无结束时间，使用开始时间+5秒作为默认值
+            maxEndTime = new Date(lastTrack.getPssj().getTime() + 5000);
+            logger.warn("轨迹{}无结束时间，使用默认值（开始时间+5秒）", lastTrack.getId());
+        }
+
+        // 遍历所有轨迹，找到最大结束时间
         for (AppTrack track : tracks) {
-            if (track.getJssj() != null && track.getJssj().after(maxEndTime)) {
-                maxEndTime = track.getJssj();
+            Date trackEndTime = track.getJssj();
+            if (trackEndTime == null) {
+                // 如果轨迹无结束时间，使用开始时间+5秒
+                trackEndTime = new Date(track.getPssj().getTime() + 5000);
+            }
+            if (trackEndTime.after(maxEndTime)) {
+                maxEndTime = trackEndTime;
             }
         }
-        event.setEndTime(maxEndTime); // 使用结束时间（开始时间+5秒）
+        event.setEndTime(maxEndTime);
         event.setTrackCount(tracks.size());
         event.setIsClosed(1); // 默认已结束
 
@@ -596,9 +628,8 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         StringBuilder desc = new StringBuilder();
 
         // 1. 基本信息：时间段、区域
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm");
         desc.append(String.format("人员于%s在%s出现",
-            sdf.format(event.getStartTime()),
+            DateUtil.formatTimeShort(event.getStartTime()),
             event.getQymc() != null ? event.getQymc() : "监控区域"
         ));
 
@@ -739,7 +770,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                     track.setRyxm(ryxm);
                     track.setWlry(wlry);
                     track.setRemark(remark);
-                    track.setBzsj(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+                    track.setBzsj(DateUtil.now());
 
                     int result = appTrackMapper.updateAppTrack(track);
                     if (result > 0) {
@@ -873,8 +904,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             }
 
             // 3. 创建临时导出目录
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
-            String timestamp = sdf.format(new Date());
+            String timestamp = DateUtil.formatCompactDateTime(new Date());
             String folderName = String.format("事件包_COMP%d_%s", event.getEventId(), timestamp);
 
             // 使用系统临时目录
@@ -983,7 +1013,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                             Map<String, String> screenshotInfo = new HashMap<>();
                             screenshotInfo.put("path", "images/" + newName);
                             screenshotInfo.put("time", screenshot.getScreenshotTime() != null ?
-                                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(screenshot.getScreenshotTime()) : "");
+                                DateUtil.formatDateTime(screenshot.getScreenshotTime()) : "");
                             screenshotInfo.put("order", String.valueOf(screenshot.getScreenshotOrder()));
                             screenshots.add(screenshotInfo);
                             copiedCount++;
@@ -1028,7 +1058,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                         Map<String, String> screenshotInfo = new HashMap<>();
                         screenshotInfo.put("path", "images/" + newName);
                         screenshotInfo.put("time", track.getPssj() != null ?
-                            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(track.getPssj()) : "");
+                            DateUtil.formatDateTime(track.getPssj()) : "");
                         screenshotInfo.put("order", "1");
                         screenshots.add(screenshotInfo);
                         logger.info("  ✓ 使用pstp字段的截图复制成功: {}", newName);
@@ -1101,7 +1131,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         data.put("event", event);
         data.put("tracks", tracks);
         data.put("screenshots", trackScreenshotsMap);
-        data.put("exportTime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+        data.put("exportTime", DateUtil.now());
 
         String json = JSON.toJSONString(data, true);
         Path jsonFile = packagePath.resolve("data").resolve("event_data.json");
@@ -1125,7 +1155,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         {
             readme.append("行为原因: ").append(event.getXwyy()).append("\n");
         }
-        readme.append("导出时间: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).append("\n\n");
+        readme.append("导出时间: ").append(DateUtil.now()).append("\n\n");
         readme.append("===============================================\n");
         readme.append("文件说明:\n");
         readme.append("  index.html     - 事件报告主页面（双击打开）\n");
@@ -1156,7 +1186,6 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     private String buildHtmlTemplate(CompositeEvent event, List<AppTrack> tracks,
                                       Map<Long, List<Map<String, String>>> trackScreenshotsMap)
     {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         StringBuilder html = new StringBuilder();
 
         html.append("<!DOCTYPE html>\n");
@@ -1200,20 +1229,20 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             AppTrack firstTrack = tracks.get(0);
             AppTrack lastTrack = tracks.get(tracks.size() - 1);
 
-            startTimeStr = firstTrack.getPssj() != null ? sdf.format(firstTrack.getPssj()) : "";
+            startTimeStr = firstTrack.getPssj() != null ? DateUtil.formatDateTime(firstTrack.getPssj()) : "";
             // 使用jssj而不是固定的5秒后
-            endTimeStr = lastTrack.getJssj() != null ? sdf.format(lastTrack.getJssj()) : "";
+            endTimeStr = lastTrack.getJssj() != null ? DateUtil.formatDateTime(lastTrack.getJssj()) : "";
 
             // 如果jssj为空，使用pssj
             if (StringUtils.isEmpty(endTimeStr) && lastTrack.getPssj() != null) {
-                endTimeStr = sdf.format(lastTrack.getPssj());
+                endTimeStr = DateUtil.formatDateTime(lastTrack.getPssj());
             }
         }
 
         html.append("                <div class='composite-info-detail'>\n");
         html.append("                    📅 时间范围：").append(startTimeStr).append(" ~ ").append(endTimeStr).append("<br>\n");
         html.append("                    📍 路径：").append(event.getPathAreas() != null ? event.getPathAreas() : "无路径信息").append("<br>\n");
-        html.append("                    ⏱️ 导出时间：").append(sdf.format(new Date())).append("\n");
+        html.append("                    ⏱️ 导出时间：").append(DateUtil.formatDateTime(new Date())).append("\n");
         html.append("                </div>\n");
 
         // 标注信息
@@ -1278,7 +1307,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         {
             AppTrack track = tracks.get(i);
             // 格式化时间显示
-            String trackTime = track.getPssj() != null ? sdf.format(track.getPssj()) : "";
+            String trackTime = track.getPssj() != null ? DateUtil.formatDateTime(track.getPssj()) : "";
 
             html.append("                <div class='trace-node' id='traceNode").append(i).append("' onclick='playTraceVideo(").append(i).append(")'>\n");
             html.append("                    <div class='trace-time'>").append(trackTime).append("</div>\n");
@@ -1356,7 +1385,6 @@ public class CompositeEventServiceImpl implements ICompositeEventService
      */
     private String getHtmlScripts(List<AppTrack> tracks, Map<Long, List<Map<String, String>>> trackScreenshotsMap)
     {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         StringBuilder js = new StringBuilder();
 
         // 生成轨迹数组（用于时间线）
@@ -1364,7 +1392,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         for (int i = 0; i < tracks.size(); i++)
         {
             AppTrack track = tracks.get(i);
-            String trackTime = track.getPssj() != null ? sdf.format(track.getPssj()) : "";
+            String trackTime = track.getPssj() != null ? DateUtil.formatDateTime(track.getPssj()) : "";
 
             js.append("    { video: '").append(track.getSpdz() != null ? track.getSpdz() : "").append("', ");
             js.append("time: '").append(trackTime).append("', ");
@@ -1492,10 +1520,6 @@ public class CompositeEventServiceImpl implements ICompositeEventService
      */
     private void generatePdfReport(CompositeEvent event, List<AppTrack> tracks, Path packagePath) throws Exception
     {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        SimpleDateFormat dateOnly = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat timeOnly = new SimpleDateFormat("HH:mm:ss");
-
         PDDocument document = new PDDocument();
         try
         {
@@ -1538,9 +1562,9 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             // 表格数据
             String[][] basicInfo = {
                 {"事件编号", "COMP-" + (event.getEventId() != null ? event.getEventId() : "N/A")},
-                {"事件时间", (event.getStartTime() != null ? dateOnly.format(event.getStartTime()) : "") + " " +
-                            (event.getStartTime() != null ? timeOnly.format(event.getStartTime()) : "") + "-" +
-                            (event.getEndTime() != null ? timeOnly.format(event.getEndTime()) : "")},
+                {"事件时间", (event.getStartTime() != null ? DateUtil.formatDate(event.getStartTime()) : "") + " " +
+                            (event.getStartTime() != null ? DateUtil.formatTime(event.getStartTime()) : "") + "-" +
+                            (event.getEndTime() != null ? DateUtil.formatTime(event.getEndTime()) : "")},
                 {"持续时长", (event.getDuration() != null ? event.getDuration() + "分钟" : "N/A")},
                 {"主要区域", event.getQymc() != null ? event.getQymc() : ""},
                 {"行为路径", event.getPathAreas() != null ? event.getPathAreas() : ""},
@@ -1665,7 +1689,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
 
                 String[] rowData = {
                     String.valueOf(i + 1),
-                    track.getPssj() != null ? timeOnly.format(track.getPssj()) : "",
+                    track.getPssj() != null ? DateUtil.formatTime(track.getPssj()) : "",
                     track.getQymc() != null ? track.getQymc() : "",
                     ryslValue
                 };
@@ -1734,7 +1758,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             yPosition -= 20;
 
             String[] exportInfo = {
-                "导出时间: " + sdf.format(new Date()),
+                "导出时间: " + DateUtil.formatDateTime(new Date()),
                 "文件位置: " + packagePath.getFileName().toString() + "/",
                 "包含文件: index.html, images/, videos/, data/"
             };
@@ -1889,7 +1913,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             throw new IllegalArgumentException("导出路径不能为空");
         }
 
-        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String timestamp = DateUtil.formatCompactDateTime(new Date());
         String batchFolderName = "batch_events_" + timestamp;
 
         // 使用系统临时目录
@@ -1940,8 +1964,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                 }
 
                 // 创建事件包文件夹
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
-                String eventTimestamp = sdf.format(new Date());
+                String eventTimestamp = DateUtil.formatCompactDateTime(new Date());
                 String folderName = String.format("事件包_COMP%d_%s", event.getEventId(), eventTimestamp);
                 Path packagePath = batchFolder.resolve(folderName);
                 Files.createDirectories(packagePath);
@@ -1994,7 +2017,7 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         summary.append("===============================================\n");
         summary.append("           批量事件包导出摘要\n");
         summary.append("===============================================\n\n");
-        summary.append("导出时间: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).append("\n");
+        summary.append("导出时间: ").append(DateUtil.now()).append("\n");
         summary.append("总事件数: ").append(total).append("\n");
         summary.append("成功导出: ").append(success).append("\n");
         summary.append("导出失败: ").append(fail).append("\n\n");
