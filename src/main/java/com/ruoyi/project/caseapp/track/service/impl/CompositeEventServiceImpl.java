@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,7 +59,15 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     @Autowired
     private EventTrackRelationMapper relationMapper;
 
-    // 空闲时间阈值：30秒（毫秒）
+    /**
+     * 注入自身代理对象，用于事务方法的正确调用
+     * @Lazy避免循环依赖
+     */
+    @Lazy
+    @Autowired
+    private CompositeEventServiceImpl self;
+
+    // 空闲时间阈值：120秒（毫秒）- 轨迹间隔超过此值则分割为不同事件
     private static final long IDLE_THRESHOLD = 120 * 1000;
 
     /**
@@ -186,14 +195,31 @@ public class CompositeEventServiceImpl implements ICompositeEventService
      * @param track 新增或修改的轨迹
      */
     @Override
-    @Transactional
-    public synchronized void updateOrCreateCompositeEventByTrack(AppTrack track)
+    public void updateOrCreateCompositeEventByTrack(AppTrack track)
     {
         if (track == null || track.getPssj() == null)
         {
             return;
         }
 
+        // 锁的范围包含整个事务，确保线程B在线程A事务提交后才能执行
+        synchronized (compositeEventLock)
+        {
+            // 通过Spring代理对象调用事务方法
+            // 注意：不能直接调用executeTransactionalUpdate，否则@Transactional不生效
+            self.executeTransactionalUpdate(track);
+        }
+    }
+
+    /**
+     * 执行复合事件的事务性更新操作
+     * 必须通过代理对象调用此方法才能保证事务生效
+     *
+     * @param track 新增或修改的轨迹
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void executeTransactionalUpdate(AppTrack track)
+    {
         // 1. 查询该轨迹所在的时间窗口内的所有轨迹
         //    时间窗口：前后各扩展1小时，确保能覆盖到相关的复合事件
         Date trackTime = track.getPssj();
@@ -522,11 +548,41 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         long durationMillis = lastTrack.getJssj().getTime() - firstTrack.getPssj().getTime();
         event.setDuration((int) (durationMillis / 1000));
 
-        // 注意：不从轨迹聚合标注信息（ryxm, wlry）
-        // 这些字段应该保持为空，等待用户手动标注复合事件
-        // 如果从轨迹聚合，会导致重新同步时旧标注数据无法清除
-        event.setRyxm(null);
-        event.setWlry(null);
+        // 检查轨迹中是否已包含标注信息，如果有则继承
+        // 修复标注丢失问题：当用户标注后有新轨迹加入，重新生成复合事件时保留已有标注
+        boolean hasAnnotation = false;
+        for (AppTrack track : tracks)
+        {
+            if ("1".equals(track.getBzzt()))
+            {
+                // 找到已标注的轨迹，继承其标注信息到复合事件
+                hasAnnotation = true;
+                // 这些标注信息会在下面统一设置，这里先标记找到了
+                break;
+            }
+        }
+
+        // 根据是否找到标注信息来设置字段
+        if (hasAnnotation)
+        {
+            // 继承第一个已标注轨迹的信息
+            for (AppTrack track : tracks)
+            {
+                if ("1".equals(track.getBzzt()))
+                {
+                    event.setRyxm(track.getRyxm());
+                    event.setWlry(track.getWlry());
+                    // xwyy和bzzt在后面统一设置
+                    break;
+                }
+            }
+        }
+        else
+        {
+            // 所有轨迹都未标注，保持为空
+            event.setRyxm(null);
+            event.setWlry(null);
+        }
 
         // 聚合区域信息
         Set<String> areasSet = new LinkedHashSet<>(); // 保持顺序
@@ -595,10 +651,34 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         event.setHasNonworktime(hasNonworktime);
         event.setHasAbnormalPerson(hasAbnormal);
 
-        // 标注状态和行为原因不从轨迹聚合，保持为未标注状态
-        // 避免重新同步时从轨迹表带回旧的标注数据
-        event.setBzzt("0"); // 未标注
-        event.setXwyy(null); // 行为原因为空
+        // 检查轨迹中是否已包含标注信息，如果有则继承
+        // 修复标注丢失问题：标注后有新轨迹加入时，保留已有标注而不是重置为空
+        boolean annotated = false;
+        for (AppTrack track : tracks)
+        {
+            if ("1".equals(track.getBzzt()))
+            {
+                // 继承已标注轨迹的标注信息
+                event.setBzzt("1");
+                event.setXwyy(track.getXwyy());
+                event.setProcessStatus("已完成");
+                // remark字段也需要继承
+                if (track.getRemark() != null)
+                {
+                    event.setRemark(track.getRemark());
+                }
+                annotated = true;
+                break; // 只需要一个已标注的轨迹
+            }
+        }
+
+        // 如果所有轨迹都未标注，保持原逻辑
+        if (!annotated)
+        {
+            event.setBzzt("0"); // 未标注
+            event.setXwyy(null); // 行为原因为空
+            event.setProcessStatus("待处理");
+        }
 
         // 保存轨迹ID列表
         String trackIds = tracks.stream()

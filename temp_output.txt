@@ -1,0 +1,137 @@
+这是一份基于“交付级”标准的深度代码审查报告。
+经过对你提供的 CompositeEventServiceImpl.java (核心逻辑)、AppTrackServiceImpl.java (入口) 以及相关 Mapper 的详细分析，目前的逻辑存在严重的并发一致性漏洞和业务数据丢失风险，如果直接上线，在高并发摄像头写入或长时间运行场景下会出现数据错乱。
+以下是详细的 Bug 分析和改进建议：
+1. 核心并发与事务一致性漏洞 (Critical)
+这是最严重的问题。你的代码试图通过 synchronized 关键字来处理并发，但在 Spring 框架下，这种方式与 @Transactional 结合使用时存在经典的“数据库事务提交滞后”导致的竞态条件。
+问题代码： CompositeEventServiceImpl.java 中的 updateOrCreateCompositeEventByTrack 方法。
+现象描述：
+线程 A (摄像头1写入) 获取锁 -> 计算事件 -> 删除旧事件 -> 插入新事件 -> 释放锁。
+线程 B (摄像头2写入) 立即获取锁 -> 读取数据库。
+线程 A 的事务由 Spring AOP 代理在方法返回后才提交。
+结果： 线程 B 在步骤 2 读取数据时，线程 A 的事务尚未提交（根据数据库隔离级别，通常读不到未提交的数据）。线程 B 基于“旧数据”进行了计算，覆盖了线程 A 的工作，或者产生脏数据。
+后果： 复合事件重复、轨迹丢失关联、数据回滚异常。
+修复方案：
+单机方案： 锁的范围必须大于事务的范围。不能在 @Transactional 方法上直接加 synchronized。需要在 Controller 层或者一个非事务的 Service 入口方法加锁，然后再调用事务方法。
+集群/分布式方案（推荐）： 既然是交付级，必须考虑多节点部署。请使用 Redisson 分布式锁，锁的 Key 应该是 qyid (区域ID) 或特定的业务范围，而不是锁整个方法（影响吞吐量）。
+2. 业务数据丢失风险：标注信息被重置 (Critical)
+当前的逻辑是“先删除旧事件，再根据轨迹重新生成新事件”。这会导致用户已完成的“人工标注”丢失。
+问题逻辑：
+用户对 Event A 进行了标注（annotateCompositeEvent 方法同时更新了 Event 表和 Track 表）。
+几秒后，新的一条轨迹进入，触发 updateOrCreateCompositeEventByTrack。
+代码执行 deleteCompositeEventById 删除 Event A。
+代码执行 createCompositeEventFromTracks 生成新事件。
+Bug 点： 在 createCompositeEventFromTracks 方法中，代码显式写死：
+Java
+event.setBzzt("0"); // 未标注
+event.setXwyy(null); // 行为原因为空
+// ... (ryxm, wlry 也被设置为 null)
+后果： 只要有新轨迹进入合并范围，之前的标注（行为原因、人员姓名、备注）就会被瞬间清空，变为“待处理”状态。
+修复方案： 在 createCompositeEventFromTracks 中，需要遍历传入的 tracks。如果发现这些轨迹中已经包含了标注信息（因为 annotate 时同步更新了轨迹表），应该将这些信息继承到新的复合事件中，而不是无脑重置为 0。
+3. 代码与注释不一致 (Major)
+文件： CompositeEventServiceImpl.java
+位置： 静态常量定义
+Java
+// 空闲时间阈值：30秒（毫秒）
+private static final long IDLE_THRESHOLD = 120 * 1000;
+问题： 注释说是 30 秒，代码里写的是 120 * 1000 (120秒，即2分钟)。
+后果： 实际运行逻辑是 2 分钟断开一次事件，与业务需求文档（通常是30s或60s）可能严重不符。
+4. 性能隐患：全量扫描与 N+1 问题 (Major)
+A. 每次写入都扫描 2 小时数据
+在 updateOrCreateCompositeEventByTrack 中：
+Java
+// 前后各扩展1小时
+cal.add(Calendar.HOUR, -1);
+...
+cal.add(Calendar.HOUR, 1);
+每插入一条轨迹，都要查询前后 2 小时内的所有轨迹并重新计算。如果某个区域人流量大（例如 2 小时内有 5000 条轨迹），每个写入操作都会触发巨大的计算量和 DB I/O（批量删除再批量插入）。
+优化建议： 缩小检测窗口。如果你的算法是“30秒空闲切分”，你只需要向前/向后查找最近的一个“断点”即可，不需要重算 2 小时的数据。
+B. 位置查询中的循环查库
+文件： LocationTrajectoryServiceImpl.java
+方法： queryTrajectoryByLocation
+问题：
+Java
+// 3. 查询这些区域在指定时间段内的轨迹数据
+for (String qymc : qymcList) {
+    // 在循环中调用数据库查询 selectAppTrackList
+}
+后果： 如果一个货架关联了 10 个摄像头区域，就会发 10 次 SQL 查询。
+修复方案： 修改 Mapper，支持 qymc in list 的批量查询，一次 SQL 查出所有数据。
+5. 潜在的空指针异常 (Minor/Robustness)
+文件： CompositeEventServiceImpl.java
+位置： calculate30SecondCompositeEvents
+Java
+// 按时间升序排序
+tracks.sort(Comparator.comparing(AppTrack::getPssj));
+风险： 虽然数据库设计上 pssj 可能非空，但作为交付级代码，如果脏数据导致 pssj 为 null，这里会直接抛出 NPE 导致整个处理流程中断。
+建议： 加过滤器 tracks.stream().filter(t -> t.getPssj() != null)... 或在排序器中处理 null。
+6. PDF 字体加载硬编码 (Portability)
+文件： CompositeEventServiceImpl.java -> loadChineseFont
+问题： 字体路径硬编码（如 C:/Windows/Fonts/...）。
+后果： 如果部署到 Docker 容器（通常是 Linux 且精简版，没有中文字体），导出 PDF 功能将直接报错崩溃。
+修复方案： 将字体文件放入项目的 resources/fonts 目录下，使用 ClassPathResource 加载，确保跨平台一致性。
+7. 逻辑漏洞：非工作时间判断
+文件： CompositeEventServiceImpl.java
+Java
+// 注意：必须使用GMT+8时区
+Calendar cal = Calendar.getInstance(java.util.TimeZone.getTimeZone("GMT+8"));
+cal.setTime(event.getStartTime());
+int startHour = cal.get(Calendar.HOUR_OF_DAY);
+问题： 代码强行指定了 GMT+8。如果服务器部署在海外但服务于国内，或者部署在国内但系统时区被设置为 UTC，event.getStartTime() 取出的 Date 对象本身是 UTC 时间戳。
+建议： 最好在配置文件中配置时区，或者统一使用系统默认时区，确保 Date 对象转换逻辑与数据库连接池的 serverTimezone 设置一致。目前的写法在某些 Docker 容器环境下（默认为 UTC）可能会出现 8 小时的偏差。
+
+修改代码建议（针对最关键的并发和事务问题）
+修改 AppTrackServiceImpl.java 和 CompositeEventServiceImpl.java 的交互方式。
+1. 定义一个锁工具 (简单的本地锁示例):
+由于你是在 AppTrackServiceImpl 中调用更新，建议将锁提到 Service 入口，或者使用 synchronized 代码块包裹整个事务方法调用。
+更好的做法是使用数据库行锁或 Redis 锁。鉴于现有架构，修改 CompositeEventServiceImpl 如下：
+Java
+// CompositeEventServiceImpl.java
+
+// 移除方法上的 synchronized，移除 @Transactional (拆分粒度)
+public void updateOrCreateCompositeEventByTrack(AppTrack track) {
+    // 1. 获取锁 (建议换成 Redis 分布式锁 key = "lock:composite:" + track.getQyid())
+    synchronized (compositeEventLock) { // 注意：synchronized 只能锁单机
+        // 2. 开启事务 (手动控制或调用内部被 @Transactional 代理的方法)
+        CompositeEventServiceImpl proxy = applicationContext.getBean(CompositeEventServiceImpl.class);
+        proxy.executeTransactionalUpdate(track);
+    }
+}
+
+// 拆分出的实际执行方法，必须是 public 才能被 AOP 代理事务
+@Transactional(rollbackFor = Exception.class)
+public void executeTransactionalUpdate(AppTrack track) {
+    // ... 原有的业务逻辑 ...
+    // 1. 查询 (select for update 也许更好)
+    // 2. 计算
+    // 3. 删除
+    // 4. 插入
+}
+针对 Bug #2 (标注丢失) 的修复逻辑：
+在 CompositeEventServiceImpl.java 的 createCompositeEventFromTracks 方法中：
+Java
+// ...
+event.setTrackIds(trackIds);
+
+// --- 修复开始 ---
+// 检查轨迹中是否已包含标注信息，如果有，继承过来
+boolean isLabeled = false;
+for (AppTrack t : tracks) {
+    if ("1".equals(t.getBzzt())) {
+        event.setBzzt("1");
+        event.setXwyy(t.getXwyy()); // 假设同一事件的轨迹标注是一致的，取其中一个
+        event.setRyxm(t.getRyxm());
+        event.setWlry(t.getWlry());
+        event.setRemark(t.getRemark());
+        event.setProcessStatus("已完成");
+        isLabeled = true;
+        break; // 找到一个已标注的即可
+    }
+}
+if (!isLabeled) {
+    event.setBzzt("0");
+    event.setProcessStatus("待处理");
+}
+// --- 修复结束 ---
+
+return event;
+总结： 目前的版本属于“演示级”代码，逻辑跑通了，但一旦进入多摄像头并发写入或实际业务流转（如先标注后有新轨迹进入），系统会立即出现问题。务必修复 并发事务竞态 和 标注被重置 这两个 Critical 级 Bug。
