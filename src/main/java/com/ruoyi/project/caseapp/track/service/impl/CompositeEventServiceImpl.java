@@ -2,6 +2,7 @@ package com.ruoyi.project.caseapp.track.service.impl;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import java.io.*;
@@ -408,7 +409,18 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             return new ArrayList<>();
         }
 
-        // 按时间升序排序
+        // 过滤掉pssj为null的脏数据，防止排序时NPE
+        tracks = tracks.stream()
+                .filter(t -> t.getPssj() != null)
+                .collect(Collectors.toList());
+
+        if (tracks.isEmpty())
+        {
+            logger.warn("所有轨迹的pssj字段都为null，无法计算复合事件");
+            return new ArrayList<>();
+        }
+
+        // 按时间升序排序（已过滤null，安全）
         tracks.sort(Comparator.comparing(AppTrack::getPssj));
 
         List<CompositeEvent> compositeEvents = new ArrayList<>();
@@ -538,7 +550,8 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         event.setIsClosed(1); // 默认已结束
 
         // 计算持续时长（秒）- 从第一条开始到最后一条结束
-        long durationMillis = lastTrack.getJssj().getTime() - firstTrack.getPssj().getTime();
+        // 使用已处理过null的maxEndTime，避免NPE
+        long durationMillis = maxEndTime.getTime() - firstTrack.getPssj().getTime();
         event.setDuration((int) (durationMillis / 1000));
 
         // 检查轨迹中是否已包含标注信息，如果有则继承
@@ -2119,9 +2132,11 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     private void zipFolder(Path sourceFolder, Path zipFilePath) throws IOException
     {
         try (FileOutputStream fos = new FileOutputStream(zipFilePath.toFile());
-             ZipOutputStream zos = new ZipOutputStream(fos))
+             ZipOutputStream zos = new ZipOutputStream(fos);
+             // 修复资源泄漏：Files.walk()返回的Stream必须关闭
+             Stream<Path> pathStream = Files.walk(sourceFolder))
         {
-            Files.walk(sourceFolder)
+            pathStream
                 .filter(path -> !Files.isDirectory(path))
                 .forEach(path -> {
                     try
