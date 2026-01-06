@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.validation.Valid;
 import com.ruoyi.framework.aspectj.lang.annotation.Log;
 import com.ruoyi.framework.aspectj.lang.enums.BusinessType;
+import com.ruoyi.framework.interceptor.annotation.RepeatSubmit;
 import com.ruoyi.project.caseapp.track.domain.AppTrack;
 import com.ruoyi.project.caseapp.track.domain.AppTrackScreenshot;
 import com.ruoyi.project.caseapp.track.domain.CompositeEvent;
@@ -185,6 +186,7 @@ public class AppTrackController extends BaseController
     /**
      * 新增保存轨迹
      */
+    @RepeatSubmit(interval = 5000, message = "请勿重复提交")
     @Log(title = "轨迹", businessType = BusinessType.INSERT)
     @PostMapping("/add")
     @ResponseBody
@@ -238,6 +240,7 @@ public class AppTrackController extends BaseController
     /**
      * 修改保存轨迹（用于标注）
      */
+    @RepeatSubmit(interval = 3000, message = "请勿重复提交标注")
     @Log(title = "轨迹标注", businessType = BusinessType.UPDATE)
     @PostMapping("/edit")
     @ResponseBody
@@ -561,6 +564,7 @@ public class AppTrackController extends BaseController
      * @param remark 备注
      * @return 标注结果
      */
+    @RepeatSubmit(interval = 3000, message = "请勿重复提交复合事件标注")
     @Log(title = "复合事件标注", businessType = BusinessType.UPDATE)
     @PostMapping("/annotateCompositeEvent")
     @ResponseBody
