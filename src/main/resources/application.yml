@@ -9,7 +9,7 @@ ruoyi:
   # 实例演示开关
   demoEnabled: true
   # 文件路径 示例（ Windows配置D:/ruoyi/uploadPath，Linux配置 /home/ruoyi/uploadPath）
-  profile: D:/ruoyi/uploadPath
+  profile: D:/appdata/uploadPath
   # 图片/视频访问URL前缀（用于拼接完整URL）
   # 格式：http://域名:端口 或 https://域名:端口
   # 示例：http://192.168.1.20:8090 或 http://localhost:8090

@@ -100,7 +100,7 @@ public class LicenseGenerator {
 
     /**
      * 主方法 - 用于生成许可证
-     * 运行此类可以为指定机器码生成许可证文件
+     * 运行1此类可以为指定机器码生成许可证文件
      */
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);

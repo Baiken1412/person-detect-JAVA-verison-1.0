@@ -132,6 +132,103 @@ public class LicenseValidator {
     }
 
     /**
+     * 验证许可证并返回错误信息
+     *
+     * @return 错误信息，如果验证通过则返回null
+     */
+    public static String validateWithMessage() {
+        try {
+            // 检查许可证文件是否存在
+            File licenseFile = new File(LICENSE_FILE_PATH);
+            if (!licenseFile.exists()) {
+                String machineCode = MachineCodeUtil.getMachineCode();
+                return "未找到许可证文件 [" + LICENSE_FILE_PATH + "]，请联系管理员获取有效的许可证文件。当前机器码: " + machineCode;
+            }
+
+            // 读取许可证文件内容
+            byte[] encryptedData = Files.readAllBytes(Paths.get(LICENSE_FILE_PATH));
+
+            // 检查文件是否为空
+            if (encryptedData == null || encryptedData.length == 0) {
+                String machineCode = MachineCodeUtil.getMachineCode();
+                return "许可证文件为空，请联系管理员获取有效的许可证文件。当前机器码: " + machineCode;
+            }
+
+            // 解密许可证
+            String decryptedData;
+            try {
+                decryptedData = decrypt(encryptedData);
+            } catch (Exception e) {
+                String machineCode = MachineCodeUtil.getMachineCode();
+                return "许可证文件解密失败，文件可能已损坏。请联系管理员获取有效的许可证文件。当前机器码: " + machineCode;
+            }
+
+            // 检查解密结果
+            if (decryptedData == null || decryptedData.trim().isEmpty()) {
+                String machineCode = MachineCodeUtil.getMachineCode();
+                return "许可证文件内容无效，请联系管理员获取有效的许可证文件。当前机器码: " + machineCode;
+            }
+
+            // 解析许可证信息（JSON格式）
+            JSONObject licenseInfo;
+            try {
+                licenseInfo = JSON.parseObject(decryptedData);
+            } catch (Exception e) {
+                String machineCode = MachineCodeUtil.getMachineCode();
+                return "许可证数据格式错误，请联系管理员获取有效的许可证文件。当前机器码: " + machineCode;
+            }
+            
+            if (licenseInfo == null) {
+                String machineCode = MachineCodeUtil.getMachineCode();
+                return "许可证数据格式错误，请联系管理员获取有效的许可证文件。当前机器码: " + machineCode;
+            }
+
+            String licensedMachineCode = licenseInfo.getString("machineCode");
+            String expireDate = licenseInfo.getString("expireDate");
+
+            // 检查必要字段是否存在
+            if (licensedMachineCode == null || licensedMachineCode.trim().isEmpty()) {
+                String machineCode = MachineCodeUtil.getMachineCode();
+                return "许可证中缺少机器码信息，请联系管理员获取有效的许可证文件。当前机器码: " + machineCode;
+            }
+
+            if (expireDate == null || expireDate.trim().isEmpty()) {
+                String machineCode = MachineCodeUtil.getMachineCode();
+                return "许可证中缺少有效期信息，请联系管理员获取有效的许可证文件。当前机器码: " + machineCode;
+            }
+
+            // 获取当前机器码
+            String currentMachineCode = MachineCodeUtil.getMachineCode();
+
+            // 1. 验证机器码是否匹配
+            if (!currentMachineCode.equals(licensedMachineCode)) {
+                return "许可证与当前机器不匹配，请联系管理员获取有效的许可证文件。当前机器码: " + currentMachineCode;
+            }
+
+            // 2. 验证有效期
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Date expireDateObj;
+            try {
+                expireDateObj = sdf.parse(expireDate);
+            } catch (Exception e) {
+                String machineCode = MachineCodeUtil.getMachineCode();
+                return "许可证有效期格式错误，请联系管理员获取有效的许可证文件。当前机器码: " + machineCode;
+            }
+            Date currentDate = new Date();
+
+            if (currentDate.after(expireDateObj)) {
+                return "许可证已过期，过期时间: " + expireDate + "，请联系管理员续期许可证。当前机器码: " + currentMachineCode;
+            }
+
+            // 验证通过
+            return null;
+        } catch (Exception e) {
+            String machineCode = MachineCodeUtil.getMachineCode();
+            return "许可证验证失败: " + e.getMessage() + "，请联系管理员获取有效的许可证文件。当前机器码: " + machineCode;
+        }
+    }
+
+    /**
      * 获取许可证文件路径
      */
     public static String getLicenseFilePath() {

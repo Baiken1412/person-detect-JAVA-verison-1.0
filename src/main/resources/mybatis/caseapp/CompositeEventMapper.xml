@@ -50,7 +50,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 and start_time between #{params.beginTime} and #{params.endTime}
             </if>
         </where>
-        order by start_time desc
+        <!-- 修复：添加id作为第二排序字段，确保分页查询结果稳定 -->
+        <!-- 避免多个事件具有相同start_time时，分页结果不稳定导致重复或遗漏 -->
+        order by start_time desc, id desc
     </select>
 
     <select id="selectCompositeEventById" parameterType="Long" resultMap="CompositeEventResult">

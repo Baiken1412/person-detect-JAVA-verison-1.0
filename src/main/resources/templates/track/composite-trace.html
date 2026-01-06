@@ -341,6 +341,7 @@
     <div style="position: fixed; top: 20px; left: 20px; z-index: 1000; display: flex; gap: 10px;">
         <button class="back-btn" onclick="goBack()">🔙 返回</button>
         <button class="export-btn" onclick="exportEventPackage()">📦 导出事件包</button>
+        <a th:href="@{/logout}" class="back-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">🚪 退出登录</a>
     </div>
 
     <div class="container">
@@ -352,7 +353,6 @@
             <div class="composite-info" id="compositeInfo"></div>
             <div class="video-container">
                 <video id="traceVideo" controls muted>
-                    <source src="" type="video/mp4">
                     您的浏览器不支持视频播放。
                 </video>
                 <div class="video-controls">
@@ -420,64 +420,14 @@
 
         // 加载复合事件数据
         function loadCompositeEvent(id) {
-            // 从URL参数获取时间范围（如果有）
-            const beginDate = getUrlParam('beginDate') || new Date().toISOString().split('T')[0];
-            const endDate = getUrlParam('endDate') || beginDate;
-            
-            // 构建时间参数
-            const beginDateObj = new Date(beginDate);
-            const endDateObj = new Date(endDate);
-            
-            beginDateObj.setHours(0, 0, 0, 0);
-            const beginPssj = beginDateObj.getFullYear() + '-' + 
-                String(beginDateObj.getMonth() + 1).padStart(2, '0') + '-' + 
-                String(beginDateObj.getDate()).padStart(2, '0') + ' ' +
-                String(beginDateObj.getHours()).padStart(2, '0') + ':' +
-                String(beginDateObj.getMinutes()).padStart(2, '0') + ':' +
-                String(beginDateObj.getSeconds()).padStart(2, '0');
-            
-            endDateObj.setHours(23, 59, 59, 999);
-            const endPssj = endDateObj.getFullYear() + '-' + 
-                String(endDateObj.getMonth() + 1).padStart(2, '0') + '-' + 
-                String(endDateObj.getDate()).padStart(2, '0') + ' ' +
-                String(endDateObj.getHours()).padStart(2, '0') + ':' +
-                String(endDateObj.getMinutes()).padStart(2, '0') + ':' +
-                String(endDateObj.getSeconds()).padStart(2, '0');
-            
-            const formData = new FormData();
-            formData.append('params[beginPssj]', beginPssj);
-            formData.append('params[endPssj]', endPssj);
-            
-            fetch('/caseapp/track/compositeEvents/list', {
-                method: 'POST',
-                body: formData
+            // 直接通过ID查询单个复合事件详情
+            fetch('/caseapp/track/compositeEvents/' + id, {
+                method: 'GET'
             })
                 .then(response => response.json())
                 .then(data => {
                     if (data.code === 0 && data.data) {
-                        // 查找匹配的复合事件
-                        const composite = data.data.find((comp, currentIndex) => {
-                            // 优先使用主键ID匹配
-                            if (comp.id && comp.id == id) {
-                                return true;
-                            }
-                            // 兼容eventId匹配
-                            if (comp.eventId && comp.eventId == id) {
-                                return true;
-                            }
-                            // 兼容旧的COMP索引格式（向后兼容）
-                            if (id.startsWith('COMP')) {
-                                const targetIndex = parseInt(id.replace('COMP', '')) - 1;
-                                return currentIndex === targetIndex;
-                            }
-                            return false;
-                        });
-                        
-                        if (!composite) {
-                            $.modal.alertError('未找到指定的复合事件');
-                            goBack();
-                            return;
-                        }
+                        const composite = data.data;
                         
                         // 转换数据格式 - 轨迹基本信息
                         const events = composite.events.map(item => ({
@@ -488,9 +438,12 @@
                             jssj: item.jssj, // 结束时间
                             rysl: item.rysl || 0, // 人员数量
                             area: item.qymc || '',
+                            // 视频URL：后端已通过 AppTrack.getSpdz() 自动调用 ImageUrlUtil.toFullUrl() 转换为完整URL
                             videoUrl: item.spdz || '',
-                            imageUrl: item.pstp || '', // 第一张截图路径（兼容）
-                            screenshots: item.screenshots || [], // 所有截图
+                            // 第一张截图路径（兼容）：后端已通过 AppTrack.getPstp() 自动调用 ImageUrlUtil.toFullUrl() 转换为完整URL
+                            imageUrl: item.pstp || '',
+                            // 所有截图：每个截图对象的 screenshotUrl 已通过 AppTrackScreenshot.getScreenshotUrl() 自动转换为完整URL
+                            screenshots: item.screenshots || [],
                             jscs: item.jscs || 1, // 检测次数
                             status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
                             reason: item.xwyy || '',
@@ -560,9 +513,11 @@
 
                         renderCompositeInfo();
                         renderTraceTimeline();
-                        // 初始化时显示第一个轨迹的截图，但不自动播放视频
+                        // 初始化时显示第一个轨迹的截图和视频
                         updateCarouselImage(0);
                         highlightTraceNode(0);
+                        // 自动播放第一个轨迹的视频
+                        playTraceVideo(0, false);
                     } else {
                         $.modal.alertError('获取复合事件失败：' + (data.msg || '未知错误'));
                         goBack();
@@ -742,6 +697,7 @@
             if (url && url.trim() !== '') {
                 console.log(`  → 设置视频源: ${url}`);
                 v.src = url;
+                v.load(); // 重新加载视频源，确保新URL生效
 
                 // 确保视频静音（允许自动播放）
                 v.muted = true;

@@ -372,6 +372,44 @@ public class AppTrackController extends BaseController
     }
 
     /**
+     * 获取单个复合事件详情（包含轨迹和截图信息）
+     * 
+     * @param id 复合事件ID
+     * @return 复合事件详情
+     */
+    @GetMapping("/compositeEvents/{id}")
+    @ResponseBody
+    public AjaxResult getCompositeEventDetail(@PathVariable("id") Long id)
+    {
+        // 查询复合事件基本信息
+        CompositeEvent event = compositeEventService.selectCompositeEventById(id);
+        if (event == null) {
+            return AjaxResult.error("复合事件不存在");
+        }
+
+        // 从关系表查询轨迹ID列表（已按seq_no排序）
+        List<Long> trackIds = relationMapper.selectTrackIdsByEventId(event.getId());
+
+        // 查询轨迹详情
+        List<AppTrack> tracks = new ArrayList<>();
+        for (Long trackId : trackIds) {
+            AppTrack track = appTrackService.selectAppTrackById(trackId);
+            if (track != null) {
+                // 查询该轨迹的所有截图
+                List<AppTrackScreenshot> screenshots = screenshotService.selectScreenshotsByTrackId(track.getId());
+                track.setScreenshots(screenshots);
+                tracks.add(track);
+            }
+        }
+
+        // 设置轨迹列表和事件数量
+        event.setEvents(tracks);
+        event.setEventCount(tracks.size());
+
+        return AjaxResult.success().put("data", event);
+    }
+
+    /**
      * 跳转到事件经过还原（复合事件）页面
      * 
      * @return 页面路径

@@ -1,6 +1,7 @@
 package com.ruoyi.project.caseapp.core.task;
 
 import com.alibaba.fastjson.JSONObject;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.framework.config.RuoYiConfig;
 import com.ruoyi.project.caseapp.track.domain.AppTrack;
 import com.ruoyi.project.caseapp.track.service.IAppTrackService;
@@ -51,8 +52,7 @@ public class CaseappTask {
     public void caseapp(){
 
         ExecutorService executorService = Executors.newFixedThreadPool(5);
-
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
+        SimpleDateFormat sdf = new SimpleDateFormat("YYYYMMDD");
         int gpu = 0;
         // 修改：使用getRealHostIp()替代getHostIp()，解决公司环境下获取到localhost的问题
         String cxip = IpUtils.getRealHostIp();
@@ -66,25 +66,35 @@ public class CaseappTask {
         for (AppTrack track : appTracks){
             if(track.getPssj()!=null){
                 AppRoomip appRoomip = appRoomipService.selectAppRoomipById(track.getQyid());
-                    String wjdz = RuoYiConfig.getProfile()+"/"+track.getId()+".mp4";
-                    String wjmc = track.getId()+".mp4";
-                    Map<String,Object> map = new HashMap<>();
+                String sj = sdf.format(new Date());
+                String wjdz = RuoYiConfig.getProfile() + "/caseapp/" + sj + "/" + track.getId() + ".mp4";
 
-                    // 获取开始和结束时间
-                    Date kssjNew = track.getPssj();
-                    Date jssjNew = track.getJssj();
+                // 创建输出文件的父目录（如果不存在）
+                File outputFile = new File(wjdz);
+                File parentDir = outputFile.getParentFile();
+                if (parentDir != null && !parentDir.exists()) {
+                    parentDir.mkdirs();
+                    System.out.println("创建目录: " + parentDir.getAbsolutePath());
+                }
 
-                    // 保护逻辑：如果jssj为NULL，使用默认时长
-                    // 这种情况通常发生在人员只被检测到一次，没有触发记录合并的情况
-                    if (jssjNew == null && kssjNew != null) {
-                        Calendar cal = Calendar.getInstance();
-                        cal.setTime(kssjNew);
-                        // 默认截取30秒视频（可根据实际需求调整）
-                        cal.add(Calendar.SECOND, 30);
-                        jssjNew = cal.getTime();
-                        // 记录警告日志
-                        System.out.println("警告：轨迹记录ID=" + track.getId() + " 的jssj为NULL，使用默认时长30秒");
-                    }
+                String wjmc = sj + "/" + track.getId() + ".mp4";
+                Map<String, Object> map = new HashMap<>();
+
+                // 获取开始和结束时间
+                Date kssjNew = track.getPssj();
+                Date jssjNew = track.getJssj();
+
+                // 保护逻辑：如果jssj为NULL，使用默认时长
+                // 这种情况通常发生在人员只被检测到一次，没有触发记录合并的情况
+                if (jssjNew == null && kssjNew != null) {
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(kssjNew);
+                    // 默认截取30秒视频（可根据实际需求调整）
+                    cal.add(Calendar.SECOND, 30);
+                    jssjNew = cal.getTime();
+                    // 记录警告日志
+                    System.out.println("警告：轨迹记录ID=" + track.getId() + " 的jssj为NULL，使用默认时长30秒");
+                }
 
                     map.put("kssj",kssjNew);
                     map.put("jssj",jssjNew);
@@ -123,7 +133,7 @@ public class CaseappTask {
                                 int exitCode = convertToMp4((int) map.get("gpu"),urlrtsp,(String) map.get("wjdz"));
                                 if(exitCode==0){
                                     track.setJqzt("1");
-                                    track.setSpdz("https://"+cxip+":"+serverPort+"/profile/"+wjmc);
+                                    track.setSpdz(wjmc);
                                 }else{
                                     track.setJqzt("2");
                                 }

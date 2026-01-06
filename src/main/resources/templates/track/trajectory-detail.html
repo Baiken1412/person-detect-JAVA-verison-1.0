@@ -234,9 +234,14 @@
     <div class="header">
         <div class="header-content">
             <h1>轨迹详情</h1>
-            <button class="btn-back" onclick="window.history.back()">
-                <i class="fa fa-arrow-left"></i> 返回
-            </button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-back" onclick="window.history.back()">
+                    <i class="fa fa-arrow-left"></i> 返回
+                </button>
+                <a th:href="@{/logout}" class="btn-back" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                    🚪 退出登录
+                </a>
+            </div>
         </div>
     </div>
 

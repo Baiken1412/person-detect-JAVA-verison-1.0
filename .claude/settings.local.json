@@ -37,7 +37,8 @@
       "Bash(start:*)",
       "Bash(iconv:*)",
       "Bash(cd:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(if not exist \"D:\\\\work\\\\资产视频插件正式版v1.0\\\\src\\\\assembly\" mkdir \"D:\\\\work\\\\资产视频插件正式版v1.0\\\\src\\\\assembly\")"
     ]
   }
 }

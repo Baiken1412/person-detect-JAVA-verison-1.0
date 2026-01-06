@@ -1,6 +1,7 @@
 package com.ruoyi;
 
 import com.ruoyi.common.license.LicenseValidator;
+import com.ruoyi.common.license.MachineCodeUtil;
 import org.apache.catalina.connector.Connector;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,21 +21,24 @@ public class RuoYiApplication
     {
         // ==================== 许可证验证（已临时禁用） ====================
         // 注意：正式部署时请取消注释以启用许可证验证
-        /*
-        System.out.println("正在验证许可证...");
+
+        /*System.out.println("正在验证许可证...");
         boolean isLicenseValid = LicenseValidator.validate();
 
         if (!isLicenseValid) {
             System.err.println("========================================");
             System.err.println("  许可证验证失败，程序无法启动！");
+            // 为当前机器生成
+            String machineCode = MachineCodeUtil.getMachineCode();
             System.err.println("  请联系管理员获取有效的许可证文件");
+            System.out.println("当前机器码: " + machineCode);
             System.err.println("========================================");
             System.exit(1); // 退出程序
             return;
         }
         System.out.println("许可证验证通过，正在启动系统...");
-        System.out.println("========================================");
-        */
+        System.out.println("========================================");*/
+
         // ==================== 许可证验证结束 ====================
 
         // System.setProperty("spring.devtools.restart.enabled", "false");

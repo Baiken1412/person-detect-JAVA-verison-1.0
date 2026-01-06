@@ -1,97 +1,956 @@
 <!DOCTYPE html>
-<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>登录若依系统</title>
-    <meta name="description" content="若依后台管理框架">
-    <link href="../static/css/bootstrap.min.css" th:href="@{/css/bootstrap.min.css}" rel="stylesheet"/>
-    <link href="../static/css/font-awesome.min.css" th:href="@{/css/font-awesome.min.css}" rel="stylesheet"/>
-    <link href="../static/css/style.min.css" th:href="@{/css/style.min.css}" rel="stylesheet"/>
-    <link href="../static/css/login.min.css" th:href="@{/css/login.min.css}" rel="stylesheet"/>
-    <link href="../static/ruoyi/css/ry-ui.css" th:href="@{/ruoyi/css/ry-ui.css?v=4.7.8}" rel="stylesheet"/>
-    <!-- 360浏览器急速模式 -->
-    <meta name="renderer" content="webkit">
-    <!-- 避免IE使用兼容模式 -->
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <link rel="shortcut icon" href="../static/favicon.ico" th:href="@{favicon.ico}"/>
-    <style type="text/css">label.error { position:inherit;  }</style>
-    <script>
-        if(window.top!==window.self){alert('未登录或登录超时。请重新登录');window.top.location=window.location};
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资产管理中心 - 登录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            position: relative;
+        }
+
+        /* 动态背景粒子效果 */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float linear infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* 背景装饰圆圈 */
+        .bg-decoration {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+        }
+
+        .circle-1 {
+            width: 600px;
+            height: 600px;
+            top: -300px;
+            right: -200px;
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        .circle-2 {
+            width: 400px;
+            height: 400px;
+            bottom: -150px;
+            left: -100px;
+            animation: pulse 6s ease-in-out infinite;
+            animation-delay: 1s;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.3;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.5;
+            }
+        }
+
+        /* 主容器 */
+        .login-container {
+            position: relative;
+            z-index: 1;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* 登录卡片 */
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 1200px;
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
+            display: flex;
+            min-height: 600px;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 左侧品牌区 */
+        .card-left {
+            flex: 1;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-left::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .card-left::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -20%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .brand-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .logo-icon {
+            margin-bottom: 30px;
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.3));
+            animation: iconFloat 3s ease-in-out infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon img {
+            height: 120px;
+            width: auto;
+            display: block;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        .system-title {
+            color: white;
+            font-size: 36px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            letter-spacing: 3px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .system-subtitle {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 16px;
+            letter-spacing: 2px;
+            margin-bottom: 40px;
+            line-height: 1.8;
+        }
+
+        .feature-list {
+            text-align: left;
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 50px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 18px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .feature-item::before {
+            content: '✓';
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            margin-right: 15px;
+            font-weight: bold;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        /* 右侧表单区 */
+        .card-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 表单区域 */
+        .card-body {
+            padding: 50px 60px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .welcome-text {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .welcome-text h2 {
+            font-size: 28px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .welcome-text p {
+            font-size: 15px;
+            color: #7f8c8d;
+        }
+
+        .form-group {
+            margin-bottom: 28px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            color: #34495e;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 22px;
+            color: #7f8c8d;
+            transition: color 0.3s;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 16px 16px 55px;
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2a5298;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(42, 82, 152, 0.1);
+        }
+
+        .form-input:focus + .input-icon {
+            color: #2a5298;
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            font-size: 14px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            color: #7f8c8d;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.3s;
+        }
+
+        .remember-me:hover {
+            color: #34495e;
+        }
+
+        .remember-me input[type="checkbox"] {
+            margin-right: 8px;
+            width: 17px;
+            height: 17px;
+            cursor: pointer;
+            accent-color: #2a5298;
+        }
+
+        .forgot-password {
+            color: #2a5298;
+            text-decoration: none;
+            transition: color 0.3s;
+            font-size: 14px;
+        }
+
+        .forgot-password:hover {
+            color: #1e3c72;
+            text-decoration: underline;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 18px rgba(42, 82, 152, 0.35);
+            position: relative;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .login-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .login-button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(42, 82, 152, 0.4);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+        .login-button span {
+            position: relative;
+            z-index: 1;
+        }
+
+
+        /* 安全提示 */
+        .security-notice {
+            margin-top: 30px;
+            padding: 16px 18px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #856404;
+            line-height: 1.7;
+        }
+
+        .security-notice-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+        }
+
+        .security-notice-title::before {
+            content: '⚠️';
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        /* 页脚 */
+        .card-footer {
+            padding: 25px 60px;
+            background: transparent;
+            text-align: center;
+            font-size: 12px;
+            color: #7f8c8d;
+            border-top: 1px solid #e0e6ed;
+        }
+
+        .footer-links {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #2a5298;
+            text-decoration: none;
+            margin: 0 12px;
+            transition: color 0.3s;
+            font-size: 13px;
+        }
+
+        .footer-links a:hover {
+            color: #1e3c72;
+            text-decoration: underline;
+        }
+
+        /* 版权信息 */
+        .copyright {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            z-index: 1;
+            text-align: center;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .login-card {
+                flex-direction: column;
+                max-width: 600px;
+            }
+
+            .card-left {
+                padding: 40px 30px;
+                min-height: auto;
+            }
+
+            .logo-icon img {
+                height: 80px;
+            }
+
+            .system-title {
+                font-size: 28px;
+            }
+
+            .system-subtitle {
+                font-size: 14px;
+            }
+
+            .feature-list {
+                margin-top: 30px;
+            }
+
+            .feature-item {
+                font-size: 14px;
+            }
+
+            .card-body {
+                padding: 40px 30px;
+            }
+
+            .welcome-text h2 {
+                font-size: 24px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .login-card {
+                max-width: 100%;
+                border-radius: 0;
+            }
+
+            .card-left {
+                padding: 30px 20px;
+            }
+
+            .logo-icon img {
+                height: 60px;
+            }
+
+            .system-title {
+                font-size: 22px;
+                letter-spacing: 2px;
+            }
+
+            .system-subtitle {
+                font-size: 13px;
+                letter-spacing: 1px;
+            }
+
+            .feature-list {
+                display: none;
+            }
+
+            .card-body {
+                padding: 30px 25px;
+            }
+
+            .welcome-text h2 {
+                font-size: 20px;
+            }
+
+            .welcome-text p {
+                font-size: 14px;
+            }
+
+            .form-options {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+
+            .security-notice {
+                font-size: 12px;
+                padding: 14px;
+            }
+
+            .card-footer {
+                padding: 20px 25px;
+            }
+        }
+
+        /* 加载动画 */
+        .loading {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .loading .login-button::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: 40px;
+            margin-top: -8px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 错误提示 */
+        .error-message {
+            display: none;
+            margin-top: 20px;
+            padding: 14px 16px;
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            border-radius: 8px;
+            color: #721c24;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .error-message::before {
+            content: '❌ ';
+            margin-right: 6px;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        /* 许可证错误提示 */
+        .license-error {
+            margin-bottom: 30px;
+            padding: 18px 20px;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+            border-left: 5px solid #ffc107;
+            border-radius: 10px;
+            color: #856404;
+            font-size: 14px;
+            line-height: 1.8;
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+            animation: slideDown 0.5s ease-out;
+        }
+
+        .license-error-title {
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #856404;
+        }
+
+        .license-error-title::before {
+            content: '⚠️';
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .license-error-content {
+            color: #856404;
+            line-height: 1.8;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </head>
-<body class="signin">
-    <div class="signinpanel">
-        <div class="row">
-            <div class="col-sm-7">
-                <div class="signin-info">
-                    <div class="logopanel m-b">
-                        <h1><img alt="[ 若依 ]" src="../static/ruoyi.png" th:src="@{/ruoyi.png}"></h1>
+<body>
+    <!-- 背景装饰 -->
+    <div class="bg-decoration">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+    </div>
+
+    <!-- 动态粒子背景 -->
+    <div class="particles" id="particles"></div>
+
+    <!-- 登录容器 -->
+    <div class="login-container">
+        <div class="login-card">
+            <!-- 左侧品牌区 -->
+            <div class="card-left">
+                <div class="brand-content">
+                    <div class="logo-icon"><img src="/图片1.png" alt="系统Logo"></div>
+                    <h1 class="system-title">资产库区视频治理插件</h1>
+                    <p class="system-subtitle">视频分析与人员追溯管理系统</p>
+
+                    <div class="feature-list">
+                        <div class="feature-item">智能视频分析，实时监控库区动态</div>
+                        <div class="feature-item">人员活动追溯，全程可查可追</div>
+                        <div class="feature-item">AI自动识别，提升管理效率</div>
+                        <div class="feature-item">数据安全加密，保障信息安全</div>
                     </div>
-                    <div class="m-b"></div>
-                    <h4>欢迎使用 <strong>若依 后台管理系统</strong></h4>
-                    <ul class="m-b">
-                        <li><i class="fa fa-arrow-circle-o-right m-r-xs"></i> SpringBoot</li>
-                        <li><i class="fa fa-arrow-circle-o-right m-r-xs"></i> Mybatis</li>
-                        <li><i class="fa fa-arrow-circle-o-right m-r-xs"></i> Shiro</li>
-                        <li><i class="fa fa-arrow-circle-o-right m-r-xs"></i> Thymeleaf</li>
-                        <li><i class="fa fa-arrow-circle-o-right m-r-xs"></i> Bootstrap</li>
-                    </ul>
-                    <strong th:if="${isAllowRegister}">还没有账号？ <a th:href="@{/register}">立即注册&raquo;</a></strong>
                 </div>
             </div>
-            <div class="col-sm-5">
-                <form id="signupForm" autocomplete="off">
-                    <h4 class="no-margins">登录：</h4>
-                    <p class="m-t-md">你若不离不弃，我必生死相依</p>
-                    <input type="text"     name="username" class="form-control uname"     placeholder="用户名" value=""    />
-                    <input type="password" name="password" class="form-control pword"     placeholder="密码"   value="" />
-					<div class="row m-t" th:if="${captchaEnabled==true}">
-						<div class="col-xs-6">
-						    <input type="text" name="validateCode" class="form-control code" placeholder="验证码" maxlength="5" />
-						</div>
-						<div class="col-xs-6">
-							<a href="javascript:void(0);" title="点击更换验证码">
-								<img th:src="@{/captcha/captchaImage(type=${captchaType})}" class="imgcode" width="85%"/>
-							</a>
-						</div>
-					</div>
-                    <div class="checkbox-custom" th:if="${isRemembered}" th:classappend="${captchaEnabled==false} ? 'm-t'">
-				        <input type="checkbox" id="rememberme" name="rememberme"> <label for="rememberme">记住我</label>
-				    </div>
-                    <button class="btn btn-success btn-block" id="btnSubmit" data-loading="正在验证登录，请稍候...">登录</button>
+
+            <!-- 右侧表单区 -->
+            <div class="card-right">
+                <div class="card-body">
+                <div class="welcome-text">
+                    <h2>欢迎登录</h2>
+                    <p>请使用您的账号密码登录系统</p>
+                </div>
+
+                <form id="loginForm" autocomplete="off">
+                    <!-- 用户名输入 -->
+                    <div class="form-group">
+                        <label class="form-label">用户名</label>
+                        <div class="input-wrapper">
+                            <input type="text"
+                                   name="username"
+                                   id="username"
+                                   class="form-input"
+                                   placeholder="请输入用户名"
+                                   autocomplete="username"
+                                   required>
+                            <div class="input-icon">👤</div>
+                        </div>
+                    </div>
+
+                    <!-- 密码输入 -->
+                    <div class="form-group">
+                        <label class="form-label">密码</label>
+                        <div class="input-wrapper">
+                            <input type="password"
+                                   name="password"
+                                   id="password"
+                                   class="form-input"
+                                   placeholder="请输入密码"
+                                   autocomplete="current-password"
+                                   required>
+                            <div class="input-icon">🔒</div>
+                        </div>
+                    </div>
+
+                    <!-- 记住我和忘记密码 -->
+                    <div class="form-options">
+                        <label class="remember-me">
+                            <input type="checkbox" name="rememberme" id="rememberMe">
+                            <span>记住我</span>
+                        </label>
+                        <a href="#" class="forgot-password" onclick="handleForgotPassword(event)">忘记密码?</a>
+                    </div>
+
+                    <!-- 登录按钮 -->
+                    <button type="submit" class="login-button" id="btnSubmit" data-loading="正在验证登录，请稍候...">
+                        <span>登录系统</span>
+                    </button>
+
+                    <!-- 错误提示 -->
+                    <div class="error-message" id="errorMessage"></div>
                 </form>
-            </div>
-        </div>
-        <div class="signup-footer">
-            <div class="pull-left">
-                Copyright © 2018-2023 ruoyi.vip All Rights Reserved. <br>
+
+                <!-- 安全提示 -->
+                <div class="security-notice">
+                    <div class="security-notice-title">安全提示</div>
+                    <div>
+                        本系统为资产管理专用系统，请妥善保管账号密码。
+                        如非本人操作或发现异常登录，请立即联系系统管理员。
+                    </div>
+                </div>
+
+                <!-- 卡片底部 -->
+                <div class="card-footer">
+                    <div class="footer-links">
+                        <a href="#" onclick="showHelp(event)">使用帮助</a>
+                        <span>|</span>
+                        <a href="#" onclick="showContact(event)">联系管理员</a>
+                        <span>|</span>
+                        <a href="#" onclick="showAbout(event)">关于系统</a>
+                    </div>
+                    <div>推荐使用 Chrome、Edge、Firefox 浏览器访问</div>
+                </div>
             </div>
         </div>
     </div>
-<script th:inline="javascript"> var ctx = [[@{/}]]; var captchaType = [[${captchaType}]]; var captchaEnabled = [[${captchaEnabled}]];</script>
-<!--[if lte IE 8]><script>window.location.href=ctx+'html/ie.html';</script><![endif]-->
-<!-- 全局js -->
-<script src="../static/js/jquery.min.js" th:src="@{/js/jquery.min.js}"></script>
-<script src="../static/ajax/libs/validate/jquery.validate.min.js" th:src="@{/ajax/libs/validate/jquery.validate.min.js}"></script>
-<script src="../static/ajax/libs/layer/layer.min.js" th:src="@{/ajax/libs/layer/layer.min.js}"></script>
-<script src="../static/ajax/libs/blockUI/jquery.blockUI.js" th:src="@{/ajax/libs/blockUI/jquery.blockUI.js}"></script>
-<script src="../static/ruoyi/js/ry-ui.js" th:src="@{/ruoyi/js/ry-ui.js?v=4.7.8}"></script>
-<script src="../static/ruoyi/login.js" th:src="@{/ruoyi/login.js}"></script>
-<script th:inline="javascript">
-    var yhm = [[${yhm}]];
-    var mm = [[${mm}]];
-    if(yhm!=null){
-        $('input[name="username"]').val(yhm);
-    }
-    if(mm!=null){
-        $('input[name="password"]').val(mm);
-    }
-    setTimeout(function(){
-        if(yhm!=null){
-            document.getElementById("btnSubmit").click();
+
+    <!-- 版权信息 -->
+    <div class="copyright">
+        Copyright © 2023-2024 某科技公司 版权所有
+    </div>
+
+    <!-- 引入必要的JS库 -->
+    <script src="../static/js/jquery.min.js" th:src="@{/js/jquery.min.js}"></script>
+    <script src="../static/ajax/libs/layer/layer.min.js" th:src="@{/ajax/libs/layer/layer.min.js}"></script>
+    <script src="../static/ajax/libs/blockUI/jquery.blockUI.js" th:src="@{/ajax/libs/blockUI/jquery.blockUI.js}"></script>
+    <script src="../static/ruoyi/js/ry-ui.js" th:src="@{/ruoyi/js/ry-ui.js?v=4.7.8}"></script>
+    
+    <script th:inline="javascript">
+        var ctx = [[@{/}]];
+        var web_status = { SUCCESS: 0 };
+    </script>
+
+    <script>
+        // 生成粒子背景
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                particle.style.width = particle.style.height = (Math.random() * 3 + 1) + 'px';
+                particlesContainer.appendChild(particle);
+            }
         }
-    },100)
-</script>
+
+        // 显示错误信息
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+
+            setTimeout(() => {
+                errorElement.classList.remove('show');
+            }, 5000);
+        }
+
+        // 登录函数
+        function login() {
+            var username = $.common.trim($("input[name='username']").val());
+            var password = $.common.trim($("input[name='password']").val());
+            var rememberMe = $("input[name='rememberme']").is(':checked');
+            
+            $.ajax({
+                type: "post",
+                url: ctx + "login",
+                data: {
+                    "username": username,
+                    "password": password,
+                    "rememberMe": rememberMe
+                },
+                beforeSend: function () {
+                    $.modal.loading($("#btnSubmit").data("loading"));
+                    var form = document.getElementById('loginForm');
+                    form.classList.add('loading');
+                },
+                success: function(r) {
+                    if (r.code == web_status.SUCCESS) {
+                        //首页
+                        //location.href = ctx + 'index';
+                    
+                        location.href = '/caseapp/track';
+                    } else {
+                        var form = document.getElementById('loginForm');
+                        form.classList.remove('loading');
+                        showError(r.msg || '登录失败，请检查用户名和密码');
+                    }
+                    $.modal.closeLoading();
+                },
+                error: function() {
+                    var form = document.getElementById('loginForm');
+                    form.classList.remove('loading');
+                    $.modal.closeLoading();
+                    showError('网络错误，请稍后重试');
+                }
+            });
+        }
+
+        // 忘记密码
+        function handleForgotPassword(event) {
+            event.preventDefault();
+            alert('请联系系统管理员重置密码\n联系电话：010-12345678');
+        }
+
+        // 显示帮助
+        function showHelp(event) {
+            event.preventDefault();
+            alert('使用帮助：\n\n1. 使用管理员分配的账号密码登录\n2. 首次登录建议修改初始密码\n3. 如遇问题请联系系统管理员\n\n技术支持：010-12345678');
+        }
+
+        // 显示联系方式
+        function showContact(event) {
+            event.preventDefault();
+            alert('联系管理员：\n\n系统管理员：张三\n联系电话：010-12345678\n邮箱：admin@example.com\n\n技术支持：某科技公司');
+        }
+
+        // 显示关于信息
+        function showAbout(event) {
+            event.preventDefault();
+            alert('资产管理中心\n视频分析与人员追溯管理系统\n\n版本：V1.0.0\n发布日期：2024-12-30\n\n开发单位：某科技公司\nCopyright © 2023-2024 版权所有');
+        }
+
+        // 页面加载完成后初始化
+        $(function() {
+            createParticles();
+
+            // 自动聚焦到用户名输入框
+            document.getElementById('username').focus();
+
+            // 检查是否记住了用户名
+            const rememberedUser = localStorage.getItem('rememberedUser');
+            if (rememberedUser) {
+                document.getElementById('username').value = rememberedUser;
+                document.getElementById('rememberMe').checked = true;
+                document.getElementById('password').focus();
+            }
+
+            // 监听记住我复选框
+            document.getElementById('rememberMe').addEventListener('change', function() {
+                if (!this.checked) {
+                    localStorage.removeItem('rememberedUser');
+                }
+            });
+
+            // 表单提交处理
+            $("#loginForm").on('submit', function(e) {
+                e.preventDefault();
+                
+                const rememberMe = document.getElementById('rememberMe').checked;
+                const username = document.getElementById('username').value.trim();
+
+                // 保存用户名（如果勾选了记住我）
+                if (rememberMe && username) {
+                    localStorage.setItem('rememberedUser', username);
+                } else {
+                    localStorage.removeItem('rememberedUser');
+                }
+                
+                // 执行登录
+                login();
+            });
+        });
+
+        // 输入框焦点动画
+        document.querySelectorAll('.form-input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.parentElement.style.transform = 'translateY(-2px)';
+            });
+
+            input.addEventListener('blur', function() {
+                this.parentElement.parentElement.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
 </body>
 </html>

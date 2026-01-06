@@ -2,6 +2,8 @@ package com.ruoyi.project.system.user.controller;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.ruoyi.common.license.LicenseValidator;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.UsernamePasswordToken;
@@ -56,6 +58,7 @@ public class LoginController extends BaseController
             mmap.put("yhm",yhm);
             mmap.put("mm",mm);
         }
+
         return "login";
     }
 
@@ -63,6 +66,16 @@ public class LoginController extends BaseController
     @ResponseBody
     public AjaxResult ajaxLogin(String username, String password, Boolean rememberMe)
     {
+        // 验证许可证并获取错误信息
+        String licenseError = LicenseValidator.validateWithMessage();
+        if (licenseError != null) {
+            System.err.println("========================================");
+            System.err.println("  许可证验证失败！");
+            System.err.println("  错误信息: " + licenseError);
+            System.err.println("========================================");
+            return error(licenseError);
+        }
+
         UsernamePasswordToken token = new UsernamePasswordToken(username, password, rememberMe);
         Subject subject = SecurityUtils.getSubject();
         try

@@ -1479,8 +1479,10 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         {
             AppTrack track = tracks.get(i);
             String trackTime = track.getPssj() != null ? DateUtil.formatDateTime(track.getPssj()) : "";
+            // 导出HTML使用相对路径，不使用完整URL（getSpdzRaw获取原始相对路径，getSpdz会转换为完整URL）
+            String videoPath = track.getSpdzRaw() != null ? track.getSpdzRaw() : "";
 
-            js.append("    { video: '").append(track.getSpdz() != null ? track.getSpdz() : "").append("', ");
+            js.append("    { video: '").append(videoPath).append("', ");
             js.append("time: '").append(trackTime).append("', ");
             js.append("area: '").append(track.getQymc()).append("', ");
             js.append("rysl: ").append(track.getRysl()).append(", ");
