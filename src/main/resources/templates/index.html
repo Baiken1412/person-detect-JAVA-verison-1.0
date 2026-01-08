@@ -15,6 +15,20 @@
     <link th:href="@{/css/style.min.css}" rel="stylesheet"/>
     <link th:href="@{/css/skins.css}" rel="stylesheet"/>
     <link th:href="@{/ruoyi/css/ry-ui.css?v=4.7.8}" rel="stylesheet"/>
+    <style type="text/css">
+        /* 退出登录链接样式 */
+        .logout-link {
+            color: #ff9800 !important;
+            font-weight: 600 !important;
+        }
+        .logout-link:hover {
+            color: #f57c00 !important;
+            background-color: #fff3e0 !important;
+        }
+        .logout-link i {
+            color: #ff9800 !important;
+        }
+    </style>
 </head>
 <body class="fixed-sidebar full-height-layout gray-bg" th:classappend="${isMobile} ? 'canvas-menu'" style="overflow: hidden">
 <div id="wrapper">
@@ -220,7 +234,7 @@
 							</li>
 							<li class="divider"></li>
 							<li>
-								<a th:href="@{logout}">
+								<a th:href="@{logout}" class="logout-link">
 								<i class="fa fa-sign-out"></i> 退出登录</a>
 							</li>
 						</ul>

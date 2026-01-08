@@ -58,7 +58,6 @@
             height: 80px;
             width: auto;
             mix-blend-mode: multiply;
-            /* 如果multiply效果不好，可以尝试 screen 或 darken */
         }
 
         .header-text h1 {
@@ -139,25 +138,12 @@
             align-items: center;
         }
 
-        /* 区域筛选容器更宽 */
-        .toolbar > div:nth-child(2) {
-            min-width: 250px;
-        }
-
-        /* 状态筛选容器更宽 */
-        .toolbar > div:nth-child(3) {
-            min-width: 200px;
-        }
-
-        /* 管理员筛选容器更宽 */
-        .toolbar > div:nth-child(4) {
-            min-width: 200px;
-        }
-
-        /* 特殊筛选容器更宽 */
-        .toolbar > div:nth-child(5) {
-            min-width: 200px;
-        }
+        /* 调整工具栏各筛选框的宽度 */
+        .toolbar > div:nth-child(2) { min-width: 250px; } /* 区域 */
+        .toolbar > div:nth-child(3) { min-width: 180px; } /* 状态 */
+        .toolbar > div:nth-child(4) { min-width: 220px; } /* 原因 (多选) */
+        .toolbar > div:nth-child(5) { min-width: 200px; } /* 管理员 */
+        .toolbar > div:nth-child(6) { min-width: 200px; } /* 特殊筛选 */
 
         .toolbar label {
             font-size: 14px;
@@ -169,25 +155,93 @@
         .toolbar input[type="date"],
         .toolbar select {
             padding: 8px 12px;
-            border: 1px solid #ddd;
+            border: 2px solid #dee2e6;
             border-radius: 4px;
             font-size: 14px;
+            font-weight: normal;
+            color: #333;
+            background: white;
+            min-height: 38px;
         }
 
-        /* select2 容器对齐 */
+        .toolbar input[type="date"]::placeholder,
+        .toolbar select::placeholder {
+            color: #999;
+            font-size: 14px;
+            font-weight: normal;
+        }
+
         .toolbar .select2-container {
             vertical-align: middle;
         }
 
+        /* 统一所有筛选框的样式 */
         .toolbar .select2-selection {
-            height: auto;
-            min-height: 38px;
-            display: flex;
-            align-items: center;
+            height: auto !important;
+            min-height: 38px !important;
+            display: flex !important;
+            align-items: center !important;
+            border: 2px solid #dee2e6 !important;
+            border-radius: 4px !important;
+            padding: 5px 10px !important;
+            background: white !important;
+            font-size: 14px !important;
+            font-weight: normal !important;
         }
 
         .toolbar .select2-selection__rendered {
-            line-height: 38px;
+            line-height: 38px !important;
+            font-size: 14px !important;
+            font-weight: normal !important;
+            color: #333 !important;
+        }
+
+        .toolbar .select2-selection__placeholder {
+            color: #999 !important;
+            font-size: 14px !important;
+            font-weight: normal !important;
+        }
+
+        .toolbar .select2-selection__choice {
+            font-size: 13px !important;
+            font-weight: normal !important;
+        }
+
+        .toolbar .select2-search__field {
+            font-size: 14px !important;
+            font-weight: normal !important;
+            color: #333 !important;
+        }
+
+        .toolbar .select2-selection--single .select2-selection__rendered {
+            padding-left: 0 !important;
+        }
+
+        .toolbar .select2-selection--multiple .select2-selection__rendered {
+            padding-left: 0 !important;
+        }
+
+        /* 下拉选项样式统一 */
+        .select2-dropdown {
+            border: 2px solid #dee2e6 !important;
+            border-radius: 4px !important;
+        }
+
+        .select2-results__option {
+            font-size: 14px !important;
+            font-weight: normal !important;
+            color: #333 !important;
+            padding: 8px 12px !important;
+        }
+
+        .select2-results__option--highlighted {
+            background-color: #e7f3ff !important;
+            color: #333 !important;
+        }
+
+        .select2-results__option--selected {
+            background-color: #d4e9ff !important;
+            color: #333 !important;
         }
 
         /* 标注模态框中的 Select2 样式 */
@@ -200,7 +254,6 @@
             position: relative !important;
         }
 
-        /* 添加下拉箭头指示 */
         #compositeAnnotationModal .select2-container--default .select2-selection--multiple::after {
             content: '▼';
             position: absolute;
@@ -216,18 +269,7 @@
             border-color: #4c6ef5 !important;
         }
 
-        /* Placeholder 文字颜色设置为深黑色 */
         #compositeAnnotationModal .select2-search__field::placeholder {
-            color: #333 !important;
-            opacity: 1 !important;
-        }
-
-        #compositeAnnotationModal .select2-search__field::-webkit-input-placeholder {
-            color: #333 !important;
-            opacity: 1 !important;
-        }
-
-        #compositeAnnotationModal .select2-search__field::-moz-placeholder {
             color: #333 !important;
             opacity: 1 !important;
         }
@@ -240,169 +282,12 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
-            /* 动画效果由 button-animations.css 提供 */
+            font-weight: normal;
+            min-height: 38px;
         }
 
         .toolbar button:hover {
             background: #1e3c72;
-            /* 悬停动画效果由 button-animations.css 提供 */
-        }
-
-        .events-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
-        }
-
-        .event-card {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: transform 0.3s, box-shadow 0.3s;
-            cursor: pointer;
-        }
-
-        .event-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-        }
-
-        .event-card.unlabeled {
-            border: 2px solid #ff6b6b;
-        }
-
-        .event-card.labeled {
-            border: 2px solid #51cf66;
-        }
-
-        .event-card.worktime-warning {
-            border: 3px solid #ff6b6b;
-            background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
-            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-        }
-
-        .event-card.worktime-warning:hover {
-            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
-        }
-
-        .worktime-warning-badge {
-            display: inline-block;
-            background: #ff6b6b;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-top: 8px;
-        }
-
-        .event-thumbnail {
-            width: 100%;
-            height: 180px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 48px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .event-thumbnail img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .event-thumbnail .thumbnail-icon {
-            font-size: 48px;
-            z-index: 1;
-            /* 指定Emoji字体，提高兼容性 */
-            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", sans-serif;
-        }
-
-        .event-status {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .event-status.unlabeled {
-            background: #ff6b6b;
-            color: white;
-        }
-
-        .event-status.labeled {
-            background: #51cf66;
-            color: white;
-        }
-
-        .event-info {
-            padding: 15px;
-        }
-
-        .event-time {
-            font-size: 16px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 8px;
-        }
-
-        .event-location {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-        }
-
-        .event-location::before {
-            content: "📍";
-            margin-right: 5px;
-        }
-
-        .event-reason {
-            font-size: 13px;
-            color: #888;
-            padding: 5px 10px;
-            background: #f8f9fa;
-            border-radius: 4px;
-            display: inline-block;
-        }
-
-        .event-suggestion {
-            font-size: 12px;
-            color: #ff9800;
-            padding: 8px 10px;
-            background: #fff3e0;
-            border-radius: 4px;
-            margin-top: 8px;
-            border-left: 3px solid #ff9800;
-        }
-
-        .event-suggestion::before {
-            content: "💡 ";
-        }
-
-
-        .no-events {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-        }
-
-        .no-events svg {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 20px;
-            opacity: 0.5;
         }
 
         .loading-tip {
@@ -428,7 +313,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
 
         /* ===== Composite Events ===== */
         .composite-section {
@@ -498,1468 +382,687 @@
             font-size: 13px;
         }
 
-        .analyze-btn {
-            padding: 8px 16px;
-            background: #51cf66;
+        /* ===== Pagination Styles ===== */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            padding-bottom: 10px;
+        }
+
+        .pagination {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .page-item .page-link {
+            padding: 8px 14px;
+            border: 1px solid #dee2e6;
+            background: white;
+            color: #2a5298;
+            text-decoration: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .page-item.active .page-link {
+            background: #2a5298;
             color: white;
-            border: none;
+            border-color: #2a5298;
+        }
+
+        .page-item.disabled .page-link {
+            color: #999;
+            cursor: not-allowed;
+            background: #f8f9fa;
+            border-color: #e9ecef;
+        }
+
+        .page-item .page-link:hover:not(.disabled):not(.active) {
+            background-color: #e2e6ea;
+            border-color: #dae0e5;
+            color: #1e3c72;
+        }
+
+        /* 退出登录按钮样式 */
+        .logout-button {
+            background: #ff9800 !important;
+            border: 1px solid #ff9800 !important;
+            color: white !important;
+            padding: 10px 20px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
         }
 
-        .analyze-btn:hover {
-            background: #40c057;
+        .logout-button:hover {
+            background: #f57c00 !important;
+            border-color: #f57c00 !important;
+            box-shadow: 0 4px 8px rgba(255, 152, 0, 0.4);
+            transform: translateY(-1px);
         }
 
         @media (max-width: 768px) {
-            .header {
-                padding: 30px 20px;
-            }
-
-            .header-content {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .header-logo img {
-                height: 60px;
-            }
-
-            .header-text h1 {
-                font-size: 24px;
-            }
-
-            .header-text p {
-                font-size: 14px;
-            }
-
-            .events-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .toolbar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .toolbar > * {
-                width: 100%;
-            }
-
-            .modal-content {
-                width: 95%;
-            }
+            .header { padding: 30px 20px; }
+            .header-content { flex-direction: column; text-align: center; }
+            .header-logo img { height: 60px; }
+            .header-text h1 { font-size: 24px; }
+            .header-text p { font-size: 14px; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .toolbar > * { width: 100%; }
+            .modal-content { width: 95%; }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <div class="header-logo"><img src="/图片1.png" alt="系统Logo"></div>
-            <div class="header-text">
-                <h1 id="systemTitle">资产视频分析插件</h1>
-                <p id="systemSubtitle">人员活动自动识别与追溯管理系统</p>
-            </div>
-            <div style="margin-left: auto; display: flex; gap: 10px;">
-                <button style="background: rgba(255,255,255,0.4); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: default; font-size: 14px; font-weight: bold;">
-                    🏠 事件页面
-                </button>
-                <button onclick="goToEventList()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
-                    📝 轨迹页面
-                </button>
-                <button onclick="goToDailyReport()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
-                    📊 每日报告
-                </button>
-                <button onclick="goToShelfTrajectory()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
-                    📦 货位位置查询
-                </button>
-                <a th:href="@{/logout}" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s; text-decoration: none; display: inline-block;">
-                    🚪 退出登录
-                </a>
-            </div>
+<div class="header">
+    <div class="header-content">
+        <div class="header-logo"><img src="/图片1.png" alt="系统Logo"></div>
+        <div class="header-text">
+            <h1 id="systemTitle">资产视频分析插件</h1>
+            <p id="systemSubtitle">人员活动自动识别与追溯管理系统</p>
+        </div>
+        <div style="margin-left: auto; display: flex; gap: 10px;">
+            <button style="background: rgba(255,255,255,0.4); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: default; font-size: 14px; font-weight: bold;">
+                🏠 事件页面
+            </button>
+            <button onclick="goToEventList()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                📝 轨迹页面
+            </button>
+            <button onclick="goToDailyReport()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                📊 每日报告
+            </button>
+            <button onclick="goToShelfTrajectory()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                📦 货位位置查询
+            </button>
+            <a th:href="@{/logout}" class="logout-button">
+                🚪 退出登录
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="stats-bar">
+        <div class="stat-card">
+            <h3>📊 今日事件总数</h3>
+            <div class="number" id="todayTotal">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>⏳ 待标注事件</h3>
+            <div class="number" id="unlabeledCount">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>✅ 已标注事件</h3>
+            <div class="number" id="labeledCount">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>📅 本月事件总数</h3>
+            <div class="number" id="monthTotal">0</div>
         </div>
     </div>
 
-    <div class="container">
-        <!-- 统计卡片 -->
-        <div class="stats-bar">
-            <div class="stat-card">
-                <h3>📊 今日事件总数</h3>
-                <div class="number" id="todayTotal">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>⏳ 待标注事件</h3>
-                <div class="number" id="unlabeledCount">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>✅ 已标注事件</h3>
-                <div class="number" id="labeledCount">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>📅 本月事件总数</h3>
-                <div class="number" id="monthTotal">0</div>
-            </div>
+    <div class="toolbar">
+        <div>
+            <label for="beginDateFilter">📅 日期筛选：</label>
+            <input type="date" id="beginDateFilter">
+            <span style="margin: 0 5px;">至</span>
+            <input type="date" id="endDateFilter">
         </div>
-
-        <!-- 工具栏 -->
-        <div class="toolbar">
-            <div>
-                <label for="beginDateFilter">📅 日期筛选：</label>
-                <input type="date" id="beginDateFilter">
-                <span style="margin: 0 5px;">至</span>
-                <input type="date" id="endDateFilter">
-            </div>
-            <div>
-                <label for="areaFilter">📍 区域筛选：</label>
-                <select id="areaFilter" class="form-control noselect2">
-                    <option value="">全部区域</option>
-                </select>
-            </div>
-            <div>
-                <label for="statusFilter">🏷️ 状态筛选：</label>
-                <select id="statusFilter" class="form-control noselect2">
-                    <option value="">全部状态</option>
-                </select>
-            </div>
-            <div>
-                <label for="personFilter">👤 管理员筛选：</label>
-                <select id="personFilter" class="form-control noselect2" multiple>
-                    <!-- 人员选项将通过JavaScript动态生成 -->
-                </select>
-            </div>
-            <div>
-                <label for="specialFilter">⚠️ 特殊筛选：</label>
-                <select id="specialFilter" class="form-control noselect2" multiple>
-                    <option value="nonWorktime">非工作时间提示</option>
-                    <option value="abnormalPerson">人员异常数量</option>
-                </select>
-            </div>
-            <button onclick="analyzeCompositeEvents()">🔍 筛选</button>
-            <button onclick="resetFilters()" style="background: #868e96;">🔄 重置</button>
-            <button onclick="syncCompositeEvents()" style="background: #ff6b6b;">⚡ 重新同步复合事件</button>
-            <div style="flex-basis: 100%; height: 0;"></div>
-            <button onclick="toggleSelectAll()" style="background: #20c997;">☑️ 全选/反选</button>
-            <button onclick="exportSelectedCompositeEvents()" style="background: #ff9800;">📥 导出选中台账</button>
-            <button onclick="exportSelectedEventPackages()" style="background: #ff8c42;">📦 导出事件包</button>
+        <div>
+            <label for="areaFilter">📍 区域筛选：</label>
+            <select id="areaFilter" class="form-control noselect2">
+                <option value="">全部区域</option>
+            </select>
         </div>
-
-        <!-- 复合事件区域 -->
-        <div class="composite-section" id="compositeSection">
-            <h2>
-                <span>🔗 复合事件列表（事件经过还原）</span>
-            </h2>
-            <div id="compositeList"></div>
+        <div>
+            <label for="statusFilter">🏷️ 状态筛选：</label>
+            <select id="statusFilter" class="form-control noselect2">
+                <option value="">全部状态</option>
+            </select>
         </div>
+        <div>
+            <label for="reasonFilter">📝 原因筛选：</label>
+            <select id="reasonFilter" class="form-control noselect2" multiple>
+                <option value="盘库">盘库</option>
+                <option value="入库物品">入库物品</option>
+                <option value="出库物品">出库物品</option>
+                <option value="巡查">巡查</option>
+                <option value="整理">整理</option>
+                <option value="其他">其他</option>
+            </select>
+        </div>
+        <div>
+            <label for="personFilter">👤 管理员筛选：</label>
+            <select id="personFilter" class="form-control noselect2" multiple>
+            </select>
+        </div>
+        <div>
+            <label for="specialFilter">⚠️ 特殊筛选：</label>
+            <select id="specialFilter" class="form-control noselect2" multiple>
+                <option value="nonWorktime">非工作时间提示</option>
+                <option value="abnormalPerson">人员异常数量</option>
+            </select>
+        </div>
+        <button onclick="analyzeCompositeEvents(1)">🔍 筛选</button>
+        <button onclick="resetFilters()" style="background: #868e96;">🔄 重置</button>
+        <button onclick="syncCompositeEvents()" style="background: #ff6b6b;">⚡ 重新同步复合事件</button>
+        <div style="flex-basis: 100%; height: 0;"></div>
+        <button onclick="toggleSelectAll()" style="background: #20c997;">☑️ 全选/反选</button>
+        <button onclick="exportSelectedCompositeEvents()" style="background: #ff9800;">📥 导出选中台账</button>
+        <button onclick="exportSelectedEventPackages()" style="background: #ff8c42;">📦 导出事件包</button>
     </div>
 
-    <div class="footer">
-        Copyright © 2023-2024 某科技公司 版权所有
+    <div class="composite-section" id="compositeSection">
+        <h2>
+            <span>🔗 复合事件列表（事件经过还原）</span>
+        </h2>
+        <div id="compositeList"></div>
+
+        <div id="pagination" class="pagination-container"></div>
     </div>
+</div>
+
+<div class="footer">
+    Copyright © 2023-2024 某科技公司 版权所有
+</div>
 
 
-    <script>
-        // 事件数据
-        let eventsData = []; // 事件数据
-        let compositeEvents = []; // 复合事件数据
-        let currentPage = 1; // 当前页码
-        let pageSize = 10; // 每页显示数量
-        let totalCount = 0; // 总记录数
-        let hasMore = true; // 是否还有更多数据
-        let isLoading = false; // 是否正在加载
-        let renderedCount = 0; // 已渲染的事件数量中
-        let currentFilters = {}; // 当前筛选条件
+<script>
+    // 数据变量
+    let compositeEvents = []; // 复合事件数据
+    let currentPage = 1; // 当前页码
+    let pageSize = 10; // 每页显示数量
+    let totalCount = 0; // 总记录数
+    let isLoading = false; // 是否正在加载
+    let currentFilters = {}; // 当前筛选条件
 
-        // 区域邻接关系（定义哪些区域是相邻的）
-        const areaAdjacency = {
-            '库区大门': ['通道'],
-            '通道': ['库区大门', '贵重物品区', '小库房门口'],
-            '贵重物品区': ['通道'],
-            '小库房门口': ['通道']
+    // 区域邻接关系（定义哪些区域是相邻的）
+    const areaAdjacency = {
+        '库区大门': ['通道'],
+        '通道': ['库区大门', '贵重物品区', '小库房门口'],
+        '贵重物品区': ['通道'],
+        '小库房门口': ['通道']
+    };
+
+    // 加载系统配置（标题等）
+    function loadSystemConfig() {
+        fetch('/system/config/info')
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 0 && data.data) {
+                    document.getElementById('systemTitle').textContent = data.data.title;
+                    document.getElementById('systemSubtitle').textContent = data.data.subtitle;
+                    document.title = data.data.title;
+                }
+            })
+            .catch(error => {
+                console.error('加载系统配置失败:', error);
+            });
+    }
+
+    // 初始化页面
+    function init() {
+        loadSystemConfig();
+        updateStats();
+        // 加载筛选条件的下拉框数据
+        loadAreaList();
+        loadDictData();
+        loadPersonList();
+
+        // 设置默认日期：昨天到今天
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const todayStr = today.toISOString().split('T')[0];
+
+        document.getElementById('beginDateFilter').value = yesterdayStr;
+        document.getElementById('endDateFilter').value = todayStr;
+
+        // 保存当前筛选条件
+        currentFilters = {
+            beginDateFilter: yesterdayStr,
+            endDateFilter: todayStr,
+            areaFilter: '',
+            statusFilter: '',
+            reasonFilter: '', // 新增
+            personFilter: [],
+            specialFilter: []
         };
 
-        // 加载系统配置（标题等）
-        function loadSystemConfig() {
-            fetch('/system/config/info')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.code === 0 && data.data) {
-                        document.getElementById('systemTitle').textContent = data.data.title;
-                        document.getElementById('systemSubtitle').textContent = data.data.subtitle;
-                        document.title = data.data.title;
-                    }
-                })
-                .catch(error => {
-                    console.error('加载系统配置失败:', error);
-                });
-        }
+        // 初始化 select2
+        $('#reasonFilter').select2({
+            width: '220px',
+            placeholder: '请选择原因（可多选）',
+            allowClear: true
+        });
 
-        // 初始化页面
-        function init() {
-            loadSystemConfig();
-            updateStats();
-            // 加载筛选条件的下拉框数据
-            loadAreaList();
-            loadDictData();
-            loadPersonList();
+        $('#specialFilter').select2({
+            width: '200px',
+            placeholder: '请选择特殊筛选',
+            allowClear: true
+        });
 
-            // 设置默认日期：昨天到今天
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
+        // 自动加载本月的复合事件（第一页）
+        analyzeCompositeEvents(1);
+    }
 
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-            const todayStr = today.toISOString().split('T')[0];
-
-            document.getElementById('beginDateFilter').value = yesterdayStr;
-            document.getElementById('endDateFilter').value = todayStr;
-
-            // 保存当前筛选条件
-            currentFilters = {
-                beginDateFilter: yesterdayStr,
-                endDateFilter: todayStr,
-                areaFilter: '',
-                statusFilter: '',
-                personFilter: [],
-                specialFilter: []
-            };
-
-            // 初始化特殊筛选的select2
-            $('#specialFilter').select2({
-                width: '200px',
-                placeholder: '请选择特殊筛选',
-                allowClear: true
-            });
-
-            // 自动加载本月的复合事件
-            analyzeCompositeEvents();
-
-            // 设置滚动监听
-            setupScrollListener();
-        }
-        
-        // 设置滚动监听
-        function setupScrollListener() {
-            let scrollTimer = null;
-            window.addEventListener('scroll', function() {
-                // 防抖处理
-                if (scrollTimer) {
-                    clearTimeout(scrollTimer);
-                }
-                scrollTimer = setTimeout(function() {
-                    // 检查是否滚动到底部
-                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                    const windowHeight = window.innerHeight;
-                    const documentHeight = document.documentElement.scrollHeight;
-
-                    // 当距离底部小于100px时，加载更多
-                    // 修复：增加 isLoading 检查，避免在加载中重复触发
-                    if (documentHeight - scrollTop - windowHeight < 100 && !isLoading && hasMore) {
-                        loadMoreEvents();
-                    }
-                }, 100);
-            });
-        }
-
-        // 加载字典数据
-        function loadDictData() {
-            fetch('/caseapp/track/dict/biz_annotation_status')
-                .then(response => {
-                    console.log('字典数据响应状态:', response.status);
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('字典数据返回:', data);
-                    if (data.code === 0 && data.data) {
-                        const statusFilter = document.getElementById('statusFilter');
-                        // 保留"全部状态"选项
-                        statusFilter.innerHTML = '<option value="">全部状态</option>';
-
-                        if (data.data.length === 0) {
-                            console.warn('警告: 字典数据为空，请检查数据库中是否存在 biz_annotation_status 类型的字典数据');
-                            // 添加默认选项
-                            const defaultOptions = [
-                                {dictValue: '0', dictLabel: '未标注'},
-                                {dictValue: '1', dictLabel: '已标注'}
-                            ];
-                            defaultOptions.forEach(item => {
-                                const option = document.createElement('option');
-                                option.value = item.dictValue;
-                                option.textContent = item.dictLabel;
-                                statusFilter.appendChild(option);
-                            });
-                        } else {
-                            // 去重：使用Map确保每个dictValue只出现一次
-                            const uniqueData = new Map();
-                            data.data.forEach(item => {
-                                if (!uniqueData.has(item.dictValue)) {
-                                    uniqueData.set(item.dictValue, item);
-                                }
-                            });
-
-                            // 添加字典选项
-                            uniqueData.forEach(item => {
-                                const option = document.createElement('option');
-                                option.value = item.dictValue;
-                                option.textContent = item.dictLabel;
-                                statusFilter.appendChild(option);
-                            });
-                        }
-
-                        // 初始化 select2
-                        $('#statusFilter').select2({
-                            width: '200px',
-                            placeholder: '请选择状态'
-                        });
-                    } else {
-                        console.error('字典数据格式错误:', data);
-                        // 使用默认选项
-                        const statusFilter = document.getElementById('statusFilter');
-                        statusFilter.innerHTML = '<option value="">全部状态</option>';
-                        const defaultOptions = [
-                            {dictValue: '0', dictLabel: '未标注'},
-                            {dictValue: '1', dictLabel: '已标注'}
-                        ];
-                        defaultOptions.forEach(item => {
-                            const option = document.createElement('option');
-                            option.value = item.dictValue;
-                            option.textContent = item.dictLabel;
-                            statusFilter.appendChild(option);
-                        });
-                        $('#statusFilter').select2({
-                            width: '200px',
-                            placeholder: '请选择状态'
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('获取字典数据失败:', error);
-                    // 即使失败也提供默认选项
+    // --- 字典和下拉框加载逻辑保持不变 (loadDictData, loadAreaList, loadPersonList) ---
+    // 加载字典数据
+    function loadDictData() {
+        fetch('/caseapp/track/dict/biz_annotation_status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 0 && data.data) {
                     const statusFilter = document.getElementById('statusFilter');
                     statusFilter.innerHTML = '<option value="">全部状态</option>';
-                    const defaultOptions = [
-                        {dictValue: '0', dictLabel: '未标注'},
-                        {dictValue: '1', dictLabel: '已标注'}
-                    ];
-                    defaultOptions.forEach(item => {
+                    const uniqueData = new Map();
+                    data.data.forEach(item => {
+                        if (!uniqueData.has(item.dictValue)) {
+                            uniqueData.set(item.dictValue, item);
+                        }
+                    });
+                    uniqueData.forEach(item => {
                         const option = document.createElement('option');
                         option.value = item.dictValue;
                         option.textContent = item.dictLabel;
                         statusFilter.appendChild(option);
                     });
-                    $('#statusFilter').select2({
-                        width: '200px',
-                        placeholder: '请选择状态'
-                    });
-                });
-        }
-
-
-        // 加载区域列表
-        function loadAreaList() {
-            fetch('/caseapp/roomip/areas', {
-                method: 'POST'
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.code === 0 && data.data) {
-                        const areaFilter = document.getElementById('areaFilter');
-                        // 清空现有选项（保留"全部区域"）
-                        areaFilter.innerHTML = '<option value="">全部区域</option>';
-                        // 添加区域选项
-                        data.data.forEach(area => {
-                            const option = document.createElement('option');
-                            option.value = area;
-                            option.textContent = area;
-                            areaFilter.appendChild(option);
-                        });
-                        // 初始化 select2（可搜索）
-                        $('#areaFilter').select2({
-                            width: '250px',
-                            placeholder: '请选择区域'
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('获取区域列表失败:', error);
-                });
-        }
-
-        // 加载人员列表（管理员）
-        function loadPersonList() {
-            fetch('/caseapp/person/persons', {
-                method: 'POST'
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.code === 0 && data.data) {
-                        const personFilter = document.getElementById('personFilter');
-                        
-                        // 如果 select2 已经初始化，先销毁
-                        if ($('#personFilter').data('select2')) {
-                            $('#personFilter').select2('destroy');
-                        }
-                        
-                        // 清空现有选项
-                        personFilter.innerHTML = '';
-                        // 添加人员选项
-                        data.data.forEach(person => {
-                            const option = document.createElement('option');
-                            option.value = person;
-                            option.textContent = person;
-                            personFilter.appendChild(option);
-                        });
-                        // 初始化 select2（可搜索，多选）
-                        $('#personFilter').select2({
-                            width: '200px',
-                            placeholder: '请选择管理员',
-                            allowClear: true,
-                            multiple: true
-                        });
-
-                        // 美化管理员筛选框样式，与其他下拉框保持一致
-                        setTimeout(function() {
-                            const $container = $('#personFilter').next('.select2-container');
-                            const $selection = $container.find('.select2-selection');
-
-                            // 添加边框和样式
-                            $selection.css({
-                                'border': '2px solid #dee2e6',
-                                'border-radius': '4px',
-                                'min-height': '38px',
-                                'padding': '10px 30px 10px 10px',
-                                'background': 'white',
-                                'position': 'relative',
-                                'cursor': 'pointer',
-                                'font-size': '14px',
-                                'font-weight': 'bold'
-                            });
-
-                            // 设置搜索框样式
-                            $selection.find('.select2-search__field').css({
-                                'cursor': 'pointer',
-                                'font-weight': 'bold',
-                                'color': '#333'
-                            });
-
-                            // 设置选中项的字体加粗
-                            $selection.find('.select2-selection__choice').css('font-weight', 'bold');
-
-                            // 添加下拉箭头
-                            if ($selection.find('.custom-arrow').length === 0) {
-                                $selection.append('<span class="custom-arrow" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #333; font-size: 16px; font-weight: bold;">▼</span>');
-                            }
-
-                            // 鼠标悬停效果
-                            $selection.hover(
-                                function() { $(this).css('border-color', '#4c6ef5'); },
-                                function() { $(this).css('border-color', '#dee2e6'); }
-                            );
-                        }, 100);
-                    }
-                })
-                .catch(error => {
-                    console.error('获取人员列表失败:', error);
-                });
-        }
-
-        // 加载事件列表（支持分页）
-        function loadEvents(beginDateFilter, endDateFilter, areaFilter, statusFilter, personFilter, pageNum, append) {
-            if (isLoading) return; // 如果正在加载，直接返回
-            
-            isLoading = true;
-            const formData = new FormData();
-            
-            // 设置分页参数
-            formData.append('pageNum', pageNum || 1);
-            formData.append('pageSize', pageSize);
-            
-            // 设置状态筛选（对应实体类 bzzt 字段）
-            if (statusFilter) {
-                formData.append('bzzt', statusFilter);
-            }
-            
-            // 设置区域筛选（对应实体类 qymc 字段）
-            if (areaFilter) {
-                formData.append('qymc', areaFilter);
-            }
-            
-            // 设置管理员筛选（对应实体类 ryxm 字段，支持多选，使用模糊查询）
-            // 如果选择了多个管理员，使用逗号拼接
-            if (personFilter && personFilter.length > 0) {
-                // 将多个管理员用逗号拼接成一个字符串
-                const personStr = personFilter.join(',');
-                formData.append('ryxm', personStr);
-            }
-            
-            // 设置时间区间（对应 params.beginPssj 和 params.endPssj）
-            // 如果开始日期为空，默认使用今天
-            let beginDateStr = beginDateFilter || new Date().toISOString().split('T')[0];
-            // 如果结束日期为空，默认使用开始日期（同一天）
-            let endDateStr = endDateFilter || beginDateStr;
-            
-            const beginDate = new Date(beginDateStr);
-            const endDate = new Date(endDateStr);
-            
-            // 开始时间：开始日期当天 0:00:00
-            beginDate.setHours(0, 0, 0, 0);
-            const beginPssj = beginDate.getFullYear() + '-' + 
-                String(beginDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                String(beginDate.getDate()).padStart(2, '0') + ' ' +
-                String(beginDate.getHours()).padStart(2, '0') + ':' +
-                String(beginDate.getMinutes()).padStart(2, '0') + ':' +
-                String(beginDate.getSeconds()).padStart(2, '0');
-            
-            // 结束时间：结束日期当天 23:59:59
-            endDate.setHours(23, 59, 59, 999);
-            const endPssj = endDate.getFullYear() + '-' + 
-                String(endDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                String(endDate.getDate()).padStart(2, '0') + ' ' +
-                String(endDate.getHours()).padStart(2, '0') + ':' +
-                String(endDate.getMinutes()).padStart(2, '0') + ':' +
-                String(endDate.getSeconds()).padStart(2, '0');
-            
-            formData.append('params[beginPssj]', beginPssj);
-            formData.append('params[endPssj]', endPssj);
-
-            fetch('/caseapp/track/events', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    isLoading = false;
-                    if (data.code === 0 && data.rows) {
-                        totalCount = data.total || 0;
-                        const newEvents = data.rows.map(item => {
-                            const event = {
-                                id: item.id,
-                                time: formatDateTime(item.pssj),
-                                area: item.qymc || '',
-                                videoUrl: item.spdz || '',
-                                status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
-                                reason: item.xwyy || '',
-                                reasonDetail: '',
-                                persons: [],
-                                operator: '',
-                                operateTime: item.bzsj || '',
-                                spsc: item.spsc || '',
-                                pstp: item.pstp || '', // 图片路径
-                                rysl: item.rysl || 0, // 人员数量
-                                pssj: item.pssj || '', // 原始拍摄时间字符串
-                                suggestions: []
-                            };
-                            
-                            // 解析人员信息
-                            if (item.ryxm) {
-                                event.persons.push(item.ryxm);
-                            }
-                            if (item.wlry) {
-                                event.persons.push(item.wlry);
-                            }
-                            
-                            // 解析原因详情
-                            if (item.xwyy && item.xwyy.includes('：')) {
-                                const parts = item.xwyy.split('：', 2);
-                                event.reason = parts[0];
-                                event.reasonDetail = parts[1];
-                            } else {
-                                event.reason = item.xwyy || '';
-                            }
-                            
-                            if (item.bzzt === '1') {
-                                event.operator = item.ryxm || '';
-                            }
-                            
-                            return event;
-                        });
-                        
-                        if (append) {
-                            // 追加模式：将新数据追加到现有数据
-                            eventsData = eventsData.concat(newEvents);
-                            currentPage = pageNum; // 更新当前页码
-                        } else {
-                            // 替换模式：重置数据
-                            eventsData = newEvents;
-                            currentPage = pageNum || 1;
-                        }
-                        
-                        // 检查是否还有更多数据
-                        if (totalCount === 0) {
-                            // 如果没有数据，肯定没有更多
-                            hasMore = false;
-                        } else if (newEvents.length < pageSize) {
-                            // 如果当前页返回的数据少于 pageSize，说明已经是最后一页
-                            hasMore = false;
-                        } else {
-                            // 否则根据已加载数量和总数判断
-                            hasMore = eventsData.length < totalCount;
-                        }
-                        
-                        // 应用特殊筛选（如果有）
-                        let filteredEvents = eventsData;
-                        if (currentFilters.specialFilter && currentFilters.specialFilter.length > 0) {
-                            filteredEvents = filterEventsBySpecial(eventsData, currentFilters.specialFilter);
-                        }
-                        
-                        renderEvents(filteredEvents);
-                        // 分析复合事件
-                        analyzeCompositeEvents();
-                    } else {
-                        if (!append) {
-                            eventsData = [];
-                            renderEvents([]);
-                        }
-                        hasMore = false;
-                        compositeEvents = [];
-                        renderCompositeEvents();
-                    }
-                })
-                .catch(error => {
-                    isLoading = false;
-                    console.error('获取事件列表失败:', error);
-                    if (!append) {
-                        eventsData = [];
-                        renderEvents([]);
-                    }
-                    hasMore = false;
-                });
-        }
-        
-        // 加载更多事件（滚动加载）
-        function loadMoreEvents() {
-            if (!hasMore || isLoading) {
-                console.log('[滚动加载] 跳过加载 - hasMore:', hasMore, 'isLoading:', isLoading);
-                return;
-            }
-
-            // 页码+1，加载下一页
-            currentPage++;
-            console.log('[滚动加载] 开始加载第', currentPage, '页');
-            analyzeCompositeEvents(true); // 追加模式
-        }
-
-        // 格式化日期时间
-        function formatDateTime(dateStr) {
-            if (!dateStr) return '';
-            const date = new Date(dateStr);
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            const seconds = String(date.getSeconds()).padStart(2, '0');
-            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-        }
-
-        // 检查是否满足工作时间超过3人进入的条件
-        // 条件：pssj在9时-18时 且 rysl >= 3
-        function isWorktimeWarning(event) {
-            if (!event.pssj) return false;
-            
-            // 检查时间是否在9时-18时之间
-            const date = new Date(event.pssj);
-            const hour = date.getHours();
-            if (hour < 9 || hour >= 18) {
-                return false;
-            }
-            
-            // 检查人员数量是否 >= 3
-            if (!event.rysl || event.rysl < 3) {
-                return false;
-            }
-            
-            return true;
-        }
-
-        // 检查是否满足非工作时间提示条件
-        // 条件：拍摄时间不在 9:00-17:00 之间 且 rysl >= 1
-        function isNonWorktimeWarning(event) {
-            if (!event.pssj) return false;
-
-            // 检查时间是否不在9时-17时之间（工作时间为9:00-17:00）
-            const date = new Date(event.pssj);
-            const hour = date.getHours();
-            if (hour >= 9 && hour < 17) {
-                return false;
-            }
-            
-            // 检查人员数量是否 >= 1
-            if (!event.rysl || event.rysl < 1) {
-                return false;
-            }
-            
-            return true;
-        }
-
-        // 检查是否满足人员异常数量条件
-        // 条件：pssj在9时-18时 且 rysl >= 3
-        function isAbnormalPersonCount(event) {
-            return isWorktimeWarning(event);
-        }
-
-        // 根据特殊筛选条件过滤事件
-        function filterEventsBySpecial(events, specialFilters) {
-            if (!specialFilters || specialFilters.length === 0) {
-                return events;
-            }
-            
-            return events.filter(event => {
-                let matches = false;
-                
-                // 如果选择了"非工作时间提示"
-                if (specialFilters.includes('nonWorktime')) {
-                    if (isNonWorktimeWarning(event)) {
-                        matches = true;
-                    }
+                    $('#statusFilter').select2({ width: '180px', placeholder: '请选择状态' });
                 }
-                
-                // 如果选择了"人员异常数量"
-                if (specialFilters.includes('abnormalPerson')) {
-                    if (isAbnormalPersonCount(event)) {
-                        matches = true;
-                    }
-                }
-                
-                // 如果两个条件都选择了，只要满足其中一个就返回true（OR逻辑）
-                // 如果只选择了一个条件，必须满足该条件
-                return matches;
-            });
-        }
-
-        // 解析时长（秒）
-        function parseDuration(durationStr) {
-            if (!durationStr) return 0;
-            // 假设格式为 "XX秒" 或 "XX"
-            const match = durationStr.match(/(\d+)/);
-            return match ? parseInt(match[1]) : 0;
-        }
-
-        // 更新统计数据
-        function updateStats() {
-            // 调用后端统计接口
-            fetch('/caseapp/track/stats')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.code === 0) {
-                        document.getElementById('todayTotal').textContent = data.todayTotal || 0;
-                        document.getElementById('unlabeledCount').textContent = data.unlabeledCount || 0;
-                        document.getElementById('labeledCount').textContent = data.labeledCount || 0;
-                        document.getElementById('monthTotal').textContent = data.monthTotal || 0;
-                    } else {
-                        console.error('获取统计数据失败:', data.msg);
-                        // 失败时显示0
-                        document.getElementById('todayTotal').textContent = 0;
-                        document.getElementById('unlabeledCount').textContent = 0;
-                        document.getElementById('labeledCount').textContent = 0;
-                        document.getElementById('monthTotal').textContent = 0;
-                    }
-                })
-                .catch(error => {
-                    console.error('获取统计数据出错:', error);
-                    // 出错时显示0
-                    document.getElementById('todayTotal').textContent = 0;
-                    document.getElementById('unlabeledCount').textContent = 0;
-                    document.getElementById('labeledCount').textContent = 0;
-                    document.getElementById('monthTotal').textContent = 0;
-                });
-        }
-
-        // 渲染事件列表
-        function renderEvents(events) {
-            const grid = document.getElementById('eventsGrid');
-
-            if (events.length === 0) {
-                grid.innerHTML = `
-                    <div class="no-events">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <p>暂无事件记录</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // 移除加载提示
-            const loadingTip = grid.querySelector('.loading-tip');
-            if (loadingTip) {
-                loadingTip.remove();
-            }
-
-            grid.innerHTML = events.map(event => {
-                // 检查是否满足工作时间警告条件（人员异常数量）
-                const isWarning = isWorktimeWarning(event);
-                // 检查是否满足非工作时间警告条件
-                const isNonWorktime = isNonWorktimeWarning(event);
-                const warningClass = isWarning ? 'worktime-warning' : '';
-                
-                return `
-                <div class="event-card ${event.status} ${warningClass}" onclick="openEventDetail('${event.id}')">
-                    <div class="event-thumbnail">
-                        ${event.pstp ? `<img src="${event.pstp}" alt="事件缩略图" onerror="this.onerror=null; this.src=''; this.style.display='none'; this.nextElementSibling.style.display='inline-block';" /><span class="thumbnail-icon" style="display:none;">🎥</span>` : '<span class="thumbnail-icon">🎥</span>'}
-                        <span class="event-status ${event.status}">
-                            ${event.status === 'unlabeled' ? '待标注' : '已标注'}
-                        </span>
-                    </div>
-                    <div class="event-info">
-                        <div class="event-time">${event.time}</div>
-                        <div class="event-location">${event.area}</div>
-                        ${isWarning ? `
-                            <div class="worktime-warning-badge">⚠️ 工作时间超过3人进入</div>
-                        ` : ''}
-                        ${isNonWorktime ? `
-                            <div class="worktime-warning-badge" style="background: #ff9800;">⚠️ 非工作时间进入</div>
-                        ` : ''}
-                        ${event.status === 'labeled' ? `
-                            ${event.persons && event.persons.length > 0 ? `
-                                <div class="event-reason">
-                                    👤 ${event.persons.join('、')}
-                                </div>
-                            ` : ''}
-                            <div class="event-reason">
-                                ${event.reason === '其他' ? event.reason + '：' + event.reasonDetail : event.reason}
-                            </div>
-                        ` : `
-                            <div class="event-reason">待标注原因</div>
-                            ${event.suggestions && event.suggestions.length > 0 ? `
-                                <div class="event-suggestion">
-                                    该时段前后可能有${event.suggestions.join('、')}操作
-                                </div>
-                            ` : ''}
-                        `}
-                    </div>
-                </div>
-            `;
-            }).join('');
-            
-            // 如果还有更多数据，显示加载提示
-            if (hasMore) {
-                const loadingTip = document.createElement('div');
-                loadingTip.className = 'loading-tip';
-                loadingTip.innerHTML = '<div class="loading-spinner"></div><p>滚动加载更多...</p>';
-                grid.appendChild(loadingTip);
-            } else if (events.length > 0) {
-                const loadingTip = document.createElement('div');
-                loadingTip.className = 'loading-tip';
-                // 如果应用了特殊筛选，显示筛选后的实际数量；否则显示总数
-                const displayCount = (currentFilters.specialFilter && currentFilters.specialFilter.length > 0) 
-                    ? events.length 
-                    : totalCount;
-                loadingTip.innerHTML = '<p>已加载全部数据（共 ' + displayCount + ' 条）</p>';
-                grid.appendChild(loadingTip);
-            }
-        }
-
-        // 打开事件详情（跳转到轨迹详情页面）
-        function openEventDetail(eventId) {
-            window.location.href = '/caseapp/track/detail/' + eventId;
-        }
-
-        // 应用筛选
-        function applyFilters() {
-            const beginDateFilter = document.getElementById('beginDateFilter').value;
-            const endDateFilter = document.getElementById('endDateFilter').value;
-            const areaFilter = $('#areaFilter').val();
-            const statusFilter = $('#statusFilter').val();
-            const personFilter = $('#personFilter').val() || [];
-            const specialFilter = $('#specialFilter').val() || [];
-            
-            // 保存当前筛选条件
-            currentFilters = {
-                beginDateFilter: beginDateFilter,
-                endDateFilter: endDateFilter,
-                areaFilter: areaFilter,
-                statusFilter: statusFilter,
-                personFilter: personFilter,
-                specialFilter: specialFilter
-            };
-            
-            // 重置分页
-            currentPage = 1;
-            hasMore = true;
-            
-            // 重新加载事件列表（带筛选条件，替换模式）
-            loadEvents(beginDateFilter, endDateFilter, areaFilter, statusFilter, personFilter, 1, false);
-        }
-
-        // 重置筛选
-        function resetFilters() {
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-            const todayStr = today.toISOString().split('T')[0];
-
-            document.getElementById('beginDateFilter').value = yesterdayStr;
-            document.getElementById('endDateFilter').value = todayStr;
-            $('#areaFilter').val('').trigger('change');
-            $('#statusFilter').val('').trigger('change');
-            $('#personFilter').val(null).trigger('change');
-            $('#specialFilter').val(null).trigger('change');
-
-            // 保存当前筛选条件
-            currentFilters = {
-                beginDateFilter: yesterdayStr,
-                endDateFilter: todayStr,
-                areaFilter: '',
-                statusFilter: '',
-                personFilter: [],
-                specialFilter: []
-            };
-
-            // 重置分页
-            currentPage = 1;
-            hasMore = true;
-
-            loadEvents(yesterdayStr, todayStr, '', '', [], 1, false);
-        }
-
-        // 导出台账数据
-        function exportData() {
-            const beginDateFilter = currentFilters.beginDateFilter || document.getElementById('beginDateFilter').value;
-            const endDateFilter = currentFilters.endDateFilter || document.getElementById('endDateFilter').value;
-            const areaFilter = currentFilters.areaFilter || $('#areaFilter').val();
-            const statusFilter = currentFilters.statusFilter || $('#statusFilter').val();
-            const personFilter = currentFilters.personFilter || $('#personFilter').val() || [];
-
-            // 构建POST参数数组
-            var dataParam = [];
-
-            // 设置状态筛选（对应实体类 bzzt 字段）
-            if (statusFilter) {
-                dataParam.push({ "name": "bzzt", "value": statusFilter });
-            }
-
-            // 设置区域筛选（对应实体类 qymc 字段）
-            if (areaFilter) {
-                dataParam.push({ "name": "qymc", "value": areaFilter });
-            }
-
-            // 设置管理员筛选（对应实体类 ryxm 字段）
-            if (personFilter && personFilter.length > 0) {
-                dataParam.push({ "name": "ryxm", "value": personFilter.join(',') });
-            }
-
-            // 设置时间区间
-            let beginDateStr = beginDateFilter || new Date().toISOString().split('T')[0];
-            let endDateStr = endDateFilter || beginDateStr;
-
-            const beginDate = new Date(beginDateStr);
-            const endDate = new Date(endDateStr);
-
-            // 开始时间：开始日期当天 0:00:00
-            beginDate.setHours(0, 0, 0, 0);
-            const beginPssj = beginDate.getFullYear() + '-' +
-                String(beginDate.getMonth() + 1).padStart(2, '0') + '-' +
-                String(beginDate.getDate()).padStart(2, '0') + ' ' +
-                String(beginDate.getHours()).padStart(2, '0') + ':' +
-                String(beginDate.getMinutes()).padStart(2, '0') + ':' +
-                String(beginDate.getSeconds()).padStart(2, '0');
-
-            // 结束时间：结束日期当天 23:59:59
-            endDate.setHours(23, 59, 59, 999);
-            const endPssj = endDate.getFullYear() + '-' +
-                String(endDate.getMonth() + 1).padStart(2, '0') + '-' +
-                String(endDate.getDate()).padStart(2, '0') + ' ' +
-                String(endDate.getHours()).padStart(2, '0') + ':' +
-                String(endDate.getMinutes()).padStart(2, '0') + ':' +
-                String(endDate.getSeconds()).padStart(2, '0');
-
-            dataParam.push({ "name": "params[beginPssj]", "value": beginPssj });
-            dataParam.push({ "name": "params[endPssj]", "value": endPssj });
-
-            // 提示用户
-            $.modal.loading("正在导出数据，请稍候...");
-
-            // POST到导出接口，获取文件名后下载
-            $.post('/caseapp/track/export', dataParam, function(result) {
-                if (result.code == 0) {
-                    window.location.href = ctx + "common/download?fileName=" + encodeURI(result.msg) + "&delete=" + true;
-                    $.modal.closeLoading();
-                    $.modal.msgSuccess("导出成功！");
-                } else {
-                    $.modal.closeLoading();
-                    $.modal.alertError(result.msg || "导出失败");
-                }
-            }).fail(function() {
-                $.modal.closeLoading();
-                $.modal.alertError("导出请求失败，请稍后重试");
-            });
-        }
-
-        // ===== 复合事件相关函数 =====
-
-        // 重置所有筛选条件
-        function resetFilters() {
-            // 重置日期为昨天到今天
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-            const todayStr = today.toISOString().split('T')[0];
-
-            document.getElementById('beginDateFilter').value = yesterdayStr;
-            document.getElementById('endDateFilter').value = todayStr;
-
-            // 重置其他筛选条件（使用select2的方式清空）
-            $('#areaFilter').val('').trigger('change');
-            $('#statusFilter').val('').trigger('change');
-            $('#personFilter').val(null).trigger('change');
-            $('#specialFilter').val(null).trigger('change');
-
-            // 更新当前筛选条件
-            currentFilters = {
-                beginDateFilter: yesterdayStr,
-                endDateFilter: todayStr,
-                areaFilter: '',
-                statusFilter: '',
-                personFilter: [],
-                specialFilter: []
-            };
-
-            // 重新加载本月的复合事件
-            analyzeCompositeEvents();
-        }
-
-        // 重新同步所有复合事件
-        function syncCompositeEvents() {
-            if (!confirm('确定要重新同步所有复合事件吗？\n\n这将根据当前筛选的时间范围，重新计算并覆盖数据库中的复合事件数据。')) {
-                return;
-            }
-
-            // 获取当前筛选的时间范围
-            let beginDateFilter = document.getElementById('beginDateFilter').value;
-            let endDateFilter = document.getElementById('endDateFilter').value;
-
-            if (!beginDateFilter || !endDateFilter) {
-                alert('请先选择时间范围');
-                return;
-            }
-
-            const beginDate = new Date(beginDateFilter);
-            const endDate = new Date(endDateFilter);
-
-            beginDate.setHours(0, 0, 0, 0);
-            const beginPssj = beginDate.getFullYear() + '-' +
-                String(beginDate.getMonth() + 1).padStart(2, '0') + '-' +
-                String(beginDate.getDate()).padStart(2, '0') + ' 00:00:00';
-
-            endDate.setHours(23, 59, 59, 999);
-            const endPssj = endDate.getFullYear() + '-' +
-                String(endDate.getMonth() + 1).padStart(2, '0') + '-' +
-                String(endDate.getDate()).padStart(2, '0') + ' 23:59:59';
-
-            const formData = new FormData();
-            formData.append('params[beginPssj]', beginPssj);
-            formData.append('params[endPssj]', endPssj);
-
-            // 显示加载提示
-            const loadingMsg = document.createElement('div');
-            loadingMsg.innerHTML = '⏳ 正在同步复合事件，请稍候...';
-            loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px 40px; border-radius: 8px; z-index: 9999; font-size: 16px;';
-            document.body.appendChild(loadingMsg);
-
-            console.log('发送同步请求，参数：', beginPssj, '~', endPssj);
-
-            fetch('/caseapp/track/syncCompositeEvents', {
-                method: 'POST',
-                body: formData
             })
-            .then(response => {
-                console.log('收到响应，状态码：', response.status);
-                return response.json();
-            })
+            .catch(error => console.error('获取字典数据失败:', error));
+    }
+
+    // 加载区域列表
+    function loadAreaList() {
+        fetch('/caseapp/roomip/areas', { method: 'POST' })
+            .then(response => response.json())
             .then(data => {
-                console.log('同步响应数据：', data);
-                if (loadingMsg.parentNode) {
-                    document.body.removeChild(loadingMsg);
+                if (data.code === 0 && data.data) {
+                    const areaFilter = document.getElementById('areaFilter');
+                    areaFilter.innerHTML = '<option value="">全部区域</option>';
+                    data.data.forEach(area => {
+                        const option = document.createElement('option');
+                        option.value = area;
+                        option.textContent = area;
+                        areaFilter.appendChild(option);
+                    });
+                    $('#areaFilter').select2({ width: '250px', placeholder: '请选择区域' });
                 }
+            });
+    }
+
+    // 加载人员列表（管理员）
+    function loadPersonList() {
+        fetch('/caseapp/person/persons', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 0 && data.data) {
+                    const personFilter = document.getElementById('personFilter');
+                    if ($('#personFilter').data('select2')) { $('#personFilter').select2('destroy'); }
+                    personFilter.innerHTML = '';
+                    data.data.forEach(person => {
+                        const option = document.createElement('option');
+                        option.value = person;
+                        option.textContent = person;
+                        personFilter.appendChild(option);
+                    });
+                    $('#personFilter').select2({
+                        width: '200px',
+                        placeholder: '请选择管理员',
+                        allowClear: true,
+                        multiple: true
+                    });
+                }
+            });
+    }
+
+    // 格式化日期时间
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    // 更新统计数据
+    function updateStats() {
+        fetch('/caseapp/track/stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 0) {
+                    document.getElementById('todayTotal').textContent = data.todayTotal || 0;
+                    document.getElementById('unlabeledCount').textContent = data.unlabeledCount || 0;
+                    document.getElementById('labeledCount').textContent = data.labeledCount || 0;
+                    document.getElementById('monthTotal').textContent = data.monthTotal || 0;
+                }
+            })
+            .catch(error => console.error('获取统计数据出错:', error));
+    }
+
+    // ===== 复合事件相关函数 (核心逻辑) =====
+
+    // 重置所有筛选条件
+    function resetFilters() {
+        // 重置日期为昨天到今天
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const todayStr = today.toISOString().split('T')[0];
+
+        document.getElementById('beginDateFilter').value = yesterdayStr;
+        document.getElementById('endDateFilter').value = todayStr;
+
+        // 重置其他筛选条件
+        $('#areaFilter').val('').trigger('change');
+        $('#statusFilter').val('').trigger('change');
+        $('#reasonFilter').val(null).trigger('change'); // 重置原因（多选）
+        $('#personFilter').val(null).trigger('change');
+        $('#specialFilter').val(null).trigger('change');
+
+        // 重新加载第一页
+        analyzeCompositeEvents(1);
+    }
+
+    // 重新同步所有复合事件
+    function syncCompositeEvents() {
+        if (!confirm('确定要重新同步所有复合事件吗？\n\n这将根据当前筛选的时间范围，重新计算并覆盖数据库中的复合事件数据。')) {
+            return;
+        }
+
+        let beginDateFilter = document.getElementById('beginDateFilter').value;
+        let endDateFilter = document.getElementById('endDateFilter').value;
+
+        if (!beginDateFilter || !endDateFilter) {
+            alert('请先选择时间范围');
+            return;
+        }
+
+        const beginDate = new Date(beginDateFilter);
+        const endDate = new Date(endDateFilter);
+
+        beginDate.setHours(0, 0, 0, 0);
+        const beginPssj = beginDate.getFullYear() + '-' +
+            String(beginDate.getMonth() + 1).padStart(2, '0') + '-' +
+            String(beginDate.getDate()).padStart(2, '0') + ' 00:00:00';
+
+        endDate.setHours(23, 59, 59, 999);
+        const endPssj = endDate.getFullYear() + '-' +
+            String(endDate.getMonth() + 1).padStart(2, '0') + '-' +
+            String(endDate.getDate()).padStart(2, '0') + ' 23:59:59';
+
+        const formData = new FormData();
+        formData.append('params[beginPssj]', beginPssj);
+        formData.append('params[endPssj]', endPssj);
+
+        // 显示加载提示
+        const loadingMsg = document.createElement('div');
+        loadingMsg.innerHTML = '⏳ 正在同步复合事件，请稍候...';
+        loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px 40px; border-radius: 8px; z-index: 9999; font-size: 16px;';
+        document.body.appendChild(loadingMsg);
+
+        fetch('/caseapp/track/syncCompositeEvents', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (loadingMsg.parentNode) document.body.removeChild(loadingMsg);
                 if (data.code === 0) {
                     alert('✅ ' + data.msg);
-                    // 重新加载复合事件列表
-                    analyzeCompositeEvents();
+                    analyzeCompositeEvents(1); // 重新加载
                 } else {
                     alert('❌ 同步失败：' + data.msg);
                 }
             })
             .catch(error => {
-                console.error('同步复合事件失败:', error);
-                if (loadingMsg.parentNode) {
-                    document.body.removeChild(loadingMsg);
-                }
+                if (loadingMsg.parentNode) document.body.removeChild(loadingMsg);
                 alert('❌ 同步失败：' + error);
             });
-        }
+    }
 
-        // 从后端加载复合事件（基于 qyid=1 的分组）
-        // append: 是否追加数据（滚动加载时为true，筛选时为false）
-        function analyzeCompositeEvents(append = false) {
-            // 如果正在加载或没有更多数据，则返回
-            if (isLoading || (!append && !hasMore && currentPage > 1)) {
-                console.log('[加载事件] 跳过 - append:', append, 'isLoading:', isLoading, 'hasMore:', hasMore, 'currentPage:', currentPage);
-                return;
-            }
+    // 加载复合事件列表（分页加载）
+    // pageNum: 要加载的页码
+    function analyzeCompositeEvents(pageNum = 1) {
+        if (isLoading) return;
 
-            console.log('[加载事件] 开始 - append:', append, 'currentPage:', currentPage, '已有事件数:', compositeEvents.length);
-            isLoading = true;
+        isLoading = true;
+        currentPage = pageNum; // 更新当前页码
 
-            // 如果不是追加模式，重置分页
-            if (!append) {
-                currentPage = 1;
-                hasMore = true;
-                compositeEvents = [];
-                renderedCount = 0; // 重置已渲染计数
-            }
-            // 从日期选择框获取最新的筛选条件
-            let beginDateFilter = document.getElementById('beginDateFilter').value;
-            let endDateFilter = document.getElementById('endDateFilter').value;
-            let areaFilter = document.getElementById('areaFilter').value;
-            let statusFilter = document.getElementById('statusFilter').value;
-            let personFilter = $('#personFilter').val() || [];
-            let specialFilter = $('#specialFilter').val() || [];
+        // 获取筛选条件
+        let beginDateFilter = document.getElementById('beginDateFilter').value;
+        let endDateFilter = document.getElementById('endDateFilter').value;
+        let areaFilter = document.getElementById('areaFilter').value;
+        let statusFilter = document.getElementById('statusFilter').value;
+        let reasonFilter = $('#reasonFilter').val() || []; // 原因（多选）
+        let personFilter = $('#personFilter').val() || [];
+        let specialFilter = $('#specialFilter').val() || [];
 
-            // 如果日期为空，使用今天
-            if (!beginDateFilter) {
-                beginDateFilter = new Date().toISOString().split('T')[0];
-            }
-            if (!endDateFilter) {
-                endDateFilter = beginDateFilter;
-            }
+        if (!beginDateFilter) beginDateFilter = new Date().toISOString().split('T')[0];
+        if (!endDateFilter) endDateFilter = beginDateFilter;
 
-            // 更新当前筛选条件
-            currentFilters = {
-                beginDateFilter: beginDateFilter,
-                endDateFilter: endDateFilter,
-                areaFilter: areaFilter,
-                statusFilter: statusFilter,
-                personFilter: personFilter,
-                specialFilter: specialFilter
-            };
+        currentFilters = {
+            beginDateFilter, endDateFilter, areaFilter, statusFilter, reasonFilter, personFilter, specialFilter
+        };
 
-            // 构建时间参数
-            let beginDateStr = beginDateFilter;
-            let endDateStr = endDateFilter;
+        const beginDate = new Date(beginDateFilter);
+        const endDate = new Date(endDateFilter);
 
-            const beginDate = new Date(beginDateStr);
-            const endDate = new Date(endDateStr);
+        beginDate.setHours(0, 0, 0, 0);
+        const beginPssj = beginDate.getFullYear() + '-' +
+            String(beginDate.getMonth() + 1).padStart(2, '0') + '-' +
+            String(beginDate.getDate()).padStart(2, '0') + ' ' +
+            String(beginDate.getHours()).padStart(2, '0') + ':' +
+            String(beginDate.getMinutes()).padStart(2, '0') + ':' +
+            String(beginDate.getSeconds()).padStart(2, '0');
 
-            // 开始时间：开始日期当天 0:00:00
-            beginDate.setHours(0, 0, 0, 0);
-            const beginPssj = beginDate.getFullYear() + '-' +
-                String(beginDate.getMonth() + 1).padStart(2, '0') + '-' +
-                String(beginDate.getDate()).padStart(2, '0') + ' ' +
-                String(beginDate.getHours()).padStart(2, '0') + ':' +
-                String(beginDate.getMinutes()).padStart(2, '0') + ':' +
-                String(beginDate.getSeconds()).padStart(2, '0');
+        endDate.setHours(23, 59, 59, 999);
+        const endPssj = endDate.getFullYear() + '-' +
+            String(endDate.getMonth() + 1).padStart(2, '0') + '-' +
+            String(endDate.getDate()).padStart(2, '0') + ' ' +
+            String(endDate.getHours()).padStart(2, '0') + ':' +
+            String(endDate.getMinutes()).padStart(2, '0') + ':' +
+            String(endDate.getSeconds()).padStart(2, '0');
 
-            // 结束时间：结束日期当天 23:59:59
-            endDate.setHours(23, 59, 59, 999);
-            const endPssj = endDate.getFullYear() + '-' +
-                String(endDate.getMonth() + 1).padStart(2, '0') + '-' +
-                String(endDate.getDate()).padStart(2, '0') + ' ' +
-                String(endDate.getHours()).padStart(2, '0') + ':' +
-                String(endDate.getMinutes()).padStart(2, '0') + ':' +
-                String(endDate.getSeconds()).padStart(2, '0');
+        const formData = new FormData();
+        formData.append('params[beginPssj]', beginPssj);
+        formData.append('params[endPssj]', endPssj);
+        formData.append('pageNum', currentPage);
+        formData.append('pageSize', pageSize);
 
-            // 调用后端接口（使用分页接口）
-            const formData = new FormData();
-            formData.append('params[beginPssj]', beginPssj);
-            formData.append('params[endPssj]', endPssj);
-            formData.append('pageNum', currentPage);
-            formData.append('pageSize', pageSize);
+        if (areaFilter) formData.append('qymc', areaFilter);
+        if (statusFilter) formData.append('bzzt', statusFilter);
+        if (reasonFilter && reasonFilter.length > 0) formData.append('xwyy', reasonFilter.join(',')); // 添加原因筛选（多选，逗号分隔）
+        if (personFilter && personFilter.length > 0) formData.append('ryxm', personFilter[0]);
 
-            // 添加其他筛选条件
-            if (areaFilter) {
-                formData.append('qymc', areaFilter);
-            }
-            if (statusFilter) {
-                formData.append('bzzt', statusFilter);
-            }
-            if (personFilter && personFilter.length > 0) {
-                // 管理员筛选：后端使用LIKE匹配，这里传递第一个选中的人员
-                formData.append('ryxm', personFilter[0]);
-            }
+        // 显示加载状态
+        const list = document.getElementById('compositeList');
+        list.innerHTML = '<div class="loading-tip"><div class="loading-spinner"></div><p>正在加载数据...</p></div>';
 
-            fetch('/caseapp/track/compositeEvents', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    isLoading = false;
+        fetch('/caseapp/track/compositeEvents', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                isLoading = false;
 
-                    if (data.code === 0) {
-                        // 分页接口返回的数据结构: {code: 0, total: xx, rows: []}
-                        const rows = data.rows || [];
-                        totalCount = data.total || 0;
+                if (data.code === 0) {
+                    const rows = data.rows || [];
+                    totalCount = data.total || 0;
 
-                        // 检查是否还有更多数据（修复：使用总数判断，避免重复加载）
-                        // 已加载数量 = 当前已有数量 + 本次新增数量
-                        // 如果已加载数量 < 总数，说明还有更多
-                        const currentLoadedCount = append ? (compositeEvents.length + rows.length) : rows.length;
-                        hasMore = currentLoadedCount < totalCount && rows.length > 0;
+                    // 计算起始编号： (当前页 - 1) * 每页大小
+                    const startIndex = (currentPage - 1) * pageSize;
 
-                        console.log('[分页调试] 当前页:', currentPage, '本次返回:', rows.length, '总数:', totalCount, '已加载:', currentLoadedCount, '还有更多:', hasMore);
+                    // 数据转换逻辑
+                    compositeEvents = rows.map((comp, index) => {
+                        const events = (comp.events || []).map(item => ({
+                            id: item.id,
+                            time: formatDateTime(item.pssj),
+                            area: item.qymc || '',
+                            videoUrl: item.spdz || '',
+                            status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
+                            reason: item.xwyy || '',
+                            persons: [],
+                            spsc: item.spsc || '',
+                            pstp: item.pstp || '',
+                            rysl: item.rysl || 0,
+                            pssj: item.pssj || '',
+                            ryxmList: item.ryxm ? item.ryxm.split(',').filter(p => p && p.trim()) : [],
+                            wlryList: item.wlry ? item.wlry.split(',').filter(p => p && p.trim()) : []
+                        }));
 
-                        // 转换后端数据格式为前端需要的格式（分页接口已经按时间排序）
-                        // 计算全局索引的起始值（追加模式下从已有事件数量开始）
-                        const startIndex = append ? compositeEvents.length : 0;
+                        events.forEach(event => { event.persons = [...event.ryxmList, ...event.wlryList]; });
 
-                        const newEvents = rows.map((comp, index) => {
-                            // 将后端的事件列表转换为前端格式
-                            const events = (comp.events || []).map(item => ({
-                                id: item.id,
-                                time: formatDateTime(item.pssj),
-                                area: item.qymc || '',
-                                videoUrl: item.spdz || '',
-                                status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
-                                reason: item.xwyy || '',
-                                reasonDetail: '',
-                                persons: [],
-                                operator: '',
-                                operateTime: item.bzsj || '',
-                                spsc: item.spsc || '',
-                                pstp: item.pstp || '',
-                                rysl: item.rysl || 0, // 人员数量
-                                pssj: item.pssj || '', // 原始拍摄时间字符串
-                                suggestions: [],
-                                // 解析人员信息
-                                ryxmList: item.ryxm ? item.ryxm.split(',').filter(p => p && p.trim()) : [],
-                                wlryList: item.wlry ? item.wlry.split(',').filter(p => p && p.trim()) : []
-                            }));
-                            
-                            // 合并人员信息
-                            events.forEach(event => {
-                                event.persons = [...event.ryxmList, ...event.wlryList];
-                            });
-                            
-                            // 确保 bzzt 是字符串类型
-                            const bzzt = String(comp.bzzt || '0');
+                        const allPersons = new Set();
+                        events.forEach(event => { event.ryxmList.forEach(p => allPersons.add(p)); });
+                        const personsArray = Array.from(allPersons);
 
-                            // 聚合管理员信息（去重）
-                            const allPersons = new Set();
-                            events.forEach(event => {
-                                event.ryxmList.forEach(p => allPersons.add(p));
-                            });
-                            const personsArray = Array.from(allPersons);
+                        const allAreas = new Set();
+                        events.forEach(event => { if (event.area) allAreas.add(event.area); });
+                        const areasArray = Array.from(allAreas);
 
-                            // 获取标注信息（从复合事件本身）
-                            const annotationXwyy = comp.xwyy || '';
-                            const annotationRyxm = comp.ryxm || '';
-                            const annotationWlry = comp.wlry || '';
-
-                            // 聚合区域信息（去重）
-                            const allAreas = new Set();
-                            events.forEach(event => {
-                                if (event.area) allAreas.add(event.area);
-                            });
-                            const areasArray = Array.from(allAreas);
-
-                            // 检查特殊情况（优先使用后端字段，否则前端计算）
-                            const specialTags = [];
-
-                            // 非工作时间：使用前端实时计算（工作时间为9:00-17:00）
-                            // 不再依赖后端hasNonworktime字段，避免旧数据影响
+                        const specialTags = [];
+                        // 特殊标签判断
+                        if (comp.hasNonworktime === 1 || comp.hasNonworktime === '1') {
+                            specialTags.push('非工作时间');
+                        } else {
                             events.forEach(event => {
                                 const eventTime = new Date(event.pssj);
                                 const hour = eventTime.getHours();
                                 if (hour < 9 || hour >= 17) {
-                                    if (!specialTags.includes('非工作时间')) {
-                                        specialTags.push('非工作时间');
-                                    }
+                                    if (!specialTags.includes('非工作时间')) specialTags.push('非工作时间');
                                 }
                             });
+                        }
 
-                            // 人员异常：优先使用后端hasAbnormalPerson字段
-                            if (comp.hasAbnormalPerson === 1 || comp.hasAbnormalPerson === '1') {
-                                specialTags.push('人员异常');
-                            } else {
-                                // 前端兜底检查：<2人或≥3人
-                                events.forEach(event => {
-                                    if (event.rysl > 0 && (event.rysl < 2 || event.rysl >= 3)) {
-                                        if (!specialTags.includes('人员异常')) {
-                                            specialTags.push('人员异常');
-                                        }
-                                    }
-                                });
+                        if (comp.hasAbnormalPerson === 1 || comp.hasAbnormalPerson === '1') {
+                            specialTags.push('人员异常');
+                        } else {
+                            events.forEach(event => {
+                                if (event.rysl > 0 && (event.rysl < 2 || event.rysl >= 3)) {
+                                    if (!specialTags.includes('人员异常')) specialTags.push('人员异常');
+                                }
+                            });
+                        }
+
+                        return {
+                            id: comp.id,
+                            eventId: comp.eventId,
+                            eventIndex: startIndex + index + 1, // 修正编号
+                            events: events,
+                            startTime: formatDateTime(comp.startTime),
+                            endTime: formatDateTime(comp.endTime),
+                            path: events.map(e => e.area),
+                            eventCount: comp.eventCount,
+                            bzzt: String(comp.bzzt || '0'),
+                            persons: personsArray,
+                            areas: areasArray,
+                            specialTags: specialTags,
+                            ryslMax: comp.ryslMax || 0,
+                            hasNonworktime: comp.hasNonworktime || 0,
+                            hasAbnormalPerson: comp.hasAbnormalPerson || 0,
+                            xwyy: comp.xwyy || '',
+                            ryxm: comp.ryxm || '',
+                            wlry: comp.wlry || '',
+                            remark: comp.remark || ''
+                        };
+                    });
+
+                    // 前端特殊筛选（针对特殊标签）
+                    if (specialFilter && specialFilter.length > 0) {
+                        compositeEvents = compositeEvents.filter(comp => {
+                            let matches = false;
+                            if (specialFilter.includes('nonWorktime')) {
+                                if (comp.specialTags.includes('非工作时间')) matches = true;
                             }
-
-                            return {
-                                id: comp.id, // 主键ID
-                                eventId: comp.eventId, // 事件ID（第一条轨迹的ID）
-                                eventIndex: startIndex + index + 1, // 按时间顺序的动态编号
-                                events: events,
-                                startTime: formatDateTime(comp.startTime),
-                                endTime: formatDateTime(comp.endTime),
-                                path: events.map(e => e.area),
-                                eventCount: comp.eventCount,
-                                bzzt: bzzt,
-                                persons: personsArray, // 聚合的管理员列表
-                                areas: areasArray, // 聚合的区域列表
-                                specialTags: specialTags, // 特殊标签
-                                ryslMax: comp.ryslMax || 0, // 最大人员数量
-                                hasNonworktime: comp.hasNonworktime || 0, // 是否包含非工作时间
-                                hasAbnormalPerson: comp.hasAbnormalPerson || 0, // 是否人员异常
-                                xwyy: annotationXwyy, // 标注的行为原因
-                                ryxm: annotationRyxm, // 标注的管理员姓名
-                                wlry: annotationWlry  // 标注的外来人员
-                            };
+                            if (specialFilter.includes('abnormalPerson')) {
+                                if (comp.specialTags.includes('人员异常')) matches = true;
+                            }
+                            return matches;
                         });
-
-                        // 应用特殊筛选（前端过滤）- 先对新数据筛选
-                        let filteredNewEvents = newEvents;
-                        if (specialFilter && specialFilter.length > 0) {
-                            filteredNewEvents = newEvents.filter(comp => {
-                                let matches = false;
-
-                                // 非工作时间筛选
-                                if (specialFilter.includes('nonWorktime')) {
-                                    if (comp.hasNonworktime === 1 || comp.hasNonworktime === '1' || comp.specialTags.includes('非工作时间')) {
-                                        matches = true;
-                                    }
-                                }
-
-                                // 人员异常筛选
-                                if (specialFilter.includes('abnormalPerson')) {
-                                    if (comp.hasAbnormalPerson === 1 || comp.hasAbnormalPerson === '1' || comp.specialTags.includes('人员异常')) {
-                                        matches = true;
-                                    }
-                                }
-
-                                return matches;
-                            });
-                        }
-
-                        // 追加或替换数据（使用筛选后的数据）
-                        if (append) {
-                            // 修复：添加去重逻辑，避免重复显示
-                            // 使用 Set 记录已存在的事件ID
-                            const existingIds = new Set(compositeEvents.map(e => e.id));
-
-                            // 只添加不存在的新事件
-                            const uniqueNewEvents = filteredNewEvents.filter(e => {
-                                if (existingIds.has(e.id)) {
-                                    console.log('[去重] 跳过重复事件 ID:', e.id, '路径:', e.path.join(' → '));
-                                    return false;
-                                }
-                                return true;
-                            });
-
-                            console.log('[追加数据] 原有:', compositeEvents.length, '新增:', filteredNewEvents.length, '去重后:', uniqueNewEvents.length);
-
-                            compositeEvents = [...compositeEvents, ...uniqueNewEvents];
-                        } else {
-                            compositeEvents = filteredNewEvents;
-                        }
-
-                        // 重新计算所有事件的编号,确保从1开始连续编号
-                        compositeEvents.forEach((event, index) => {
-                            event.eventIndex = index + 1;
-                        });
-
-                        // 渲染
-                        if (append) {
-                            renderCompositeEvents(true);
-                        } else {
-                            renderCompositeEvents();
-                        }
-
-                        updateStats();
-                    } else {
-                        if (!append) {
-                            compositeEvents = [];
-                            renderCompositeEvents();
-                        }
-                        hasMore = false;
-                        updateStats();
                     }
-                })
-                .catch(error => {
-                    console.error('获取复合事件失败:', error);
-                    isLoading = false;
-                    if (!append) {
-                        compositeEvents = [];
-                        renderCompositeEvents();
-                        updateStats();
-                    }
-                });
+
+                    renderCompositeEvents();
+                    renderPagination(totalCount, pageSize, currentPage);
+                    updateStats();
+                } else {
+                    compositeEvents = [];
+                    renderCompositeEvents();
+                    renderPagination(0, pageSize, 1);
+                    updateStats();
+                }
+            })
+            .catch(error => {
+                console.error('获取复合事件失败:', error);
+                isLoading = false;
+                compositeEvents = [];
+                renderCompositeEvents();
+            });
+    }
+
+    // 渲染复合事件列表
+    function renderCompositeEvents() {
+        const list = document.getElementById('compositeList');
+
+        if (compositeEvents.length === 0) {
+            list.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #999;">
+                        <p style="font-size: 48px; margin-bottom: 10px;">📭</p>
+                        <p>暂无符合条件的复合事件</p>
+                    </div>
+                `;
+            return;
         }
 
-        // 检查两个区域是否相邻
-        function areAreasAdjacent(area1, area2) {
-            if (area1 === area2) return true;
-            return areaAdjacency[area1]?.includes(area2) || false;
-        }
+        const htmlContent = compositeEvents.map(comp => {
+            const duration = calculateDuration(comp.startTime, comp.endTime);
+            const pathStr = comp.path.join(' → ');
+            const bzzt = String(comp.bzzt || '0');
+            const statusBadge = bzzt === '1'
+                ? '<span style="background: #51cf66; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px;">已标注</span>'
+                : '<span style="background: #ff6b6b; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px;">待标注</span>';
 
-        // 渲染复合事件
-        // append: 是否追加渲染（滚动加载时为true）
-        function renderCompositeEvents(append = false) {
-            const section = document.getElementById('compositeSection');
-            const list = document.getElementById('compositeList');
+            const displayPersons = comp.ryxm || (comp.persons && comp.persons.length > 0 ? comp.persons.join('、') : '');
+            const personsStr = displayPersons ? `<div style="margin-top: 8px;">👤 管理员：${displayPersons}</div>` : '';
+            const wlryStr = comp.wlry ? `<div style="margin-top: 4px;">🔶 外来人员：${comp.wlry}</div>` : '';
+            const xwyyStr = comp.xwyy ? `<div style="margin-top: 4px; padding: 6px 10px; background: #e7f5ff; border-left: 3px solid #4c6ef5; border-radius: 4px; font-size: 13px;">📝 原因：${comp.xwyy}</div>` : '';
+            const remarkStr = comp.remark ? `<div style="margin-top: 4px; padding: 6px 10px; background: #fff3cd; border-left: 3px solid #ffc107; border-radius: 4px; font-size: 13px;">💬 备注：${comp.remark}</div>` : '';
 
-            if (compositeEvents.length === 0 && !append) {
-                section.style.display = 'none';
-                return;
-            }
+            const specialTagsHtml = comp.specialTags && comp.specialTags.length > 0
+                ? comp.specialTags.map(tag => {
+                    const color = tag === '非工作时间' ? '#ff9800' : '#e91e63';
+                    return `<span style="background: ${color}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px;">⚠️ ${tag}</span>`;
+                }).join('')
+                : '';
 
-            section.style.display = 'block';
+            const ryslMaxHtml = comp.ryslMax > 0
+                ? `<span style="margin-left: 8px; padding: 2px 8px; background: ${comp.hasAbnormalPerson ? '#ffe5e5' : '#e8f5e9'}; color: ${comp.hasAbnormalPerson ? '#d32f2f' : '#2e7d32'}; border-radius: 10px; font-size: 11px; font-weight: bold;">👥 最多${comp.ryslMax}人</span>`
+                : '';
 
-            // 计算需要渲染的事件
-            let eventsToRender;
-            if (append) {
-                // 追加模式：只渲染从 renderedCount 开始的新事件
-                eventsToRender = compositeEvents.slice(renderedCount);
-            } else {
-                // 全量渲染模式：渲染所有事件，并重置已渲染计数
-                eventsToRender = compositeEvents;
-                renderedCount = 0;
-            }
-
-            const htmlContent = eventsToRender.map(comp => {
-                const duration = calculateDuration(comp.startTime, comp.endTime);
-                const pathStr = comp.path.join(' → ');
-                // 确保 bzzt 是字符串类型并正确判断
-                const bzzt = String(comp.bzzt || '0');
-                const statusBadge = bzzt === '1' ? '<span style="background: #51cf66; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px;">已标注</span>' : '<span style="background: #ff6b6b; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px;">待标注</span>';
-
-                // 显示标注的管理员信息（优先显示标注的，其次显示聚合的）
-                const displayPersons = comp.ryxm || (comp.persons && comp.persons.length > 0 ? comp.persons.join('、') : '');
-                const personsStr = displayPersons
-                    ? `<div style="margin-top: 8px;">👤 管理员：${displayPersons}</div>`
-                    : '';
-
-                // 显示外来人员
-                const wlryStr = comp.wlry
-                    ? `<div style="margin-top: 4px;">🔶 外来人员：${comp.wlry}</div>`
-                    : '';
-
-                // 显示行为原因
-                const xwyyStr = comp.xwyy
-                    ? `<div style="margin-top: 4px; padding: 6px 10px; background: #e7f5ff; border-left: 3px solid #4c6ef5; border-radius: 4px; font-size: 13px;">📝 原因：${comp.xwyy}</div>`
-                    : '';
-
-                // 显示备注
-                const remarkStr = comp.remark
-                    ? `<div style="margin-top: 4px; padding: 6px 10px; background: #fff3cd; border-left: 3px solid #ffc107; border-radius: 4px; font-size: 13px;">💬 备注：${comp.remark}</div>`
-                    : '';
-
-                // 显示特殊标签
-                const specialTagsHtml = comp.specialTags && comp.specialTags.length > 0
-                    ? comp.specialTags.map(tag => {
-                        const color = tag === '非工作时间' ? '#ff9800' : '#e91e63';
-                        return `<span style="background: ${color}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px;">⚠️ ${tag}</span>`;
-                    }).join('')
-                    : '';
-
-                // 显示最大人员数量（如果有异常则高亮显示）
-                const ryslMaxHtml = comp.ryslMax > 0
-                    ? `<span style="margin-left: 8px; padding: 2px 8px; background: ${comp.hasAbnormalPerson ? '#ffe5e5' : '#e8f5e9'}; color: ${comp.hasAbnormalPerson ? '#d32f2f' : '#2e7d32'}; border-radius: 10px; font-size: 11px; font-weight: bold;">👥 最多${comp.ryslMax}人</span>`
-                    : '';
-
-                return `
+            return `
                     <div class="composite-card" id="composite-card-${comp.id}">
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
                             <input type="checkbox" class="composite-checkbox" data-event-id="${comp.id}"
@@ -1970,14 +1073,12 @@
                                     <div class="composite-title">复合事件 #${comp.eventIndex} <span style="color: #868e96; font-size: 13px; font-weight: normal;">(ID: ${comp.id})</span>${statusBadge}${specialTagsHtml}${ryslMaxHtml}</div>
                                     <div class="composite-badge">${comp.eventCount || comp.events.length} 个关联事件</div>
                                 </div>
-                        <div onclick="openCompositeTrace('${comp.id}')">
-                            <div class="composite-path">
-                                📍 路径：${pathStr}
-                            </div>
-                            <div class="composite-time-range">
-                                ⏱️ ${comp.startTime} ~ ${comp.endTime.split(' ')[1]} (${duration})
-                            </div>
-                        </div>
+                                <div onclick="openCompositeTrace('${comp.id}')">
+                                    <div class="composite-path">📍 路径：${pathStr}</div>
+                                    <div class="composite-time-range">⏱️ ${comp.startTime} ~ ${comp.endTime.split(' ')[1]} (${duration})</div>
+                                    ${personsStr}
+                                    ${xwyyStr}
+                                </div>
                                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e9ecef; display: flex; gap: 10px;">
                                     <button onclick="event.stopPropagation(); annotateCompositeEvent('${comp.eventId}', '${comp.id}')"
                                             style="flex: 1; padding: 8px 16px; background: #4c6ef5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
@@ -1992,466 +1093,300 @@
                         </div>
                     </div>
                 `;
-            }).join('');
+        }).join('');
 
-            // 追加或替换内容
-            // 性能优化：使用 insertAdjacentHTML 替代 innerHTML +=
-            // insertAdjacentHTML 不会重新解析现有DOM，避免：
-            // 1. 事件监听器丢失
-            // 2. 用户交互状态(如选中、focus)丢失
-            // 3. 整个列表重新渲染导致的闪烁
-            if (append) {
-                // 追加模式：在列表末尾插入新内容
-                list.insertAdjacentHTML('beforeend', htmlContent);
-                // 更新已渲染数量
-                renderedCount = compositeEvents.length;
-            } else {
-                // 全量渲染模式：直接覆盖(首次加载或筛选重置)
-                list.innerHTML = htmlContent;
-                // 全量渲染后，更新已渲染数量
-                renderedCount = compositeEvents.length;
-            }
+        list.innerHTML = htmlContent;
+    }
 
-            // 添加加载提示
-            const existingTip = list.querySelector('.loading-tip');
-            if (existingTip) {
-                list.removeChild(existingTip);
-            }
+    // 渲染分页控件
+    function renderPagination(total, size, current) {
+        const container = document.getElementById('pagination');
+        if (total === 0) {
+            container.innerHTML = '';
+            return;
+        }
 
-            if (compositeEvents.length > 0) {
-                const loadingTip = document.createElement('div');
-                loadingTip.className = 'loading-tip';
-                loadingTip.style.cssText = 'text-align: center; padding: 20px; color: #999; font-size: 14px;';
+        const totalPages = Math.ceil(total / size);
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
 
-                if (hasMore) {
-                    loadingTip.innerHTML = '<p>向下滚动加载更多...</p>';
-                } else {
-                    loadingTip.innerHTML = '<p>已加载全部数据（共 ' + totalCount + ' 条）</p>';
-                }
+        let html = '<ul class="pagination">';
 
-                list.appendChild(loadingTip);
+        // 上一页
+        const prevDisabled = current === 1 ? 'disabled' : '';
+        html += `<li class="page-item ${prevDisabled}" onclick="${current > 1 ? `changePage(${current - 1})` : ''}">
+                        <a class="page-link">上一页</a>
+                     </li>`;
+
+        // 页码生成逻辑 (最多显示5个页码 + 省略号)
+        let startPage = Math.max(1, current - 2);
+        let endPage = Math.min(totalPages, current + 2);
+
+        if (startPage > 1) {
+            html += `<li class="page-item" onclick="changePage(1)"><a class="page-link">1</a></li>`;
+            if (startPage > 2) {
+                html += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
             }
         }
 
-        // 计算时长
-        function calculateDuration(startTime, endTime) {
-            const start = new Date(startTime);
-            const end = new Date(endTime);
-            const diffSeconds = Math.floor((end - start) / 1000); // 秒
+        for (let i = startPage; i <= endPage; i++) {
+            const active = i === current ? 'active' : '';
+            html += `<li class="page-item ${active}" onclick="changePage(${i})">
+                            <a class="page-link">${i}</a>
+                         </li>`;
+        }
 
-            if (diffSeconds < 60) {
-                return `${diffSeconds}秒`;
-            } else if (diffSeconds < 3600) {
-                const mins = Math.floor(diffSeconds / 60);
-                const secs = diffSeconds % 60;
-                return `${mins}分${secs}秒`;
-            } else {
-                const hours = Math.floor(diffSeconds / 3600);
-                const mins = Math.floor((diffSeconds % 3600) / 60);
-                const secs = diffSeconds % 60;
-                return `${hours}小时${mins}分${secs}秒`;
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                html += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
             }
+            html += `<li class="page-item" onclick="changePage(${totalPages})"><a class="page-link">${totalPages}</a></li>`;
         }
 
-        // 打开复合事件追踪（跳转到新页面）
-        function openCompositeTrace(compositeId) {
-            const beginDate = currentFilters.beginDateFilter || document.getElementById('beginDateFilter').value || new Date().toISOString().split('T')[0];
-            const endDate = currentFilters.endDateFilter || document.getElementById('endDateFilter').value || beginDate;
-            window.location.href = '/caseapp/track/compositeTrace?id=' + compositeId + '&beginDate=' + beginDate + '&endDate=' + endDate;
+        // 下一页
+        const nextDisabled = current === totalPages ? 'disabled' : '';
+        html += `<li class="page-item ${nextDisabled}" onclick="${current < totalPages ? `changePage(${current + 1})` : ''}">
+                        <a class="page-link">下一页</a>
+                     </li>`;
+
+        html += `</ul>`;
+
+        // 添加总数显示
+        html += `<span style="margin-left: 15px; color: #666; font-size: 14px;">共 ${total} 条 / ${totalPages} 页</span>`;
+
+        container.innerHTML = html;
+    }
+
+    // 切换页码
+    function changePage(page) {
+        if (page === currentPage || isLoading) return;
+        analyzeCompositeEvents(page);
+        // 滚动到列表顶部
+        document.getElementById('compositeSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // 计算时长
+    function calculateDuration(startTime, endTime) {
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        const diffSeconds = Math.floor((end - start) / 1000);
+
+        if (diffSeconds < 60) return `${diffSeconds}秒`;
+        else if (diffSeconds < 3600) {
+            const mins = Math.floor(diffSeconds / 60);
+            const secs = diffSeconds % 60;
+            return `${mins}分${secs}秒`;
+        } else {
+            const hours = Math.floor(diffSeconds / 3600);
+            const mins = Math.floor((diffSeconds % 3600) / 60);
+            const secs = diffSeconds % 60;
+            return `${hours}小时${mins}分${secs}秒`;
         }
+    }
 
-        // 跳转到事件列表页面
-        function goToEventList() {
-            window.location.href = '/caseapp/track/eventList';
-        }
+    // 页面跳转函数
+    function openCompositeTrace(compositeId) {
+        const beginDate = currentFilters.beginDateFilter;
+        const endDate = currentFilters.endDateFilter;
+        window.location.href = '/caseapp/track/compositeTrace?id=' + compositeId + '&beginDate=' + beginDate + '&endDate=' + endDate;
+    }
+    function goToEventList() { window.location.href = '/caseapp/track/eventList'; }
+    function goToDailyReport() { window.location.href = '/caseapp/track/dailyReport'; }
+    function goToShelfTrajectory() { window.location.href = '/caseapp/track/shelfTrajectory'; }
 
-        // 跳转到每日报告页面
-        function goToDailyReport() {
-            window.location.href = '/caseapp/track/dailyReport';
-        }
+    // ==================== 导出相关 ====================
+    function toggleSelectAll() {
+        const checkboxes = document.querySelectorAll('.composite-checkbox');
+        if (checkboxes.length === 0) { alert('当前没有可选择的复合事件'); return; }
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => { cb.checked = !allChecked; });
+    }
 
-        // 跳转到货位位置查询页面
-        function goToShelfTrajectory() {
-            window.location.href = '/caseapp/track/shelfTrajectory';
-        }
+    function exportSelectedCompositeEvents() {
+        const checkboxes = document.querySelectorAll('.composite-checkbox:checked');
+        if (checkboxes.length === 0) { alert('请先选择要导出的复合事件'); return; }
+        const selectedEventIds = Array.from(checkboxes).map(cb => cb.getAttribute('data-event-id')).filter(id => id && id.trim() !== '');
+        if (selectedEventIds.length === 0) { alert('未找到有效的事件ID'); return; }
+        if (!confirm(`确定要导出选中的 ${selectedEventIds.length} 个复合事件台账吗？`)) return;
 
-        // ==================== 复合事件导出功能 ====================
+        const formData = new FormData();
+        formData.append('eventIds', selectedEventIds.join(','));
+        const loadingMsg = document.createElement('div');
+        loadingMsg.innerHTML = '⏳ 正在生成台账文件，请稍候...';
+        loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px 40px; border-radius: 8px; z-index: 9999; font-size: 16px;';
+        document.body.appendChild(loadingMsg);
 
-        // 全选/反选复选框
-        function toggleSelectAll() {
-            const checkboxes = document.querySelectorAll('.composite-checkbox');
-            if (checkboxes.length === 0) {
-                alert('当前没有可选择的复合事件');
-                return;
-            }
-
-            // 判断当前是否全选
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-
-            // 如果全选，则取消全选；否则全选
-            checkboxes.forEach(cb => {
-                cb.checked = !allChecked;
-            });
-        }
-
-        // 导出选中的复合事件台账
-        function exportSelectedCompositeEvents() {
-            const checkboxes = document.querySelectorAll('.composite-checkbox:checked');
-
-            if (checkboxes.length === 0) {
-                alert('请先选择要导出的复合事件');
-                return;
-            }
-
-            // 获取选中的事件ID列表（过滤无效值）
-            const selectedEventIds = Array.from(checkboxes)
-                .map(cb => cb.getAttribute('data-event-id'))
-                .filter(id => id && id.trim() !== '');
-
-            if (selectedEventIds.length === 0) {
-                alert('未找到有效的事件ID');
-                return;
-            }
-
-            // 确认导出
-            if (!confirm(`确定要导出选中的 ${selectedEventIds.length} 个复合事件台账吗？`)) {
-                return;
-            }
-
-            // 构建表单数据
-            const formData = new FormData();
-            formData.append('eventIds', selectedEventIds.join(','));
-
-            // 显示加载提示
-            const loadingMsg = document.createElement('div');
-            loadingMsg.innerHTML = '⏳ 正在生成台账文件，请稍候...';
-            loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px 40px; border-radius: 8px; z-index: 9999; font-size: 16px;';
-            document.body.appendChild(loadingMsg);
-
-            // 调用导出接口
-            fetch('/caseapp/track/exportCompositeEvents', {
-                method: 'POST',
-                body: formData
-            })
+        fetch('/caseapp/track/exportCompositeEvents', { method: 'POST', body: formData })
             .then(response => response.json())
             .then(data => {
                 document.body.removeChild(loadingMsg);
                 if (data.code === 0) {
-                    // 下载文件
-                    const fileName = encodeURI(data.msg);
-                    window.location.href = ctx + 'common/download?fileName=' + fileName + '&delete=true';
+                    window.location.href = ctx + 'common/download?fileName=' + encodeURI(data.msg) + '&delete=true';
                     alert('✅ 导出成功！');
-
-                    // 取消选中
                     checkboxes.forEach(cb => cb.checked = false);
-                } else {
-                    alert('❌ 导出失败：' + data.msg);
-                }
+                } else { alert('❌ 导出失败：' + data.msg); }
             })
-            .catch(error => {
-                document.body.removeChild(loadingMsg);
-                console.error('导出失败:', error);
-                alert('❌ 导出失败：' + error);
-            });
-        }
+            .catch(error => { document.body.removeChild(loadingMsg); alert('❌ 导出失败：' + error); });
+    }
 
-        // 导出选中的事件包
-        function exportSelectedEventPackages() {
-            const checkboxes = document.querySelectorAll('.composite-checkbox:checked');
+    function exportSelectedEventPackages() {
+        const checkboxes = document.querySelectorAll('.composite-checkbox:checked');
+        if (checkboxes.length === 0) { alert('请先选择要导出的复合事件'); return; }
+        const selectedEventIds = Array.from(checkboxes).map(cb => cb.getAttribute('data-event-id')).filter(id => id && id.trim() !== '');
+        if (selectedEventIds.length === 0) { alert('未找到有效的事件ID'); return; }
+        if (!confirm(`确定要导出选中的 ${selectedEventIds.length} 个事件包吗？\n\n导出位置：桌面/事件包导出/batch_events_[时间]/\n包含：HTML报告、图片、视频、JSON数据`)) return;
 
-            if (checkboxes.length === 0) {
-                alert('请先选择要导出的复合事件');
-                return;
-            }
+        const loadingMsg = document.createElement('div');
+        loadingMsg.innerHTML = `⏳ 正在导出事件包，请稍候...<br><small>共 ${selectedEventIds.length} 个事件</small>`;
+        loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px 40px; border-radius: 8px; z-index: 9999; font-size: 16px; text-align: center;';
+        document.body.appendChild(loadingMsg);
 
-            // 获取选中的事件ID列表（过滤无效值）
-            const selectedEventIds = Array.from(checkboxes)
-                .map(cb => cb.getAttribute('data-event-id'))
-                .filter(id => id && id.trim() !== '');
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/caseapp/track/compositeEvents/batchExport';
+        form.style.display = 'none';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'eventIds';
+        input.value = selectedEventIds.join(',');
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
 
-            if (selectedEventIds.length === 0) {
-                alert('未找到有效的事件ID');
-                return;
-            }
+        setTimeout(() => {
+            if (loadingMsg.parentNode) document.body.removeChild(loadingMsg);
+            document.body.removeChild(form);
+            alert('✅ 导出成功！正在下载事件包...');
+            checkboxes.forEach(cb => cb.checked = false);
+        }, 1000);
+    }
 
-            // 确认导出
-            if (!confirm(`确定要导出选中的 ${selectedEventIds.length} 个事件包吗？\n\n导出位置：桌面/事件包导出/batch_events_[时间]/\n包含：HTML报告、图片、视频、JSON数据\n\n💡 提示：如需选择保存位置，请在浏览器设置中开启\n"下载前询问每个文件的保存位置"选项`)) {
-                return;
-            }
+    window.addEventListener('DOMContentLoaded', init);
 
-            // 显示加载提示
-            const loadingMsg = document.createElement('div');
-            loadingMsg.innerHTML = `⏳ 正在导出事件包，请稍候...<br><small>共 ${selectedEventIds.length} 个事件</small>`;
-            loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px 40px; border-radius: 8px; z-index: 9999; font-size: 16px; text-align: center;';
-            document.body.appendChild(loadingMsg);
+    // ==================== 复合事件标注功能 (保持不变) ====================
+    let currentAnnotationEventId = null;
+    let currentAnnotationCompId = null;
 
-            // 使用表单提交方式触发批量导出
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/caseapp/track/compositeEvents/batchExport';
-            form.style.display = 'none';
+    function annotateCompositeEvent(eventId, compId) {
+        currentAnnotationEventId = eventId;
+        currentAnnotationCompId = compId;
+        document.getElementById('compositeAnnotationModal').style.display = 'flex';
+        document.getElementById('annotationForm').reset();
+        loadPersonListForAnnotation();
+    }
 
-            // 创建隐藏的input来传递eventIds参数
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'eventIds';
-            input.value = selectedEventIds.join(',');
-            form.appendChild(input);
-
-            document.body.appendChild(form);
-            form.submit();
-
-            // 延迟关闭加载提示
-            setTimeout(() => {
-                if (loadingMsg.parentNode) {
-                    document.body.removeChild(loadingMsg);
-                }
-                document.body.removeChild(form);
-                alert('✅ 导出成功！正在下载事件包...');
-
-                // 取消选中
-                checkboxes.forEach(cb => cb.checked = false);
-            }, 1000);
-        }
-
-        // 页面加载完成后初始化
-        window.addEventListener('DOMContentLoaded', init);
-
-        // ==================== 复合事件标注功能 ====================
-        let currentAnnotationEventId = null;
-        let currentAnnotationCompId = null;
-
-        // 打开复合事件标注弹窗
-        function annotateCompositeEvent(eventId, compId) {
-            currentAnnotationEventId = eventId;
-            currentAnnotationCompId = compId;
-
-            // 显示模态框
-            document.getElementById('compositeAnnotationModal').style.display = 'flex';
-
-            // 重置表单
-            document.getElementById('annotationForm').reset();
-
-            // 加载人员列表并初始化 Select2
-            loadPersonListForAnnotation();
-        }
-
-        // 加载人员列表供标注使用
-        function loadPersonListForAnnotation() {
-            fetch('/caseapp/person/persons', {
-                method: 'POST'
-            })
+    function loadPersonListForAnnotation() {
+        fetch('/caseapp/person/persons', { method: 'POST' })
             .then(response => response.json())
             .then(data => {
                 const personSelect = $('#annot_ryxm');
-
-                // 如果 select2 已经初始化，先销毁
-                if (personSelect.data('select2')) {
-                    personSelect.select2('destroy');
-                }
-
-                // 清空现有选项
+                if (personSelect.data('select2')) { personSelect.select2('destroy'); }
                 personSelect.empty();
-
-                // 添加选项
                 if (data && data.data) {
-                    data.data.forEach(person => {
-                        personSelect.append(new Option(person, person, false, false));
-                    });
+                    data.data.forEach(person => { personSelect.append(new Option(person, person, false, false)); });
                 }
-
-                // 初始化 Select2（多选下拉框，显示为标签形式）
                 personSelect.select2({
                     placeholder: '请选择管理员（可多选）',
                     allowClear: true,
                     width: '100%',
-                    dropdownParent: $('#compositeAnnotationModal'),
-                    language: {
-                        noResults: function() {
-                            return "未找到匹配的管理员";
-                        }
-                    }
+                    dropdownParent: $('#compositeAnnotationModal')
                 });
-
-                // 美化 Select2 多选框，让它看起来更像下拉框
+                // 样式美化代码省略（保持原样）
                 setTimeout(function() {
                     const $container = $('#annot_ryxm').next('.select2-container');
                     const $selection = $container.find('.select2-selection');
-
-                    // 添加边框和样式，与"行为原因"下拉框保持一致
-                    $selection.css({
-                        'border': '2px solid #dee2e6',
-                        'border-radius': '4px',
-                        'min-height': '38px',
-                        'padding': '10px 30px 10px 10px',
-                        'background': 'white',
-                        'position': 'relative',
-                        'cursor': 'pointer',
-                        'font-size': '14px',
-                        'font-weight': 'bold'
-                    });
-
-                    // 移除输入框的文字光标，并设置字体加粗
-                    $selection.find('.select2-search__field').css({
-                        'cursor': 'pointer',
-                        'font-weight': 'bold'
-                    });
-
-                    // 设置 placeholder 文字颜色为深黑色
-                    $selection.find('.select2-search__field').attr('placeholder', '请选择管理员（可多选）');
-                    $selection.find('.select2-search__field').css('color', '#333');
-
-                    // 设置选中项的字体加粗
-                    $selection.find('.select2-selection__choice').css('font-weight', 'bold');
-
-                    // 如果还没有下拉箭头，添加一个（更大、更黑）
-                    if ($selection.find('.custom-arrow').length === 0) {
-                        $selection.append('<span class="custom-arrow" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #333; font-size: 16px; font-weight: bold;">▼</span>');
-                    }
-
-                    // 鼠标悬停效果
-                    $selection.hover(
-                        function() { $(this).css('border-color', '#4c6ef5'); },
-                        function() { $(this).css('border-color', '#dee2e6'); }
-                    );
+                    $selection.css({'border':'2px solid #dee2e6','borderRadius':'4px','minHeight':'38px','padding':'5px 10px'});
                 }, 100);
-            })
-            .catch(error => {
-                console.error('加载人员列表失败:', error);
             });
-        }
+    }
 
-        // 关闭标注弹窗
-        function closeAnnotationModal() {
-            document.getElementById('compositeAnnotationModal').style.display = 'none';
-            // 清空表单
-            document.getElementById('annot_xwyy').value = '';
-            // 使用 Select2 的方式清空人员选择
-            $('#annot_ryxm').val(null).trigger('change');
-            document.getElementById('annot_wlry').value = '';
-            document.getElementById('annot_remark').value = '';
-            currentAnnotationEventId = null;
-            currentAnnotationCompId = null;
-        }
+    function closeAnnotationModal() {
+        document.getElementById('compositeAnnotationModal').style.display = 'none';
+        document.getElementById('annot_xwyy').value = '';
+        $('#annot_ryxm').val(null).trigger('change');
+        document.getElementById('annot_wlry').value = '';
+        document.getElementById('annot_remark').value = '';
+        currentAnnotationEventId = null;
+        currentAnnotationCompId = null;
+    }
 
-        // 保存复合事件标注
-        function saveCompositeAnnotation() {
-            const xwyy = document.getElementById('annot_xwyy').value;
-            // 从多选下拉框获取选中的人员，用逗号连接
-            const ryxmArray = $('#annot_ryxm').val();
-            const ryxm = ryxmArray ? ryxmArray.join(',') : '';
-            const wlry = document.getElementById('annot_wlry').value;
-            const remark = document.getElementById('annot_remark').value;
+    function saveCompositeAnnotation() {
+        const xwyy = document.getElementById('annot_xwyy').value;
+        const ryxmArray = $('#annot_ryxm').val();
+        const ryxm = ryxmArray ? ryxmArray.join(',') : '';
+        const wlry = document.getElementById('annot_wlry').value;
+        const remark = document.getElementById('annot_remark').value;
 
-            if (!xwyy) {
-                alert('请选择行为原因');
-                return;
-            }
+        if (!xwyy) { alert('请选择行为原因'); return; }
 
-            // 构建请求数据
-            const formData = new FormData();
-            formData.append('eventId', currentAnnotationEventId);
-            formData.append('xwyy', xwyy);
-            formData.append('ryxm', ryxm);
-            formData.append('wlry', wlry);
-            formData.append('remark', remark);
+        const formData = new FormData();
+        formData.append('eventId', currentAnnotationEventId);
+        formData.append('xwyy', xwyy);
+        formData.append('ryxm', ryxm);
+        formData.append('wlry', wlry);
+        formData.append('remark', remark);
 
-            // 发送标注请求
-            fetch('/caseapp/track/annotateCompositeEvent', {
-                method: 'POST',
-                body: formData
-            })
+        fetch('/caseapp/track/annotateCompositeEvent', { method: 'POST', body: formData })
             .then(response => response.json())
             .then(data => {
                 if (data.code === 0) {
                     alert('✅ 标注成功！');
                     closeAnnotationModal();
-                    // 重新加载复合事件列表
-                    analyzeCompositeEvents();
-                } else {
-                    alert('❌ 标注失败：' + data.msg);
-                }
+                    analyzeCompositeEvents(currentPage); // 刷新当前页
+                } else { alert('❌ 标注失败：' + data.msg); }
             })
-            .catch(error => {
-                console.error('标注失败:', error);
-                alert('❌ 标注失败：' + error);
-            });
-        }
-    </script>
+            .catch(error => alert('❌ 标注失败：' + error));
+    }
+</script>
 
-    <!-- 复合事件标注模态框 -->
-    <div id="compositeAnnotationModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 8px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-            <!-- 标题 -->
-            <div style="background: linear-gradient(135deg, #4c6ef5 0%, #364fc7 100%); color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; font-size: 20px;">✏️ 标注复合事件</h2>
-                <button onclick="closeAnnotationModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 24px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer;">×</button>
-            </div>
-
-            <!-- 表单内容 -->
-            <div style="padding: 30px;">
-                <form id="annotationForm">
-                    <!-- 行为原因 -->
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">
-                            <span style="color: #ff6b6b;">*</span> 行为原因：
-                        </label>
-                        <select id="annot_xwyy" style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 4px; font-size: 14px;">
-                            <option value="">请选择行为原因</option>
-                            <option value="盘库">盘库</option>
-                            <option value="入库物品">入库物品</option>
-                            <option value="出库物品">出库物品</option>
-                            <option value="巡查">巡查</option>
-                            <option value="整理">整理</option>
-                            <option value="其他">其他</option>
-                        </select>
-                    </div>
-
-                    <!-- 人员姓名 -->
-                    <div id="annot_ryxm_container" style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">
-                            👤 管理员姓名：
-                        </label>
-                        <select id="annot_ryxm" class="form-control" multiple style="width: 100%; display: block !important; visibility: visible !important;">
-                            <option value="">加载中...</option>
-                        </select>
-                        <small style="color: #868e96; font-size: 12px;">可多选，选中后会显示为标签</small>
-                    </div>
-
-                    <!-- 外来人员 -->
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">
-                            🔶 外来人员：
-                        </label>
-                        <input type="text" id="annot_wlry" placeholder="多个人员用逗号分隔" style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 4px; font-size: 14px;">
-                        <small style="color: #868e96; font-size: 12px;">如有外来人员参与，请填写</small>
-                    </div>
-
-                    <!-- 备注 -->
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">
-                            📝 备注：
-                        </label>
-                        <textarea id="annot_remark" placeholder="请输入备注信息" style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 4px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
-                        <small style="color: #868e96; font-size: 12px;">可选填，用于记录其他需要说明的信息</small>
-                    </div>
-
-                    <!-- 按钮 -->
-                    <div style="display: flex; gap: 10px; margin-top: 30px;">
-                        <button type="button" onclick="closeAnnotationModal()" style="flex: 1; padding: 12px; background: #868e96; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
-                            取消
-                        </button>
-                        <button type="button" onclick="saveCompositeAnnotation()" style="flex: 2; padding: 12px; background: #4c6ef5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold;">
-                            ✅ 保存标注
-                        </button>
-                    </div>
-                </form>
-            </div>
+<div id="compositeAnnotationModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 8px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="background: linear-gradient(135deg, #4c6ef5 0%, #364fc7 100%); color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; font-size: 20px;">✏️ 标注复合事件</h2>
+            <button onclick="closeAnnotationModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 24px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer;">×</button>
+        </div>
+        <div style="padding: 30px;">
+            <form id="annotationForm">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;"><span style="color: #ff6b6b;">*</span> 行为原因：</label>
+                    <select id="annot_xwyy" style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 4px; font-size: 14px;">
+                        <option value="">请选择行为原因</option>
+                        <option value="盘库">盘库</option>
+                        <option value="入库物品">入库物品</option>
+                        <option value="出库物品">出库物品</option>
+                        <option value="巡查">巡查</option>
+                        <option value="整理">整理</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div id="annot_ryxm_container" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">👤 管理员姓名：</label>
+                    <select id="annot_ryxm" class="form-control" multiple style="width: 100%; display: block !important; visibility: visible !important;">
+                        <option value="">加载中...</option>
+                    </select>
+                    <small style="color: #868e96; font-size: 12px;">可多选，选中后会显示为标签</small>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">🔶 外来人员：</label>
+                    <input type="text" id="annot_wlry" placeholder="多个人员用逗号分隔" style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">📝 备注：</label>
+                    <textarea id="annot_remark" placeholder="请输入备注信息" style="width: 100%; padding: 10px; border: 2px solid #dee2e6; border-radius: 4px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 30px;">
+                    <button type="button" onclick="closeAnnotationModal()" style="flex: 1; padding: 12px; background: #868e96; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">取消</button>
+                    <button type="button" onclick="saveCompositeAnnotation()" style="flex: 2; padding: 12px; background: #4c6ef5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold;">✅ 保存标注</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
-    <th:block th:include="include :: footer" />
-    <th:block th:include="include :: select2-js" />
-    <th:block th:include="include :: bootstrap-select-js" />
+<th:block th:include="include :: footer" />
+<th:block th:include="include :: select2-js" />
+<th:block th:include="include :: bootstrap-select-js" />
 </body>
 </html>

@@ -55,7 +55,7 @@ public class RuoYiApplication
         Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
         connector.setScheme("http");
         connector.setSecure(false);
-        connector.setPort(8099);//http端口
+        connector.setPort(8091);//http端口
         return connector;
     }
 }

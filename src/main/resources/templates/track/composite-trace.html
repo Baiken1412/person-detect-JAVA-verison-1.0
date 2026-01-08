@@ -335,13 +335,38 @@
         .carousel-image-info .info-area {
             opacity: 0.9;
         }
+
+        /* 退出登录按钮样式 */
+        .logout-button {
+            background: #ff9800 !important;
+            border: 1px solid #ff9800 !important;
+            color: white !important;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+        }
+
+        .logout-button:hover {
+            background: #f57c00 !important;
+            border-color: #f57c00 !important;
+            box-shadow: 0 4px 8px rgba(255, 152, 0, 0.4);
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
     <div style="position: fixed; top: 20px; left: 20px; z-index: 1000; display: flex; gap: 10px;">
         <button class="back-btn" onclick="goBack()">🔙 返回</button>
         <button class="export-btn" onclick="exportEventPackage()">📦 导出事件包</button>
-        <a th:href="@{/logout}" class="back-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">🚪 退出登录</a>
+        <a th:href="@{/logout}" class="logout-button">🚪 退出登录</a>
     </div>
 
     <div class="container">

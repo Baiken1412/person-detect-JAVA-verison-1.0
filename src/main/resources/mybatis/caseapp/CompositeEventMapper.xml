@@ -43,6 +43,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="qymc != null and qymc != ''"> and qymc like concat('%', #{qymc}, '%')</if>
             <if test="isClosed != null"> and is_closed = #{isClosed}</if>
             <if test="bzzt != null and bzzt != ''"> and bzzt = #{bzzt}</if>
+            <!-- 支持多个原因筛选 -->
+            <if test="params.xwyyList != null and params.xwyyList.size() > 0">
+                and (
+                <foreach collection="params.xwyyList" item="reason" separator=" or ">
+                    xwyy like concat('%', #{reason}, '%')
+                </foreach>
+                )
+            </if>
             <if test="ryxm != null and ryxm != ''"> and ryxm like concat('%', #{ryxm}, '%')</if>
             <if test="hasNonworktime != null"> and has_nonworktime = #{hasNonworktime}</if>
             <if test="hasAbnormalPerson != null"> and has_abnormalPerson = #{hasAbnormalPerson}</if>

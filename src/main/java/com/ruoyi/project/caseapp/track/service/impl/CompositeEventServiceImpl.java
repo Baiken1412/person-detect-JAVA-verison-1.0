@@ -35,6 +35,8 @@ import com.ruoyi.project.caseapp.track.mapper.AppTrackMapper;
 import com.ruoyi.project.caseapp.track.mapper.AppTrackScreenshotMapper;
 import com.ruoyi.project.caseapp.track.mapper.EventTrackRelationMapper;
 import com.ruoyi.project.caseapp.track.service.ICompositeEventService;
+import com.ruoyi.project.caseapp.roomip.mapper.AppRoomipMapper;
+import com.ruoyi.project.caseapp.roomip.domain.AppRoomip;
 
 /**
  * 复合事件Service业务层处理
@@ -59,6 +61,9 @@ public class CompositeEventServiceImpl implements ICompositeEventService
 
     @Autowired
     private EventTrackRelationMapper relationMapper;
+
+    @Autowired
+    private AppRoomipMapper appRoomipMapper;
 
     // 空闲时间阈值：120秒（毫秒）- 轨迹间隔超过此值则分割为不同事件
     private static final long IDLE_THRESHOLD = 120 * 1000;
@@ -237,8 +242,34 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             return;
         }
 
+        // 过滤掉"收物室"的轨迹 - 不参与复合事件计算
+        List<AppTrack> filteredTracks = new ArrayList<>();
+        for (AppTrack track : windowTracks)
+        {
+            // 通过 qyid 查询对应的摄像头配置
+            if (track.getQyid() != null)
+            {
+                AppRoomip roomip = appRoomipMapper.selectAppRoomipById(track.getQyid());
+                // 如果 fjmc 不是"收物室"，则加入计算列表
+                if (roomip == null || !"收物室".equals(roomip.getFjmc()))
+                {
+                    filteredTracks.add(track);
+                }
+            }
+            else
+            {
+                // qyid 为空的轨迹保留
+                filteredTracks.add(track);
+            }
+        }
+
+        if (filteredTracks.isEmpty())
+        {
+            return;
+        }
+
         // 2. 使用30秒算法计算复合事件
-        List<CompositeEvent> newEvents = calculate30SecondCompositeEvents(windowTracks);
+        List<CompositeEvent> newEvents = calculate30SecondCompositeEvents(filteredTracks);
 
         // 3. 删除该时间窗口内的旧复合事件（通过关系表查询）
         for (AppTrack t : windowTracks)
@@ -307,8 +338,34 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             return 0;
         }
 
+        // 过滤掉"收物室"的轨迹 - 不参与复合事件计算
+        List<AppTrack> filteredTracks = new ArrayList<>();
+        for (AppTrack track : allTracks)
+        {
+            // 通过 qyid 查询对应的摄像头配置
+            if (track.getQyid() != null)
+            {
+                AppRoomip roomip = appRoomipMapper.selectAppRoomipById(track.getQyid());
+                // 如果 fjmc 不是"收物室"，则加入计算列表
+                if (roomip == null || !"收物室".equals(roomip.getFjmc()))
+                {
+                    filteredTracks.add(track);
+                }
+            }
+            else
+            {
+                // qyid 为空的轨迹保留
+                filteredTracks.add(track);
+            }
+        }
+
+        if (filteredTracks.isEmpty())
+        {
+            return 0;
+        }
+
         // 2. 使用30秒算法计算复合事件
-        List<CompositeEvent> events = calculate30SecondCompositeEvents(allTracks);
+        List<CompositeEvent> events = calculate30SecondCompositeEvents(filteredTracks);
 
         // 3. 清空旧数据（如果有时间范围限制，只删除该范围内的）
         if (appTrack != null && appTrack.getParams().get("beginPssj") != null)

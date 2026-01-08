@@ -489,6 +489,92 @@
             color: #606266;
             font-size: 14px;
         }
+
+        /* 视频播放弹窗样式 */
+        .video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-modal.show {
+            display: flex;
+        }
+
+        .video-modal-content {
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            max-width: 90%;
+            max-height: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .video-modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .video-modal-title {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .video-modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .video-modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .video-modal-body {
+            background: #000;
+        }
+
+        .video-modal-body video {
+            width: 100%;
+            max-height: 70vh;
+            display: block;
+        }
+
+        .video-modal-footer {
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .video-info-text {
+            flex: 1;
+            font-size: 13px;
+            color: #606266;
+        }
     </style>
 </head>
 <body>
@@ -574,9 +660,30 @@
         </div>
     </div>
 
+    <!-- 视频播放弹窗 -->
+    <div class="video-modal" id="videoModal">
+        <div class="video-modal-content">
+            <div class="video-modal-header">
+                <div class="video-modal-title" id="videoModalTitle">轨迹视频</div>
+                <button class="video-modal-close" onclick="closeVideoModal()">✖</button>
+            </div>
+            <div class="video-modal-body">
+                <video id="modalVideo" controls>
+                    您的浏览器不支持视频播放。
+                </video>
+            </div>
+            <div class="video-modal-footer">
+                <span class="video-info-text" id="videoInfoText">视频播放中...</span>
+            </div>
+        </div>
+    </div>
+
     <script th:inline="javascript">
         /*<![CDATA[*/
         const ctx = /*[[@{/}]]*/ '/';
+
+        // 存储当前轨迹数据
+        let currentTrajectories = [];
 
         // 页面加载时初始化货架和区域列表
         function loadShelfAndAreaLists() {
@@ -736,8 +843,9 @@
         // 渲染轨迹列表
         function renderTrajectories(data) {
             trajectoryList.innerHTML = '';
+            currentTrajectories = data; // 保存轨迹数据
 
-            data.forEach(trajectory => {
+            data.forEach((trajectory, index) => {
                 const card = document.createElement('div');
                 card.className = 'trajectory-card';
 
@@ -763,7 +871,7 @@
                     <div class="trajectory-content">
                         <div class="trajectory-image">
                             <img src="${trajectory.keyframeUrl}" alt="关键帧截图">
-                            <div class="play-overlay" onclick="playVideo('${trajectory.id}')">
+                            <div class="play-overlay" onclick="playVideo(${index})">
                                 <div class="play-button">
                                     <svg viewBox="0 0 24 24">
                                         <path d="M8 5v14l11-7z"/>
@@ -800,8 +908,7 @@
                                 <div class="info-value">
                                     ${trajectory.hasVideo ? `共 ${trajectory.videoCount} 个视频片段` : '暂无视频'}
                                     <div class="video-actions">
-                                        <button class="btn-small" onclick="playVideo('${trajectory.id}')">播放视频</button>
-                                        
+                                        <button class="btn-small" onclick="playVideo(${index})">${trajectory.hasVideo ? '播放视频' : '暂无视频'}</button>
                                         <button class="btn-small" onclick="viewDetails('${trajectory.id}')">查看事件</button>
                                     </div>
                                 </div>
@@ -898,10 +1005,73 @@
         });
 
         // 视频播放功能
-        function playVideo(trajectoryId) {
-            alert(`播放轨迹 ${trajectoryId} 的视频片段`);
-            // 实际实现中可以打开视频播放器弹窗
+        function playVideo(index) {
+            if (index < 0 || index >= currentTrajectories.length) {
+                alert('无效的轨迹索引');
+                return;
+            }
+
+            const trajectory = currentTrajectories[index];
+            const videoUrl = trajectory.videoUrl;
+
+            console.log('播放轨迹视频:', {
+                id: trajectory.id,
+                videoUrl: videoUrl,
+                startTime: trajectory.startTime,
+                endTime: trajectory.endTime
+            });
+
+            if (!videoUrl || videoUrl.trim() === '') {
+                alert('该轨迹暂无视频数据\n\n可能原因：\n1. 视频尚未生成\n2. 视频文件路径未配置\n3. 数据库spdz字段为空');
+                return;
+            }
+
+            // 设置弹窗标题
+            document.getElementById('videoModalTitle').textContent = `轨迹视频 - ${trajectory.id}`;
+
+            // 设置视频信息
+            document.getElementById('videoInfoText').textContent =
+                `时间: ${trajectory.startTime} ~ ${trajectory.endTime} | 持续: ${trajectory.duration}`;
+
+            // 设置视频源
+            const modalVideo = document.getElementById('modalVideo');
+            modalVideo.src = videoUrl;
+
+            // 显示弹窗
+            document.getElementById('videoModal').classList.add('show');
+
+            // 添加错误处理
+            modalVideo.onerror = (e) => {
+                console.error('视频加载失败:', e);
+                alert(`视频加载失败！\n\n视频URL: ${videoUrl}\n\n请检查：\n1. 视频文件是否存在\n2. 文件路径是否正确\n3. 视频格式是否支持`);
+            };
+
+            // 自动播放
+            modalVideo.play().catch(e => {
+                console.error('视频播放失败:', e);
+            });
         }
+
+        // 关闭视频弹窗
+        function closeVideoModal() {
+            const modal = document.getElementById('videoModal');
+            const video = document.getElementById('modalVideo');
+
+            // 停止播放
+            video.pause();
+            video.src = '';
+
+            // 隐藏弹窗
+            modal.classList.remove('show');
+        }
+
+        // 点击弹窗外部区域关闭
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('videoModal');
+            if (e.target === modal) {
+                closeVideoModal();
+            }
+        });
 
         // 下载视频功能
         function downloadVideo(trajectoryId) {

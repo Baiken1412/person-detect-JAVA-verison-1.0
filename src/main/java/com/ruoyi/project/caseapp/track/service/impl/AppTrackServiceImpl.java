@@ -12,6 +12,7 @@ import com.ruoyi.project.caseapp.track.domain.CompositeEvent;
 import com.ruoyi.project.caseapp.track.service.IAppTrackService;
 import com.ruoyi.project.caseapp.track.service.ICompositeEventService;
 import com.ruoyi.common.utils.text.Convert;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 轨迹Service业务层处理
@@ -63,6 +64,7 @@ public class AppTrackServiceImpl implements IAppTrackService
      * @return 结果
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int insertAppTrack(AppTrack appTrack)
     {
         int result = appTrackMapper.insertAppTrack(appTrack);
@@ -225,7 +227,7 @@ public class AppTrackServiceImpl implements IAppTrackService
             }
         }
 
-        // 传递其他筛选条件（区域、状态、人员等）
+        // 传递其他筛选条件（区域、状态、人员、原因等）
         if (appTrack != null)
         {
             if (appTrack.getQymc() != null)
@@ -239,6 +241,23 @@ public class AppTrackServiceImpl implements IAppTrackService
             if (appTrack.getRyxm() != null)
             {
                 queryParam.setRyxm(appTrack.getRyxm());
+            }
+            if (appTrack.getXwyy() != null && !appTrack.getXwyy().trim().isEmpty())
+            {
+                // 支持多个原因筛选（逗号分隔）
+                String[] reasons = appTrack.getXwyy().split(",");
+                List<String> reasonList = new ArrayList<>();
+                for (String reason : reasons)
+                {
+                    if (reason != null && !reason.trim().isEmpty())
+                    {
+                        reasonList.add(reason.trim());
+                    }
+                }
+                if (!reasonList.isEmpty())
+                {
+                    queryParam.getParams().put("xwyyList", reasonList);
+                }
             }
         }
 
