@@ -96,17 +96,35 @@ public class CaseappTask {
                     System.out.println("警告：轨迹记录ID=" + track.getId() + " 的jssj为NULL，使用默认时长30秒");
                 }
 
-                    map.put("kssj",kssjNew);
-                    map.put("jssj",jssjNew);
+                // 视频截取时间调整：开始时间前5秒，结束时间后5秒
+                Date videoStartTime = kssjNew;
+                Date videoEndTime = jssjNew;
+
+                if (kssjNew != null) {
+                    Calendar calStart = Calendar.getInstance();
+                    calStart.setTime(kssjNew);
+                    calStart.add(Calendar.SECOND, -5);  // 开始时间前5秒
+                    videoStartTime = calStart.getTime();
+                }
+
+                if (jssjNew != null) {
+                    Calendar calEnd = Calendar.getInstance();
+                    calEnd.setTime(jssjNew);
+                    calEnd.add(Calendar.SECOND, 5);  // 结束时间后5秒
+                    videoEndTime = calEnd.getTime();
+                }
+
+                    map.put("kssj",videoStartTime);
+                    map.put("jssj",videoEndTime);
                     map.put("ip",appRoomip.getIp());
                     map.put("wjdz",wjdz);
                     map.put("wjmc",wjmc);
                     map.put("gpu",gpu % 2);
                     gpu++;
                     track.setJqzt("2");
-                    // 计算视频时长：jssjNew减去kssjNew，转换为秒
-                    if(kssjNew != null && jssjNew != null) {
-                        long durationMillis = jssjNew.getTime() - kssjNew.getTime();
+                    // 计算视频时长：使用调整后的时间（前5秒+后5秒），转换为秒
+                    if(videoStartTime != null && videoEndTime != null) {
+                        long durationMillis = videoEndTime.getTime() - videoStartTime.getTime();
                         long durationSeconds = durationMillis / 1000;
                         track.setSpsc(String.valueOf(durationSeconds));
                     }
