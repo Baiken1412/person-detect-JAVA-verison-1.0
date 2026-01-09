@@ -1162,9 +1162,12 @@
     // 切换页码
     function changePage(page) {
         if (page === currentPage || isLoading) return;
+
+        // 先滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // 再加载数据
         analyzeCompositeEvents(page);
-        // 滚动到列表顶部
-        document.getElementById('compositeSection').scrollIntoView({ behavior: 'smooth' });
     }
 
     // 计算时长

@@ -12,7 +12,7 @@ ruoyi:
   profile: D:/appdata/uploadPath
   # 图片/视频访问URL前缀（用于拼接完整URL）
   # 格式：http://域名:端口 或 https://域名:端口
-  # 示例：http://192.168.1.20:8090 或 http://localhost:8090
+  # 示例：https://192.168.1.20:8090 或 http://localhost:8090
   # 注意：不要在末尾添加 /
   profile-url: https://localhost:8090
   # 获取ip地址开关
