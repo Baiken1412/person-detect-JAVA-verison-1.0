@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>每日情况概览</title>
+    <link th:href="@{/css/font-awesome.min.css?v=4.7.0}" rel="stylesheet"/>
     <th:block th:include="include :: select2-css" />
     <link th:href="@{/css/button-animations.css}" rel="stylesheet"/>
     <style>
@@ -368,7 +369,7 @@
         }
 
         .loading::after {
-            content: "⏳ 正在加载报告数据...";
+            content: "正在加载报告数据...";
             font-size: 18px;
             color: #667eea;
         }
@@ -407,19 +408,19 @@
             </div>
             <div style="margin-left: auto; display: flex; gap: 10px;">
                 <button onclick="goToEvents()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
-                    🏠 事件页面
+                    <i class="fa fa-home"></i> 事件页面
                 </button>
                 <button onclick="goToEventList()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
-                    📝 轨迹页面
+                    <i class="fa fa-list"></i> 轨迹页面
                 </button>
                 <button style="background: rgba(255,255,255,0.4); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: default; font-size: 14px; font-weight: bold;">
-                    📊 每日报告
+                    <i class="fa fa-bar-chart"></i> 每日报告
                 </button>
                 <button onclick="goToShelfTrajectory()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
-                    📦 货位位置查询
+                    <i class="fa fa-cube"></i> 货位位置查询
                 </button>
                 <a th:href="@{/logout}" class="logout-button">
-                    🚪 退出登录
+                    <i class="fa fa-sign-out"></i> 退出登录
                 </a>
             </div>
         </div>
@@ -427,7 +428,7 @@
 
     <div class="container">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 30px; border-radius: 8px 8px 0 0; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-            <h2 style="font-size: 24px; font-weight: 600;">📊 每日情况概览</h2>
+            <h2 style="font-size: 24px; font-weight: 600;"><i class="fa fa-bar-chart"></i> 每日情况概览</h2>
             <div class="date-selector">
                 <input type="date" id="reportDate" />
                 <button onclick="loadReport()">查看</button>
@@ -447,22 +448,22 @@
                 <!-- 统计卡片 -->
                 <div class="stats-grid">
                     <div class="stat-card total">
-                        <div class="stat-icon">📈</div>
+                        <div class="stat-icon"><i class="fa fa-line-chart"></i></div>
                         <div class="stat-label">总事件数</div>
                         <div class="stat-value" id="totalEvents">0</div>
                     </div>
                     <div class="stat-card abnormal">
-                        <div class="stat-icon">⚠️</div>
+                        <div class="stat-icon"><i class="fa fa-exclamation-triangle"></i></div>
                         <div class="stat-label">异常事件</div>
                         <div class="stat-value" id="abnormalEvents">0</div>
                     </div>
                     <div class="stat-card suspicious">
-                        <div class="stat-icon">🔍</div>
+                        <div class="stat-icon"><i class="fa fa-search"></i></div>
                         <div class="stat-label">可疑事件</div>
                         <div class="stat-value" id="suspiciousEvents">0</div>
                     </div>
                     <div class="stat-card normal">
-                        <div class="stat-icon">✅</div>
+                        <div class="stat-icon"><i class="fa fa-check-circle"></i></div>
                         <div class="stat-label">正常事件</div>
                         <div class="stat-value" id="normalEvents">0</div>
                     </div>
@@ -471,7 +472,7 @@
                 <!-- 需要关注的事件 -->
                 <div class="section">
                     <div class="section-title">
-                        <span class="icon">⚠️</span>
+                        <span class="icon"><i class="fa fa-exclamation-triangle"></i></span>
                         需要关注的事件
                         <span class="count" id="abnormalCount">0</span>
                     </div>
@@ -481,7 +482,7 @@
                 <!-- 待标注事件 -->
                 <div class="section">
                     <div class="section-title">
-                        <span class="icon">🔍</span>
+                        <span class="icon"><i class="fa fa-search"></i></span>
                         待标注事件
                         <span class="count" id="suspiciousCount">0</span>
                     </div>
@@ -491,7 +492,7 @@
                 <!-- 正常事件概览 -->
                 <div class="section">
                     <div class="section-title">
-                        <span class="icon">✅</span>
+                        <span class="icon"><i class="fa fa-check-circle"></i></span>
                         正常事件概览
                         <span class="count" id="normalCount">0</span>
                     </div>
@@ -501,11 +502,11 @@
                 <!-- 管理建议 -->
                 <div class="suggestions-grid">
                     <div class="suggestion-box">
-                        <div class="suggestion-title">💡 管理建议</div>
+                        <div class="suggestion-title"><i class="fa fa-lightbulb-o"></i> 管理建议</div>
                         <ul class="suggestion-list" id="managementSuggestions"></ul>
                     </div>
                     <div class="suggestion-box">
-                        <div class="suggestion-title">ℹ️ 系统提示</div>
+                        <div class="suggestion-title"><i class="fa fa-info-circle"></i> 系统提示</div>
                         <ul class="suggestion-list" id="systemTips"></ul>
                     </div>
                 </div>
@@ -646,10 +647,10 @@
 
             container.innerHTML = events.map(event => {
                 let typeText = '';
-                if (event.hasNonworktime === 1) typeText += '🌙 非工作时间 ';
-                if (event.hasAbnormalPerson === 1) typeText += '👥 人数异常 ';
-                if (event.wlry) typeText += '🔶 外来人员 ';
-                if (event.duration > 1800) typeText += '⏰ 持续时间长 ';
+                if (event.hasNonworktime === 1) typeText += '<i class="fa fa-moon-o"></i> 非工作时间 ';
+                if (event.hasAbnormalPerson === 1) typeText += '<i class="fa fa-users"></i> 人数异常 ';
+                if (event.wlry) typeText += '<i class="fa fa-user-plus"></i> 外来人员 ';
+                if (event.duration > 1800) typeText += '<i class="fa fa-clock-o"></i> 持续时间长 ';
 
                 // 处理状态标签（只显示处理状态，避免与标注状态重复）
                 const processStatus = event.processStatus || '待处理';
@@ -662,12 +663,12 @@
                             <div class="event-status ${processStatusClass}">${processStatus}</div>
                         </div>
                         <div class="event-details">
-                            <div>⏱️ 时间：${formatDateTime(event.startTime)} ~ ${formatTime(event.endTime)} （${formatDuration(event.duration || 0)}）</div>
-                            <div>📍 区域：${event.pathAreas || event.qymc || '未知'}</div>
-                            ${event.behaviorDescription ? `<div>📋 经过说明：${event.behaviorDescription}</div>` : ''}
-                            ${event.ryxm ? `<div>👤 人员：${event.ryxm}</div>` : ''}
-                            ${event.wlry ? `<div>🔶 外来人员：${event.wlry}</div>` : ''}
-                            ${event.xwyy ? `<div>📝 标注说明：${event.xwyy}</div>` : ''}
+                            <div><i class="fa fa-clock-o"></i> 时间：${formatDateTime(event.startTime)} ~ ${formatTime(event.endTime)} （${formatDuration(event.duration || 0)}）</div>
+                            <div><i class="fa fa-map-marker"></i> 区域：${event.pathAreas || event.qymc || '未知'}</div>
+                            ${event.behaviorDescription ? `<div><i class="fa fa-clipboard"></i> 经过说明：${event.behaviorDescription}</div>` : ''}
+                            ${event.ryxm ? `<div><i class="fa fa-user"></i> 人员：${event.ryxm}</div>` : ''}
+                            ${event.wlry ? `<div><i class="fa fa-user-plus"></i> 外来人员：${event.wlry}</div>` : ''}
+                            ${event.xwyy ? `<div><i class="fa fa-pencil"></i> 标注说明：${event.xwyy}</div>` : ''}
                         </div>
                     </div>
                 `;
@@ -689,11 +690,11 @@
         // 获取状态图标
         function getStatusIcon(status) {
             const icons = {
-                'normal': '✅',
-                'attention': '⚠️',
-                'abnormal': '❌'
+                'normal': '<i class="fa fa-check-circle"></i>',
+                'attention': '<i class="fa fa-exclamation-triangle"></i>',
+                'abnormal': '<i class="fa fa-times-circle"></i>'
             };
-            return icons[status] || '📊';
+            return icons[status] || '<i class="fa fa-bar-chart"></i>';
         }
 
         // 获取处理状态的CSS类

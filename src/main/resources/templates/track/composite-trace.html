@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>事件经过还原（复合事件）</title>
+    <link th:href="@{/css/font-awesome.min.css?v=4.7.0}" rel="stylesheet"/>
     <th:block th:include="include :: select2-css" />
     <link th:href="@{/css/button-animations.css}" rel="stylesheet"/>
     <style>
@@ -364,15 +365,15 @@
 </head>
 <body>
     <div style="position: fixed; top: 20px; left: 20px; z-index: 1000; display: flex; gap: 10px;">
-        <button class="back-btn" onclick="goBack()">🔙 返回</button>
-        <button class="export-btn" onclick="exportEventPackage()">📦 导出事件包</button>
-        <a th:href="@{/logout}" class="logout-button">🚪 退出登录</a>
+        <button class="back-btn" onclick="goBack()"><i class="fa fa-arrow-left"></i> 返回</button>
+        <button class="export-btn" onclick="exportEventPackage()"><i class="fa fa-cube"></i> 导出事件包</button>
+        <a th:href="@{/logout}" class="logout-button"><i class="fa fa-sign-out"></i> 退出登录</a>
     </div>
 
     <div class="container">
         <div class="header">
-            <h1>🎬 事件经过还原（复合事件）</h1>
-            <button class="close-btn" onclick="goBack()">✖️</button>
+            <h1><i class="fa fa-video-camera"></i> 事件经过还原（复合事件）</h1>
+            <button class="close-btn" onclick="goBack()">×</button>
         </div>
         <div class="content">
             <div class="composite-info" id="compositeInfo"></div>
@@ -382,10 +383,10 @@
                 </video>
                 <div class="video-controls">
                     <button class="volume-btn muted" id="volumeBtn" onclick="toggleVolume()">
-                        🔇 点击开启声音
+                        <i class="fa fa-volume-off"></i> 点击开启声音
                     </button>
                     <span style="color: #666; font-size: 12px;">
-                        💡 视频默认静音自动播放，如需声音请点击左侧按钮
+                        <i class="fa fa-lightbulb-o"></i> 视频默认静音自动播放，如需声音请点击左侧按钮
                     </span>
                 </div>
             </div>
@@ -393,7 +394,7 @@
             <!-- 轨迹截图轮播区域 -->
             <div class="image-carousel">
                 <div class="carousel-header">
-                    <h3>📸 轨迹截图</h3>
+                    <h3><i class="fa fa-camera"></i> 轨迹截图</h3>
                     <span class="carousel-counter" id="imageCounter">1 / 1</span>
                 </div>
                 <div class="carousel-container">
@@ -403,7 +404,7 @@
                     <div class="carousel-image-wrapper">
                         <img id="carouselImage" src="" alt="轨迹截图" onerror="this.src=''; this.style.display='none'; document.getElementById('noImagePlaceholder').style.display='flex';">
                         <div id="noImagePlaceholder" class="no-image-placeholder" style="display: none;">
-                            <div>📷</div>
+                            <div><i class="fa fa-camera" style="font-size: 48px;"></i></div>
                             <p>暂无截图</p>
                         </div>
                         <div class="carousel-image-info" id="imageInfo">
@@ -602,16 +603,16 @@
                 annotationHtml += '<div style="font-weight: bold; color: #4c6ef5; margin-bottom: 6px;">📋 标注信息</div>';
 
                 if (currentComposite.xwyy) {
-                    annotationHtml += `<div style="margin-bottom: 4px;">📝 行为原因：${currentComposite.xwyy}</div>`;
+                    annotationHtml += `<div style="margin-bottom: 4px;"><i class="fa fa-edit"></i> 行为原因：${currentComposite.xwyy}</div>`;
                 }
                 if (currentComposite.ryxm) {
-                    annotationHtml += `<div style="margin-bottom: 4px;">👤 管理员：${currentComposite.ryxm}</div>`;
+                    annotationHtml += `<div style="margin-bottom: 4px;"><i class="fa fa-user"></i> 管理员：${currentComposite.ryxm}</div>`;
                 }
                 if (currentComposite.wlry) {
-                    annotationHtml += `<div style="margin-bottom: 4px;">🔶 外来人员：${currentComposite.wlry}</div>`;
+                    annotationHtml += `<div style="margin-bottom: 4px;"><i class="fa fa-users"></i> 外来人员：${currentComposite.wlry}</div>`;
                 }
                 if (currentComposite.remark) {
-                    annotationHtml += `<div style="margin-bottom: 4px;">💬 备注：${currentComposite.remark}</div>`;
+                    annotationHtml += `<div style="margin-bottom: 4px;"><i class="fa fa-comment"></i> 备注：${currentComposite.remark}</div>`;
                 }
 
                 annotationHtml += '</div>';
@@ -623,9 +624,9 @@
                     <span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 8px;">${statusText}</span>
                 </div>
                 <div class="composite-info-detail">
-                    📍 路径：${currentComposite.path.join(' → ')}<br>
-                    ⏱️ 时长：${duration}<br>
-                    📅 时间范围：${currentComposite.startTime} ~ ${currentComposite.endTime.split(' ')[1]}
+                    <i class="fa fa-map-marker"></i> 路径：${currentComposite.path.join(' → ')}<br>
+                    <i class="fa fa-clock-o"></i> 时长：${duration}<br>
+                    <i class="fa fa-calendar"></i> 时间范围：${currentComposite.startTime} ~ ${currentComposite.endTime.split(' ')[1]}
                 </div>
                 ${annotationHtml}
             `;
@@ -652,15 +653,15 @@
                     // 生成警告标签
                     const warningTags = [];
                     if (isNonWorktime) {
-                        warningTags.push('<span style="background: #ff9800; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px; margin-left: 4px;">⚠️ 非工作时间</span>');
+                        warningTags.push('<span style="background: #ff9800; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px; margin-left: 4px;"><i class="fa fa-warning"></i> 非工作时间</span>');
                     }
                     if (isAbnormalPerson) {
-                        warningTags.push('<span style="background: #e74c3c; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px; margin-left: 4px;">⚠️ 人数异常</span>');
+                        warningTags.push('<span style="background: #e74c3c; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px; margin-left: 4px;"><i class="fa fa-warning"></i> 人数异常</span>');
                     }
 
                     return `
                         <div class="trace-node ${i === 0 ? 'active' : ''}" id="traceNode${i}" onclick="playTraceVideo(${i}, true)">
-                            ${duration ? `<div class="trace-duration">⏱️ 间隔 ${duration}</div>` : ''}
+                            ${duration ? `<div class="trace-duration"><i class="fa fa-clock-o"></i> 间隔 ${duration}</div>` : ''}
                             <div class="trace-time">${e.time}</div>
                             <div class="trace-area">📍 ${e.area} ${e.rysl ? `(${e.rysl}人)` : ''}${warningTags.join('')}</div>
                         </div>
@@ -736,7 +737,7 @@
 
                     // 构建错误消息
                     let errorMsg = `❌ 视频加载失败！\n\n`;
-                    errorMsg += `📍 事件信息：\n`;
+                    errorMsg += `<i class="fa fa-map-marker"></i> 事件信息：\n`;
                     errorMsg += `   • 事件ID: ${event.id}\n`;
                     errorMsg += `   • 区域: ${event.area}\n`;
                     errorMsg += `   • 时间: ${event.time}\n\n`;

@@ -22,6 +22,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="pathAreas"    column="path_areas"    />
         <result property="hasNonworktime"    column="has_nonworktime"    />
         <result property="hasAbnormalPerson"    column="has_abnormal_person"    />
+        <result property="hasLongTrack"    column="has_long_track"    />
+        <result property="hasLongEvent"    column="has_long_event"    />
         <!-- trackIds字段仅在内存中使用，不再持久化到数据库 -->
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
@@ -31,7 +33,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectCompositeEventVo">
         select id, event_id, qyid, qymc, is_closed, bzzt, start_time, end_time, duration,
                track_count, xwyy, ryxm, wlry, rysl_max, path_areas, has_nonworktime,
-               has_abnormal_person, create_time, update_time, remark
+               has_abnormal_person, has_long_track, has_long_event, create_time, update_time, remark
         from app_composite_event
     </sql>
 
@@ -54,6 +56,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="ryxm != null and ryxm != ''"> and ryxm like concat('%', #{ryxm}, '%')</if>
             <if test="hasNonworktime != null"> and has_nonworktime = #{hasNonworktime}</if>
             <if test="hasAbnormalPerson != null"> and has_abnormalPerson = #{hasAbnormalPerson}</if>
+            <if test="hasLongTrack != null"> and has_long_track = #{hasLongTrack}</if>
+            <if test="hasLongEvent != null"> and has_long_event = #{hasLongEvent}</if>
             <if test="params.beginTime != null and params.endTime != null">
                 and start_time between #{params.beginTime} and #{params.endTime}
             </if>
@@ -101,6 +105,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="pathAreas != null">path_areas,</if>
             <if test="hasNonworktime != null">has_nonworktime,</if>
             <if test="hasAbnormalPerson != null">has_abnormal_person,</if>
+            <if test="hasLongTrack != null">has_long_track,</if>
+            <if test="hasLongEvent != null">has_long_event,</if>
             <if test="remark != null">remark,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -120,6 +126,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="pathAreas != null">#{pathAreas},</if>
             <if test="hasNonworktime != null">#{hasNonworktime},</if>
             <if test="hasAbnormalPerson != null">#{hasAbnormalPerson},</if>
+            <if test="hasLongTrack != null">#{hasLongTrack},</if>
+            <if test="hasLongEvent != null">#{hasLongEvent},</if>
             <if test="remark != null">#{remark},</if>
          </trim>
     </insert>
@@ -142,6 +150,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="pathAreas != null">path_areas = #{pathAreas},</if>
             <if test="hasNonworktime != null">has_nonworktime = #{hasNonworktime},</if>
             <if test="hasAbnormalPerson != null">has_abnormal_person = #{hasAbnormalPerson},</if>
+            <if test="hasLongTrack != null">has_long_track = #{hasLongTrack},</if>
+            <if test="hasLongEvent != null">has_long_event = #{hasLongEvent},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
         where id = #{id}

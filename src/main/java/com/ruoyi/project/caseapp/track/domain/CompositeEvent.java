@@ -91,6 +91,14 @@ public class CompositeEvent extends BaseEntity
     @Excel(name = "人数是否异常", readConverterExp = "0=否,1=是")
     private Integer hasAbnormalPerson;
 
+    /** 是否包含轨迹时间过长：0=否，1=是 */
+    @Excel(name = "轨迹时间过长", readConverterExp = "0=否,1=是")
+    private Integer hasLongTrack;
+
+    /** 是否事件时间过长：0=否，1=是 */
+    @Excel(name = "事件时间过长", readConverterExp = "0=否,1=是")
+    private Integer hasLongEvent;
+
     /** 包含的轨迹ID列表（逗号分隔） */
     private String trackIds;
 
@@ -246,6 +254,22 @@ public class CompositeEvent extends BaseEntity
 
     public void setHasAbnormalPerson(Integer hasAbnormalPerson) {
         this.hasAbnormalPerson = hasAbnormalPerson;
+    }
+
+    public Integer getHasLongTrack() {
+        return hasLongTrack;
+    }
+
+    public void setHasLongTrack(Integer hasLongTrack) {
+        this.hasLongTrack = hasLongTrack;
+    }
+
+    public Integer getHasLongEvent() {
+        return hasLongEvent;
+    }
+
+    public void setHasLongEvent(Integer hasLongEvent) {
+        this.hasLongEvent = hasLongEvent;
     }
 
     public String getTrackIds() {

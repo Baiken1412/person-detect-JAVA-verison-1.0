@@ -46,7 +46,7 @@ public class AppTrackServiceImpl implements IAppTrackService
 
     /**
      * 查询轨迹列表
-     * 
+     *
      * @param appTrack 轨迹
      * @return 轨迹
      */

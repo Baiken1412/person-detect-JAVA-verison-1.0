@@ -68,6 +68,14 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     // 空闲时间阈值：120秒（毫秒）- 轨迹间隔超过此值则分割为不同事件
     private static final long IDLE_THRESHOLD = 120 * 1000;
 
+    // 轨迹时长报警阈值（分钟），从配置文件读取
+    @Value("${alarm.track-duration-threshold:3}")
+    private int trackDurationThreshold;
+
+    // 事件时长报警阈值（分钟），从配置文件读取
+    @Value("${alarm.event-duration-threshold:30}")
+    private int eventDurationThreshold;
+
     /**
      * 查询复合事件
      *
@@ -713,6 +721,37 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         }
         event.setHasNonworktime(hasNonworktime);
         event.setHasAbnormalPerson(hasAbnormal);
+
+        // 判断轨迹时间过长：检查所有轨迹中是否有单条轨迹时长超过阈值
+        int hasLongTrack = 0;
+        for (AppTrack track : tracks)
+        {
+            if (track.getPssj() != null && track.getJssj() != null)
+            {
+                long trackDuration = track.getJssj().getTime() - track.getPssj().getTime();
+                long trackDurationMinutes = trackDuration / (60 * 1000);
+                if (trackDurationMinutes > trackDurationThreshold)
+                {
+                    hasLongTrack = 1;
+                    System.out.println("【轨迹时间过长】轨迹ID=" + track.getId() +
+                        ", 时长=" + trackDurationMinutes + "分钟" +
+                        ", 阈值=" + trackDurationThreshold + "分钟");
+                    break; // 找到一个超时即可
+                }
+            }
+        }
+        event.setHasLongTrack(hasLongTrack);
+
+        // 判断事件时间过长：检查整个事件的持续时长是否超过阈值
+        int hasLongEvent = 0;
+        if (event.getDuration() != null && event.getDuration() > eventDurationThreshold)
+        {
+            hasLongEvent = 1;
+            System.out.println("【事件时间过长】事件ID=" + event.getEventId() +
+                ", 时长=" + event.getDuration() + "分钟" +
+                ", 阈值=" + eventDurationThreshold + "分钟");
+        }
+        event.setHasLongEvent(hasLongEvent);
 
         // 检查轨迹中是否已包含标注信息，如果有则继承
         // 修复标注丢失问题：标注后有新轨迹加入时，保留已有标注而不是重置为空

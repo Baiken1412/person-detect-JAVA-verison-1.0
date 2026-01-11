@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>事件标注 - 资产库区视频治理插件</title>
+    <link th:href="@{/css/font-awesome.min.css?v=4.7.0}" rel="stylesheet"/>
     <th:block th:include="include :: select2-css" />
     <th:block th:include="include :: bootstrap-select-css" />
     <link th:href="@{/css/button-animations.css}" rel="stylesheet"/>
@@ -292,7 +293,8 @@
         }
 
         .event-location::before {
-            content: "📍";
+            content: "\f041"; /* Font Awesome map-marker */
+            font-family: FontAwesome;
             margin-right: 5px;
         }
 
@@ -316,7 +318,8 @@
         }
 
         .event-suggestion::before {
-            content: "💡 ";
+            content: "\f0eb "; /* Font Awesome lightbulb */
+            font-family: FontAwesome;
         }
 
         .no-events {
@@ -419,19 +422,19 @@
         </div>
         <div style="margin-left: auto; display: flex; gap: 10px;">
             <button onclick="goToCompositeEvents()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
-                🏠 事件页面
+                <i class="fa fa-home"></i> 事件页面
             </button>
             <button style="background: rgba(255,255,255,0.4); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: default; font-size: 14px; font-weight: bold;">
-                📝 轨迹页面
+                <i class="fa fa-list"></i> 轨迹页面
             </button>
             <button onclick="goToDailyReport()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
-                📊 每日报告
+                <i class="fa fa-bar-chart"></i> 每日报告
             </button>
             <button onclick="goToShelfTrajectory()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
-                📦 货位位置查询
+                <i class="fa fa-cube"></i> 货位位置查询
             </button>
             <a th:href="@{/logout}" class="logout-button">
-                🚪 退出登录
+                <i class="fa fa-sign-out"></i> 退出登录
             </a>
         </div>
     </div>
@@ -440,56 +443,58 @@
 <div class="container">
     <div class="stats-bar">
         <div class="stat-card">
-            <h3>📊 今日事件总数</h3>
+            <h3><i class="fa fa-bar-chart"></i> 今日事件总数</h3>
             <div class="number" id="todayTotal">0</div>
         </div>
         <div class="stat-card">
-            <h3>⏳ 待标注事件</h3>
+            <h3><i class="fa fa-clock-o"></i> 待标注事件</h3>
             <div class="number" id="unlabeledCount">0</div>
         </div>
         <div class="stat-card">
-            <h3>✅ 已标注事件</h3>
+            <h3><i class="fa fa-check"></i> 已标注事件</h3>
             <div class="number" id="labeledCount">0</div>
         </div>
         <div class="stat-card">
-            <h3>📅 本月事件总数</h3>
+            <h3><i class="fa fa-calendar"></i> 本月事件总数</h3>
             <div class="number" id="monthTotal">0</div>
         </div>
     </div>
 
     <div class="toolbar">
         <div>
-            <label for="beginDateFilter">📅 日期筛选：</label>
+            <label for="beginDateFilter"><i class="fa fa-calendar"></i> 日期筛选：</label>
             <input type="date" id="beginDateFilter">
             <span style="margin: 0 5px;">至</span>
             <input type="date" id="endDateFilter">
         </div>
         <div>
-            <label for="areaFilter">📍 区域筛选：</label>
+            <label for="areaFilter"><i class="fa fa-map-marker"></i> 区域筛选：</label>
             <select id="areaFilter" class="form-control noselect2">
                 <option value="">全部区域</option>
             </select>
         </div>
         <div>
-            <label for="statusFilter">🏷️ 状态筛选：</label>
+            <label for="statusFilter"><i class="fa fa-tag"></i> 状态筛选：</label>
             <select id="statusFilter" class="form-control noselect2">
                 <option value="">全部状态</option>
             </select>
         </div>
         <div>
-            <label for="personFilter">👤 管理员筛选：</label>
+            <label for="personFilter"><i class="fa fa-user"></i> 管理员筛选：</label>
             <select id="personFilter" class="form-control noselect2" multiple>
             </select>
         </div>
         <div>
-            <label for="specialFilter">⚠️ 特殊筛选：</label>
+            <label for="specialFilter"><i class="fa fa-warning"></i> 特殊筛选：</label>
             <select id="specialFilter" class="form-control noselect2" multiple>
                 <option value="nonWorktime">非工作时间提示</option>
                 <option value="abnormalPerson">人员异常数量</option>
+                <option value="longTrack">轨迹时间过长</option>
+                <option value="longEvent">事件时间过长</option>
             </select>
         </div>
-        <button onclick="applyFilters()">🔍 筛选</button>
-        <button onclick="resetFilters()">🔄 重置</button>
+        <button onclick="applyFilters()"><i class="fa fa-search"></i> 筛选</button>
+        <button onclick="resetFilters()"><i class="fa fa-refresh"></i> 重置</button>
     </div>
 
     <div class="events-grid" id="eventsGrid">
@@ -757,34 +762,40 @@
         formData.append('params[beginPssj]', formatDate(beginDate));
         formData.append('params[endPssj]', formatDate(endDate));
 
-        fetch('/caseapp/track/events', { method: 'POST', body: formData })
+        fetch('/caseapp/track/compositeEvents', { method: 'POST', body: formData })
             .then(response => response.json())
             .then(data => {
                 isLoading = false;
                 if (data.code === 0 && data.rows) {
                     totalCount = data.total || 0;
-                    const newEvents = data.rows.map(item => ({
-                        id: item.id,
-                        time: formatDateTime(item.pssj),
-                        endTime: formatDateTime(item.jssj),
-                        area: item.qymc || '',
-                        videoUrl: item.spdz || '',
-                        status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
-                        reason: (item.xwyy && item.xwyy.includes('：')) ? item.xwyy.split('：', 2)[0] : (item.xwyy || ''),
-                        reasonDetail: (item.xwyy && item.xwyy.includes('：')) ? item.xwyy.split('：', 2)[1] : '',
-                        persons: [item.ryxm, item.wlry].filter(Boolean),
-                        operator: item.bzzt === '1' ? (item.ryxm || '') : '',
-                        operateTime: item.bzsj || '',
-                        spsc: item.spsc || '',
-                        pstp: item.pstp || '',
-                        rysl: item.rysl || 0,
-                        pssj: item.pssj || '',
-                        jssj: item.jssj || '',
-                        suggestions: [],
-                        ryxm: item.ryxm || '',
-                        wlry: item.wlry || '',
-                        remark: item.remark || ''
-                    }));
+                    const newEvents = data.rows.map(item => {
+                        // 从复合事件的events数组中获取第一个轨迹的信息（用于显示缩略图等）
+                        const firstTrack = (item.events && item.events.length > 0) ? item.events[0] : {};
+                        return {
+                            id: item.id,
+                            time: formatDateTime(item.startTime),
+                            endTime: formatDateTime(item.endTime),
+                            area: item.qymc || '',
+                            videoUrl: firstTrack.spdz || '',
+                            status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
+                            reason: (item.xwyy && item.xwyy.includes('：')) ? item.xwyy.split('：', 2)[0] : (item.xwyy || ''),
+                            reasonDetail: (item.xwyy && item.xwyy.includes('：')) ? item.xwyy.split('：', 2)[1] : '',
+                            persons: [item.ryxm, item.wlry].filter(Boolean),
+                            operator: item.bzzt === '1' ? (item.ryxm || '') : '',
+                            operateTime: item.bzsj || '',
+                            spsc: firstTrack.spsc || '',
+                            pstp: firstTrack.pstp || '',
+                            rysl: item.ryslMax || 0,
+                            pssj: item.startTime || '',
+                            jssj: item.endTime || '',
+                            suggestions: [],
+                            ryxm: item.ryxm || '',
+                            wlry: item.wlry || '',
+                            remark: item.remark || '',
+                            hasLongTrack: item.hasLongTrack || 0,
+                            hasLongEvent: item.hasLongEvent || 0
+                        };
+                    });
 
                     if (append) {
                         eventsData = eventsData.concat(newEvents);
@@ -855,6 +866,8 @@
             let matches = false;
             if (specialFilters.includes('nonWorktime') && isNonWorktimeWarning(event)) matches = true;
             if (specialFilters.includes('abnormalPerson') && isAbnormalPersonCount(event)) matches = true;
+            if (specialFilters.includes('longTrack') && event.hasLongTrack === 1) matches = true;
+            if (specialFilters.includes('longEvent') && event.hasLongEvent === 1) matches = true;
             return matches;
         });
     }
@@ -892,7 +905,9 @@
         const eventsHTML = eventsToRender.map(event => {
             const isNonWorktime = isNonWorktimeWarning(event);
             const isAbnormal = isAbnormalPersonCount(event);
-            const warningClass = (isNonWorktime || isAbnormal) ? 'worktime-warning' : '';
+            const isLongTrack = event.hasLongTrack === 1;
+            const isLongEvent = event.hasLongEvent === 1;
+            const warningClass = (isNonWorktime || isAbnormal || isLongTrack || isLongEvent) ? 'worktime-warning' : '';
 
             return `
                 <div class="event-card ${event.status} ${warningClass}" onclick="viewEventDetail('${event.id}')" style="cursor: pointer;">
@@ -903,10 +918,12 @@
                     <div class="event-info">
                         <div class="event-time">${event.time}</div>
                         <div class="event-location">${event.area} ${event.rysl ? `（${event.rysl}人）` : ''}</div>
-                        ${isAbnormal ? `<div class="worktime-warning-badge" style="background: #e74c3c;">⚠️ 人员数量异常</div>` : ''}
-                        ${isNonWorktime ? `<div class="worktime-warning-badge" style="background: #ff9800;">⚠️ 非工作时间</div>` : ''}
+                        ${isAbnormal ? `<div class="worktime-warning-badge" style="background: #e74c3c;"><i class="fa fa-warning"></i> 人员数量异常</div>` : ''}
+                        ${isNonWorktime ? `<div class="worktime-warning-badge" style="background: #ff9800;"><i class="fa fa-warning"></i> 非工作时间</div>` : ''}
+                        ${isLongTrack ? `<div class="worktime-warning-badge" style="background: #9b59b6;"><i class="fa fa-clock-o"></i> 轨迹时间过长</div>` : ''}
+                        ${isLongEvent ? `<div class="worktime-warning-badge" style="background: #3498db;"><i class="fa fa-hourglass-end"></i> 事件时间过长</div>` : ''}
                         ${event.status === 'labeled' ? `
-                            ${event.persons.length > 0 ? `<div class="event-reason">👤 ${event.persons.join('、')}</div>` : ''}
+                            ${event.persons.length > 0 ? `<div class="event-reason"><i class="fa fa-user"></i> ${event.persons.join('、')}</div>` : ''}
                             <div class="event-reason">${event.reason === '其他' ? event.reason + '：' + event.reasonDetail : event.reason}</div>
                         ` : '<div class="event-reason">待标注原因</div>'}
                     </div>
@@ -934,7 +951,7 @@
                     if (trajectory.spdz) {
                         detailHTML += `
                                 <div style="margin-bottom: 20px; background: #f8f9fa; border-radius: 8px; padding: 15px;">
-                                    <div style="font-weight: bold; margin-bottom: 12px;">🎬 活动视频</div>
+                                    <div style="font-weight: bold; margin-bottom: 12px;"><i class="fa fa-video-camera"></i> 活动视频</div>
                                     <div style="background: #000; border-radius: 6px; overflow: hidden;">
                                         <video id="trajectoryVideo" controls style="width: 100%; max-height: 400px; display: block;">
                                             <source src="${trajectory.spdz}" type="video/mp4">
@@ -946,24 +963,24 @@
                                     </div>
                                 </div>`;
                     } else {
-                        detailHTML += `<div style="margin-bottom: 20px; background: #fff3cd; border-radius: 8px; padding: 15px; color: #856404;">⚠️ 暂无视频数据</div>`;
+                        detailHTML += `<div style="margin-bottom: 20px; background: #fff3cd; border-radius: 8px; padding: 15px; color: #856404;"><i class="fa fa-warning"></i> 暂无视频数据</div>`;
                     }
 
                     detailHTML += `
                             <div style="margin-bottom: 15px; border-bottom: 1px solid #e9ecef;">
-                                <strong>📍 区域位置:</strong> ${trajectory.qymc || '未知'} <br>
-                                <strong>👥 人员数量:</strong> ${trajectory.rysl || 0} 人 <br>
-                                <strong>📌 状态:</strong> ${trajectory.bzzt === '1' ? '已标注' : '待标注'}
+                                <strong><i class="fa fa-map-marker"></i> 区域位置:</strong> ${trajectory.qymc || '未知'} <br>
+                                <strong><i class="fa fa-users"></i> 人员数量:</strong> ${trajectory.rysl || 0} 人 <br>
+                                <strong><i class="fa fa-tag"></i> 状态:</strong> ${trajectory.bzzt === '1' ? '已标注' : '待标注'}
                             </div>
                         `;
 
                     if (trajectory.bzzt === '1') {
                         detailHTML += `
                                 <div style="margin-bottom: 15px; border-bottom: 1px solid #e9ecef;">
-                                    <strong>📝 原因:</strong> ${trajectory.xwyy || '未填写'} <br>
-                                    <strong>👤 管理员:</strong> ${trajectory.ryxm || '未填写'} <br>
-                                    <strong>🚶 外来人员:</strong> ${trajectory.wlry || '无'} <br>
-                                    <strong>💬 备注:</strong> ${trajectory.remark || '无'}
+                                    <strong><i class="fa fa-edit"></i> 原因:</strong> ${trajectory.xwyy || '未填写'} <br>
+                                    <strong><i class="fa fa-user"></i> 管理员:</strong> ${trajectory.ryxm || '未填写'} <br>
+                                    <strong><i class="fa fa-users"></i> 外来人员:</strong> ${trajectory.wlry || '无'} <br>
+                                    <strong><i class="fa fa-comment"></i> 备注:</strong> ${trajectory.remark || '无'}
                                 </div>
                             `;
                     }
@@ -971,7 +988,7 @@
                     if (screenshots.length > 0) {
                         detailHTML += `
                                 <div style="margin-bottom: 15px;">
-                                    <strong>📸 截图 (${screenshots.length})</strong>
+                                    <strong><i class="fa fa-camera"></i> 截图 (${screenshots.length})</strong>
                                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 10px;">
                                         ${screenshots.map((s, i) => `
                                             <div onclick="openImageViewer(${i}, window.currentTrajectoryScreenshots)" style="cursor: pointer; position: relative;">

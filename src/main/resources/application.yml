@@ -25,6 +25,13 @@ system:
   # 系统副标题
   subtitle: 人员活动自动识别与追溯管理系统
 
+# 报警配置
+alarm:
+  # 轨迹时长报警阈值（单位：分钟）
+  track-duration-threshold: 3
+  # 事件时长报警阈值（单位：分钟）
+  event-duration-threshold: 30
+
 # 开发环境配置
 server:
   # 服务器的HTTP端口，默认为80
