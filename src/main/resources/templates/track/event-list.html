@@ -801,7 +801,8 @@
                                     ryxm: item.ryxm || '',
                                     wlry: item.wlry || '',
                                     remark: item.remark || '',
-                                    hasLongTrack: item.hasLongTrack || 0,
+                                    isLongTrack: track.isLongTrack || 0,  // 使用轨迹自己的 isLongTrack 字段
+                                    trackDuration: track.trackDuration || 0,  // 轨迹时长（秒）
                                     hasLongEvent: item.hasLongEvent || 0
                                 });
                             });
@@ -832,7 +833,8 @@
                                 ryxm: item.ryxm || '',
                                 wlry: item.wlry || '',
                                 remark: item.remark || '',
-                                hasLongTrack: item.hasLongTrack || 0,
+                                isLongTrack: 0,  // 没有轨迹信息时默认为0
+                                trackDuration: 0,
                                 hasLongEvent: item.hasLongEvent || 0
                             });
                         }
@@ -945,7 +947,10 @@
         const eventsHTML = eventsToRender.map(event => {
             const isNonWorktime = isNonWorktimeWarning(event);
             const isAbnormal = isAbnormalPersonCount(event);
-            const isLongTrack = event.hasLongTrack === 1;
+
+            // 使用数据库中保存的 isLongTrack 字段（已经由后端计算好）
+            const isLongTrack = event.isLongTrack === 1;
+
             const warningClass = (isNonWorktime || isAbnormal || isLongTrack) ? 'worktime-warning' : '';
 
             // 构建跳转URL，带上复合事件ID
@@ -956,7 +961,6 @@
                     <div class="event-thumbnail">
                         ${event.pstp ? `<img src="${event.pstp}" alt="缩略图" onerror="this.onerror=null; this.src=''; this.style.display='none'; this.nextElementSibling.style.display='inline-block';" /><span class="thumbnail-icon" style="display:none;">🎥</span>` : '<span class="thumbnail-icon">🎥</span>'}
                         <span class="event-status ${event.status}">${event.status === 'unlabeled' ? '待标注' : '已标注'}</span>
-                        ${event.totalTracks > 1 ? `<span class="track-indicator" style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">轨迹 ${event.trackIndex}/${event.totalTracks}</span>` : ''}
                     </div>
                     <div class="event-info">
                         <div class="event-time">${event.time}</div>

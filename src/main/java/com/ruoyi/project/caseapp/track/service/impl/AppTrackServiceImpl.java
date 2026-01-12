@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.ruoyi.project.caseapp.track.mapper.AppTrackMapper;
 import com.ruoyi.project.caseapp.track.mapper.EventTrackRelationMapper;
@@ -16,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 轨迹Service业务层处理
- * 
+ *
  * @author ruoyi
  * @date 2025-12-11
  */
@@ -28,6 +29,10 @@ public class AppTrackServiceImpl implements IAppTrackService
 
     @Autowired
     private ICompositeEventService compositeEventService;
+
+    // 轨迹时长报警阈值（分钟），从配置文件读取
+    @Value("${alarm.track-duration-threshold:3}")
+    private int trackDurationThreshold;
 
     @Autowired
     private EventTrackRelationMapper relationMapper;
@@ -67,6 +72,9 @@ public class AppTrackServiceImpl implements IAppTrackService
     @Transactional(rollbackFor = Exception.class)
     public int insertAppTrack(AppTrack appTrack)
     {
+        // 自动计算轨迹时长和是否过长
+        calculateTrackDuration(appTrack);
+
         int result = appTrackMapper.insertAppTrack(appTrack);
         if (result > 0)
         {
@@ -86,6 +94,9 @@ public class AppTrackServiceImpl implements IAppTrackService
     @Override
     public int updateAppTrack(AppTrack appTrack)
     {
+        // 自动计算轨迹时长和是否过长
+        calculateTrackDuration(appTrack);
+
         int result = appTrackMapper.updateAppTrack(appTrack);
         if (result > 0)
         {
@@ -93,6 +104,29 @@ public class AppTrackServiceImpl implements IAppTrackService
             compositeEventService.updateOrCreateCompositeEventByTrack(appTrack);
         }
         return result;
+    }
+
+    /**
+     * 计算轨迹时长和是否时间过长
+     *
+     * @param track 轨迹对象
+     */
+    private void calculateTrackDuration(AppTrack track)
+    {
+        if (track.getPssj() != null && track.getJssj() != null)
+        {
+            long durationMillis = track.getJssj().getTime() - track.getPssj().getTime();
+            int durationSeconds = (int) (durationMillis / 1000);
+            int durationMinutes = durationSeconds / 60;
+
+            track.setTrackDuration(durationSeconds);
+            track.setIsLongTrack(durationMinutes > trackDurationThreshold ? 1 : 0);
+        }
+        else
+        {
+            track.setTrackDuration(null);
+            track.setIsLongTrack(0);
+        }
     }
 
     /**

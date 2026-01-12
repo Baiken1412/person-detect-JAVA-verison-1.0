@@ -98,6 +98,14 @@ public class AppTrack extends BaseEntity
     @Excel(name = "检测次数")
     private Integer jscs;
 
+    /** 轨迹时长（秒） */
+    @Excel(name = "轨迹时长(秒)")
+    private Integer trackDuration;
+
+    /** 是否时间过长：0=否，1=是 */
+    @Excel(name = "是否时间过长", readConverterExp = "0=否,1=是")
+    private Integer isLongTrack;
+
     /** 截图列表（不保存到数据库，仅用于传输） */
     private List<AppTrackScreenshot> screenshots;
 
@@ -300,6 +308,22 @@ public class AppTrack extends BaseEntity
 
     public void setJscs(Integer jscs) {
         this.jscs = jscs;
+    }
+
+    public Integer getTrackDuration() {
+        return trackDuration;
+    }
+
+    public void setTrackDuration(Integer trackDuration) {
+        this.trackDuration = trackDuration;
+    }
+
+    public Integer getIsLongTrack() {
+        return isLongTrack;
+    }
+
+    public void setIsLongTrack(Integer isLongTrack) {
+        this.isLongTrack = isLongTrack;
     }
 
     public List<AppTrackScreenshot> getScreenshots() {
