@@ -430,6 +430,11 @@ public class AppTrackController extends BaseController
 
                     // 判断轨迹时间过长（收物室只有单条轨迹）
                     long trackDurationMinutes = duration / 60;
+
+                    logger.info("【收物室轨迹时长检查】轨迹ID={}, 开始={}, 结束={}, 时长={}秒({}分钟), 轨迹阈值={}分钟, 是否过长={}",
+                        track.getId(), track.getPssj(), track.getJssj(), duration, trackDurationMinutes,
+                        trackDurationThreshold, (trackDurationMinutes > trackDurationThreshold));
+
                     singleEvent.setHasLongTrack(trackDurationMinutes > trackDurationThreshold ? 1 : 0);
 
                     // 判断事件时间过长（对单轨迹事件，事件时长=轨迹时长）

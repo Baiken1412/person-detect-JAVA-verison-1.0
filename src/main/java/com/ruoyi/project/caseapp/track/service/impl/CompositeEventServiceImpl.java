@@ -729,13 +729,20 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             if (track.getPssj() != null && track.getJssj() != null)
             {
                 long trackDuration = track.getJssj().getTime() - track.getPssj().getTime();
+                long trackDurationSeconds = trackDuration / 1000;
                 long trackDurationMinutes = trackDuration / (60 * 1000);
+
+                System.out.println("【轨迹时长检查】轨迹ID=" + track.getId() +
+                    ", 开始时间=" + track.getPssj() +
+                    ", 结束时间=" + track.getJssj() +
+                    ", 时长=" + trackDurationSeconds + "秒 (" + trackDurationMinutes + "分钟)" +
+                    ", 阈值=" + trackDurationThreshold + "分钟" +
+                    ", 是否过长=" + (trackDurationMinutes > trackDurationThreshold));
+
                 if (trackDurationMinutes > trackDurationThreshold)
                 {
                     hasLongTrack = 1;
-                    System.out.println("【轨迹时间过长】轨迹ID=" + track.getId() +
-                        ", 时长=" + trackDurationMinutes + "分钟" +
-                        ", 阈值=" + trackDurationThreshold + "分钟");
+                    System.out.println("  ⚠️ 【轨迹时间过长】触发警告");
                     break; // 找到一个超时即可
                 }
             }
