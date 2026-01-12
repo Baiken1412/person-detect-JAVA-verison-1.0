@@ -744,12 +744,17 @@ public class CompositeEventServiceImpl implements ICompositeEventService
 
         // 判断事件时间过长：检查整个事件的持续时长是否超过阈值
         int hasLongEvent = 0;
-        if (event.getDuration() != null && event.getDuration() > eventDurationThreshold)
+        if (event.getDuration() != null)
         {
-            hasLongEvent = 1;
-            System.out.println("【事件时间过长】事件ID=" + event.getEventId() +
-                ", 时长=" + event.getDuration() + "分钟" +
-                ", 阈值=" + eventDurationThreshold + "分钟");
+            // 注意：event.getDuration() 返回的单位是秒，需要转换为分钟
+            long eventDurationMinutes = event.getDuration() / 60;
+            if (eventDurationMinutes > eventDurationThreshold)
+            {
+                hasLongEvent = 1;
+                System.out.println("【事件时间过长】事件ID=" + event.getEventId() +
+                    ", 时长=" + eventDurationMinutes + "分钟" +
+                    ", 阈值=" + eventDurationThreshold + "分钟");
+            }
         }
         event.setHasLongEvent(hasLongEvent);
 

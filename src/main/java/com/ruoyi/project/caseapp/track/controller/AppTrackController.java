@@ -335,16 +335,110 @@ public class AppTrackController extends BaseController
      * 查询复合事件列表
      * qyid = 1 表示复合事件的标记点，两个标记点之间的所有数据组成一个复合事件
      * 支持时间筛选
-     * 
+     *
      * @param appTrack 轨迹（用于时间筛选，通过 params.beginPssj 和 params.endPssj 进行时间筛选）
+     * @param includeReceivingRoom 是否包含收物室轨迹（默认false，轨迹页面传true）
      * @return 复合事件列表
      */
     @PostMapping("/compositeEvents")
     @ResponseBody
-    public TableDataInfo getCompositeEvents(AppTrack appTrack)
+    public TableDataInfo getCompositeEvents(AppTrack appTrack, Boolean includeReceivingRoom)
     {
         startPage();
         List<CompositeEvent> list = appTrackService.selectCompositeEvents(appTrack);
+
+        // 如果需要包含收物室轨迹，则查询并追加
+        if (Boolean.TRUE.equals(includeReceivingRoom))
+        {
+            // 查询收物室的轨迹
+            List<AppTrack> receivingRoomTracks = new ArrayList<>();
+
+            // 查询所有收物室的摄像头ID
+            AppRoomip queryRoomip = new AppRoomip();
+            queryRoomip.setFjmc("收物室");
+            List<AppRoomip> receivingRooms = appRoomipService.selectAppRoomipList(queryRoomip);
+
+            if (receivingRooms != null && !receivingRooms.isEmpty())
+            {
+                for (AppRoomip room : receivingRooms)
+                {
+                    AppTrack trackQuery = new AppTrack();
+                    trackQuery.setQyid(room.getId());
+
+                    // 传递时间筛选条件
+                    if (appTrack != null && appTrack.getParams() != null)
+                    {
+                        trackQuery.setParams(appTrack.getParams());
+                    }
+
+                    // 传递其他筛选条件
+                    if (appTrack != null)
+                    {
+                        if (appTrack.getBzzt() != null)
+                        {
+                            trackQuery.setBzzt(appTrack.getBzzt());
+                        }
+                        if (appTrack.getRyxm() != null)
+                        {
+                            trackQuery.setRyxm(appTrack.getRyxm());
+                        }
+                    }
+
+                    List<AppTrack> tracks = appTrackService.selectAppTrackList(trackQuery);
+                    if (tracks != null)
+                    {
+                        receivingRoomTracks.addAll(tracks);
+                    }
+                }
+            }
+
+            // 将收物室轨迹包装成单轨迹复合事件
+            for (AppTrack track : receivingRoomTracks)
+            {
+                CompositeEvent singleEvent = new CompositeEvent();
+                singleEvent.setId(track.getId()); // 使用轨迹ID作为复合事件ID
+                singleEvent.setEventId(track.getId());
+                singleEvent.setStartTime(track.getPssj());
+                singleEvent.setEndTime(track.getJssj());
+                singleEvent.setQymc(track.getQymc());
+                singleEvent.setBzzt(track.getBzzt());
+                singleEvent.setXwyy(track.getXwyy());
+                singleEvent.setRyxm(track.getRyxm());
+                singleEvent.setWlry(track.getWlry());
+                singleEvent.setRemark(track.getRemark());
+                singleEvent.setRyslMax(track.getRysl());
+
+                // 设置单个轨迹
+                List<AppTrack> events = new ArrayList<>();
+                events.add(track);
+                singleEvent.setEvents(events);
+                singleEvent.setEventCount(1);
+
+                // 计算时长（秒）
+                if (track.getPssj() != null && track.getJssj() != null)
+                {
+                    long duration = (track.getJssj().getTime() - track.getPssj().getTime()) / 1000;
+                    singleEvent.setDuration((int) duration);
+                }
+
+                list.add(singleEvent);
+            }
+
+            // 追加收物室轨迹后，重新按时间降序排序（从新到旧）
+            list.sort((e1, e2) -> {
+                if (e1.getStartTime() == null && e2.getStartTime() == null) return 0;
+                if (e1.getStartTime() == null) return 1;
+                if (e2.getStartTime() == null) return -1;
+                // 降序：新的在前
+                int timeCompare = e2.getStartTime().compareTo(e1.getStartTime());
+                if (timeCompare != 0) return timeCompare;
+                // 时间相同时按ID降序
+                Long id1 = e1.getId() != null ? e1.getId() : 0L;
+                Long id2 = e2.getId() != null ? e2.getId() : 0L;
+                return id2.compareTo(id1);
+            });
+        }
+
         return getDataTable(list);
     }
 
