@@ -41,7 +41,8 @@
       "Bash(if not exist \"D:\\\\work\\\\资产视频插件正式版v1.0\\\\src\\\\assembly\" mkdir \"D:\\\\work\\\\资产视频插件正式版v1.0\\\\src\\\\assembly\")",
       "Bash(powershell -Command \"\\(Get-Item ruoyi.jar\\).Length / 1MB\")",
       "Bash(jar -tf:*)",
-      "Bash(jar -xf:*)"
+      "Bash(jar -xf:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

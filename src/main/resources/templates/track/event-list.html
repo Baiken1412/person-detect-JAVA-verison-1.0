@@ -770,34 +770,72 @@
                 isLoading = false;
                 if (data.code === 0 && data.rows) {
                     totalCount = data.total || 0;
-                    const newEvents = data.rows.map(item => {
-                        // 从复合事件的events数组中获取第一个轨迹的信息（用于显示缩略图等）
-                        const firstTrack = (item.events && item.events.length > 0) ? item.events[0] : {};
-                        return {
-                            id: item.id,  // 复合事件ID
-                            trackId: firstTrack.id || item.id,  // 第一个轨迹ID（用于查看详情）
-                            time: formatDateTime(item.startTime),
-                            endTime: formatDateTime(item.endTime),
-                            area: item.qymc || '',
-                            videoUrl: firstTrack.spdz || '',
-                            status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
-                            reason: (item.xwyy && item.xwyy.includes('：')) ? item.xwyy.split('：', 2)[0] : (item.xwyy || ''),
-                            reasonDetail: (item.xwyy && item.xwyy.includes('：')) ? item.xwyy.split('：', 2)[1] : '',
-                            persons: [item.ryxm, item.wlry].filter(Boolean),
-                            operator: item.bzzt === '1' ? (item.ryxm || '') : '',
-                            operateTime: item.bzsj || '',
-                            spsc: firstTrack.spsc || '',
-                            pstp: firstTrack.pstp || '',
-                            rysl: item.ryslMax || 0,
-                            pssj: item.startTime || '',
-                            jssj: item.endTime || '',
-                            suggestions: [],
-                            ryxm: item.ryxm || '',
-                            wlry: item.wlry || '',
-                            remark: item.remark || '',
-                            hasLongTrack: item.hasLongTrack || 0,
-                            hasLongEvent: item.hasLongEvent || 0
-                        };
+                    // 将每个复合事件中的所有轨迹都展开成独立的事件卡片
+                    const newEvents = [];
+                    data.rows.forEach(item => {
+                        // 如果复合事件包含多个轨迹，为每个轨迹创建一个卡片
+                        if (item.events && item.events.length > 0) {
+                            item.events.forEach((track, index) => {
+                                newEvents.push({
+                                    id: item.id,  // 复合事件ID
+                                    trackId: track.id,  // 轨迹ID
+                                    compositeId: item.id,  // 保存复合事件ID用于跳转
+                                    trackIndex: index + 1,  // 轨迹序号（用于显示"轨迹 1/3"）
+                                    totalTracks: item.events.length,  // 总轨迹数
+                                    time: formatDateTime(track.pssj || item.startTime),
+                                    endTime: formatDateTime(track.jssj || item.endTime),
+                                    area: track.qymc || item.qymc || '',
+                                    videoUrl: track.spdz || '',
+                                    status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
+                                    reason: (item.xwyy && item.xwyy.includes('：')) ? item.xwyy.split('：', 2)[0] : (item.xwyy || ''),
+                                    reasonDetail: (item.xwyy && item.xwyy.includes('：')) ? item.xwyy.split('：', 2)[1] : '',
+                                    persons: [item.ryxm, item.wlry].filter(Boolean),
+                                    operator: item.bzzt === '1' ? (item.ryxm || '') : '',
+                                    operateTime: item.bzsj || '',
+                                    spsc: track.spsc || '',
+                                    pstp: track.pstp || '',
+                                    rysl: track.rysl || item.ryslMax || 0,
+                                    pssj: track.pssj || item.startTime || '',
+                                    jssj: track.jssj || item.endTime || '',
+                                    suggestions: [],
+                                    ryxm: item.ryxm || '',
+                                    wlry: item.wlry || '',
+                                    remark: item.remark || '',
+                                    hasLongTrack: item.hasLongTrack || 0,
+                                    hasLongEvent: item.hasLongEvent || 0
+                                });
+                            });
+                        } else {
+                            // 如果没有轨迹信息，保留原有逻辑
+                            newEvents.push({
+                                id: item.id,
+                                trackId: item.id,
+                                compositeId: item.id,
+                                trackIndex: 1,
+                                totalTracks: 1,
+                                time: formatDateTime(item.startTime),
+                                endTime: formatDateTime(item.endTime),
+                                area: item.qymc || '',
+                                videoUrl: '',
+                                status: item.bzzt === '1' ? 'labeled' : 'unlabeled',
+                                reason: (item.xwyy && item.xwyy.includes('：')) ? item.xwyy.split('：', 2)[0] : (item.xwyy || ''),
+                                reasonDetail: (item.xwyy && item.xwyy.includes('：')) ? item.xwyy.split('：', 2)[1] : '',
+                                persons: [item.ryxm, item.wlry].filter(Boolean),
+                                operator: item.bzzt === '1' ? (item.ryxm || '') : '',
+                                operateTime: item.bzsj || '',
+                                spsc: '',
+                                pstp: '',
+                                rysl: item.ryslMax || 0,
+                                pssj: item.startTime || '',
+                                jssj: item.endTime || '',
+                                suggestions: [],
+                                ryxm: item.ryxm || '',
+                                wlry: item.wlry || '',
+                                remark: item.remark || '',
+                                hasLongTrack: item.hasLongTrack || 0,
+                                hasLongEvent: item.hasLongEvent || 0
+                            });
+                        }
                     });
 
                     if (append) {
@@ -910,11 +948,15 @@
             const isLongTrack = event.hasLongTrack === 1;
             const warningClass = (isNonWorktime || isAbnormal || isLongTrack) ? 'worktime-warning' : '';
 
+            // 构建跳转URL，带上复合事件ID
+            const detailUrl = `/caseapp/track/detail/${event.trackId}?compositeId=${event.compositeId}`;
+
             return `
-                <div class="event-card ${event.status} ${warningClass}" onclick="viewEventDetail('${event.id}')" style="cursor: pointer;">
+                <div class="event-card ${event.status} ${warningClass}" onclick="window.location.href='${detailUrl}'" style="cursor: pointer;">
                     <div class="event-thumbnail">
                         ${event.pstp ? `<img src="${event.pstp}" alt="缩略图" onerror="this.onerror=null; this.src=''; this.style.display='none'; this.nextElementSibling.style.display='inline-block';" /><span class="thumbnail-icon" style="display:none;">🎥</span>` : '<span class="thumbnail-icon">🎥</span>'}
                         <span class="event-status ${event.status}">${event.status === 'unlabeled' ? '待标注' : '已标注'}</span>
+                        ${event.totalTracks > 1 ? `<span class="track-indicator" style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">轨迹 ${event.trackIndex}/${event.totalTracks}</span>` : ''}
                     </div>
                     <div class="event-info">
                         <div class="event-time">${event.time}</div>

@@ -56,6 +56,24 @@
             border-color: rgba(255,255,255,0.5);
         }
 
+        .btn-composite {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-composite:hover {
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+            transform: translateY(-1px);
+        }
+
         .container {
             max-width: 1400px;
             margin: 30px auto;
@@ -263,6 +281,9 @@
                 <button class="btn-back" onclick="window.history.back()">
                     <i class="fa fa-arrow-left"></i> 返回
                 </button>
+                <button id="viewCompositeBtn" class="btn-composite" style="display: none;" onclick="viewCompositeEvent()">
+                    <i class="fa fa-film"></i> 查看完整事件还原
+                </button>
                 <a th:href="@{/logout}" class="logout-button">
                     🚪 退出登录
                 </a>
@@ -334,11 +355,28 @@
     <th:block th:include="include :: footer" />
     <script th:inline="javascript">
         const trajectoryId = /*[[${trajectory.id}]]*/ 0;
+        let compositeId = null;
 
         // 页面加载完成后获取数据
         $(document).ready(function() {
+            // 从 URL 参数获取 compositeId
+            const urlParams = new URLSearchParams(window.location.search);
+            compositeId = urlParams.get('compositeId');
+
+            // 如果存在 compositeId，显示"查看完整事件还原"按钮
+            if (compositeId) {
+                document.getElementById('viewCompositeBtn').style.display = 'inline-block';
+            }
+
             loadTrajectoryDetail();
         });
+
+        // 跳转到完整事件还原页面
+        function viewCompositeEvent() {
+            if (compositeId) {
+                window.location.href = '/caseapp/track/compositeTrace?id=' + compositeId;
+            }
+        }
 
         // 加载轨迹详情数据
         function loadTrajectoryDetail() {
