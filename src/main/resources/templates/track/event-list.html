@@ -774,7 +774,8 @@
                         // 从复合事件的events数组中获取第一个轨迹的信息（用于显示缩略图等）
                         const firstTrack = (item.events && item.events.length > 0) ? item.events[0] : {};
                         return {
-                            id: item.id,
+                            id: item.id,  // 复合事件ID
+                            trackId: firstTrack.id || item.id,  // 第一个轨迹ID（用于查看详情）
                             time: formatDateTime(item.startTime),
                             endTime: formatDateTime(item.endTime),
                             area: item.qymc || '',
@@ -910,7 +911,7 @@
             const warningClass = (isNonWorktime || isAbnormal || isLongTrack) ? 'worktime-warning' : '';
 
             return `
-                <div class="event-card ${event.status} ${warningClass}" onclick="viewEventDetail('${event.id}')" style="cursor: pointer;">
+                <div class="event-card ${event.status} ${warningClass}" onclick="viewEventDetail('${event.trackId}')" style="cursor: pointer;">
                     <div class="event-thumbnail">
                         ${event.pstp ? `<img src="${event.pstp}" alt="缩略图" onerror="this.onerror=null; this.src=''; this.style.display='none'; this.nextElementSibling.style.display='inline-block';" /><span class="thumbnail-icon" style="display:none;">🎥</span>` : '<span class="thumbnail-icon">🎥</span>'}
                         <span class="event-status ${event.status}">${event.status === 'unlabeled' ? '待标注' : '已标注'}</span>
