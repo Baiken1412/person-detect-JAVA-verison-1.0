@@ -933,7 +933,7 @@
         else grid.innerHTML = eventsHTML;
     }
 
-    // 查看轨迹详情（实际上是复合事件详情）
+    // 查看轨迹详情（只显示单个轨迹，不显示整个复合事件）
     function viewEventDetail(eventId) {
         document.getElementById('eventDetailContent').innerHTML = `<div style="text-align: center; padding: 40px; color: #999;"><i class="fa fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i><p>加载中...</p></div>`;
         document.getElementById('eventDetailModal').style.display = 'flex';
@@ -942,8 +942,8 @@
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
 
-        // 使用复合事件详情接口（因为轨迹页面显示的是复合事件列表）
-        fetch('/caseapp/track/compositeEvents/' + eventId, { signal: controller.signal })
+        // 使用单轨迹详情接口（只显示点击的那一个轨迹）
+        fetch('/caseapp/track/detailData/' + eventId, { signal: controller.signal })
             .then(response => {
                 clearTimeout(timeoutId);
                 if (!response.ok) {
@@ -952,97 +952,64 @@
                 return response.json();
             })
             .then(data => {
-                if (data.code === 0 && data.data) {
-                    const composite = data.data;
-                    const tracks = composite.events || [];
-
-                    // 收集所有轨迹的截图
-                    const allScreenshots = [];
-                    tracks.forEach(track => {
-                        if (track.screenshots && track.screenshots.length > 0) {
-                            allScreenshots.push(...track.screenshots);
-                        }
-                    });
-                    window.currentTrajectoryScreenshots = allScreenshots;
+                if (data.code === 0) {
+                    const trajectory = data.trajectory;
+                    const screenshots = data.screenshots || [];
+                    window.currentTrajectoryScreenshots = screenshots;
 
                     let detailHTML = `<div style="line-height: 1.8;">`;
-
-                    // 复合事件基本信息
-                    detailHTML += `
-                        <div style="margin-bottom: 20px; background: #f0f7ff; border-radius: 8px; padding: 15px; border-left: 4px solid #2a5298;">
-                            <div style="font-weight: bold; font-size: 16px; color: #2a5298; margin-bottom: 10px;">
-                                <i class="fa fa-info-circle"></i> 复合事件信息
-                            </div>
-                            <div style="font-size: 14px; line-height: 2;">
-                                <strong><i class="fa fa-list-ol"></i> 包含轨迹:</strong> ${tracks.length} 个 <br>
-                                <strong><i class="fa fa-map-signs"></i> 活动路径:</strong> ${tracks.map(t => t.qymc).filter(Boolean).join(' → ')} <br>
-                                <strong><i class="fa fa-tag"></i> 标注状态:</strong> ${composite.bzzt === '1' ? '<span style="color: #51cf66;">已标注</span>' : '<span style="color: #ff6b6b;">待标注</span>'}
-                            </div>
-                        </div>`;
-
-                    // 标注信息
-                    if (composite.bzzt === '1') {
+                    if (trajectory.spdz) {
                         detailHTML += `
-                            <div style="margin-bottom: 20px; background: #f8f9fa; border-radius: 8px; padding: 15px;">
-                                <div style="font-weight: bold; margin-bottom: 10px;"><i class="fa fa-edit"></i> 标注信息</div>
-                                <div style="font-size: 14px; line-height: 2;">
-                                    <strong><i class="fa fa-pencil"></i> 行为原因:</strong> ${composite.xwyy || '未填写'} <br>
-                                    <strong><i class="fa fa-user"></i> 管理员:</strong> ${composite.ryxm || '未填写'} <br>
-                                    <strong><i class="fa fa-users"></i> 外来人员:</strong> ${composite.wlry || '无'} <br>
-                                    <strong><i class="fa fa-comment"></i> 备注:</strong> ${composite.remark || '无'}
-                                </div>
-                            </div>`;
-                    }
-
-                    // 显示每个轨迹的视频和截图
-                    tracks.forEach((track, index) => {
-                        detailHTML += `
-                            <div style="margin-bottom: 20px; background: #f8f9fa; border-radius: 8px; padding: 15px;">
-                                <div style="font-weight: bold; margin-bottom: 12px;">
-                                    <i class="fa fa-video-camera"></i> 轨迹 ${index + 1} - ${track.qymc || '未知区域'}
-                                    <span style="font-size: 12px; color: #666; font-weight: normal; margin-left: 10px;">
-                                        ${formatDateTime(track.pssj)} ~ ${formatDateTime(track.jssj)}
-                                    </span>
-                                </div>`;
-
-                        if (track.spdz) {
-                            detailHTML += `
-                                <div style="background: #000; border-radius: 6px; overflow: hidden; margin-bottom: 10px;">
-                                    <video controls style="width: 100%; max-height: 350px; display: block;">
-                                        <source src="${track.spdz}" type="video/mp4">
-                                        您的浏览器不支持视频播放。
-                                    </video>
-                                </div>`;
-                        }
-
-                        if (track.screenshots && track.screenshots.length > 0) {
-                            detailHTML += `
-                                <div style="margin-top: 10px;">
-                                    <strong style="font-size: 13px;"><i class="fa fa-camera"></i> 截图 (${track.screenshots.length})</strong>
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 8px;">
-                                        ${track.screenshots.map((s, i) => {
-                                            const globalIndex = allScreenshots.findIndex(ss => ss.id === s.id);
-                                            return `
-                                                <div onclick="openImageViewer(${globalIndex}, window.currentTrajectoryScreenshots)" style="cursor: pointer; position: relative;">
-                                                    <img src="${s.screenshotUrl}" style="width: 100%; height: 90px; object-fit: cover; border-radius: 6px;">
-                                                    <div style="position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.7); color: white; font-size: 9px; padding: 3px; text-align: center;">#${s.screenshotOrder}</div>
-                                                </div>`;
-                                        }).join('')}
+                                <div style="margin-bottom: 20px; background: #f8f9fa; border-radius: 8px; padding: 15px;">
+                                    <div style="font-weight: bold; margin-bottom: 12px;"><i class="fa fa-video-camera"></i> 活动视频</div>
+                                    <div style="background: #000; border-radius: 6px; overflow: hidden;">
+                                        <video id="trajectoryVideo" controls style="width: 100%; max-height: 400px; display: block;">
+                                            <source src="${trajectory.spdz}" type="video/mp4">
+                                            您的浏览器不支持视频播放。
+                                        </video>
+                                    </div>
+                                    <div style="margin-top: 10px; font-size: 13px; color: #6c757d;">
+                                        时间段: ${formatDateTime(trajectory.pssj)} ~ ${formatDateTime(trajectory.jssj)}
                                     </div>
                                 </div>`;
-                        }
-
-                        detailHTML += `</div>`;
-                    });
+                    } else {
+                        detailHTML += `<div style="margin-bottom: 20px; background: #fff3cd; border-radius: 8px; padding: 15px; color: #856404;"><i class="fa fa-warning"></i> 暂无视频数据</div>`;
+                    }
 
                     detailHTML += `
-                        <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef;">
-                            <button onclick="window.location.href='/caseapp/track/compositeTrace?id=${composite.id}'"
-                                    style="padding: 10px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">
-                                <i class="fa fa-film"></i> 查看完整事件还原
-                            </button>
-                        </div>
-                    </div>`;
+                            <div style="margin-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                <strong><i class="fa fa-map-marker"></i> 区域位置:</strong> ${trajectory.qymc || '未知'} <br>
+                                <strong><i class="fa fa-users"></i> 人员数量:</strong> ${trajectory.rysl || 0} 人 <br>
+                                <strong><i class="fa fa-tag"></i> 状态:</strong> ${trajectory.bzzt === '1' ? '已标注' : '待标注'}
+                            </div>
+                        `;
+
+                    if (trajectory.bzzt === '1') {
+                        detailHTML += `
+                                <div style="margin-bottom: 15px; border-bottom: 1px solid #e9ecef;">
+                                    <strong><i class="fa fa-edit"></i> 原因:</strong> ${trajectory.xwyy || '未填写'} <br>
+                                    <strong><i class="fa fa-user"></i> 管理员:</strong> ${trajectory.ryxm || '未填写'} <br>
+                                    <strong><i class="fa fa-users"></i> 外来人员:</strong> ${trajectory.wlry || '无'} <br>
+                                    <strong><i class="fa fa-comment"></i> 备注:</strong> ${trajectory.remark || '无'}
+                                </div>
+                            `;
+                    }
+
+                    if (screenshots.length > 0) {
+                        detailHTML += `
+                                <div style="margin-bottom: 15px;">
+                                    <strong><i class="fa fa-camera"></i> 截图 (${screenshots.length})</strong>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 10px;">
+                                        ${screenshots.map((s, i) => `
+                                            <div onclick="openImageViewer(${i}, window.currentTrajectoryScreenshots)" style="cursor: pointer; position: relative;">
+                                                <img src="${s.screenshotUrl}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px;">
+                                                <div style="position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 4px;">#${s.screenshotOrder} ${formatTime(s.screenshotTime)}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>`;
+                    }
+                    detailHTML += `</div>`;
                     document.getElementById('eventDetailContent').innerHTML = detailHTML;
                 } else {
                     // 处理业务错误

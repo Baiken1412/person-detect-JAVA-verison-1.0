@@ -73,6 +73,14 @@ public class AppTrackController extends BaseController
     @Value("${hkpt.appSecret}")
     private String appSecret;
 
+    // 轨迹时长报警阈值（分钟）
+    @Value("${alarm.track-duration-threshold:3}")
+    private int trackDurationThreshold;
+
+    // 事件时长报警阈值（分钟）
+    @Value("${alarm.event-duration-threshold:30}")
+    private int eventDurationThreshold;
+
     @Autowired
     private IAppTrackService appTrackService;
 
@@ -419,6 +427,19 @@ public class AppTrackController extends BaseController
                 {
                     long duration = (track.getJssj().getTime() - track.getPssj().getTime()) / 1000;
                     singleEvent.setDuration((int) duration);
+
+                    // 判断轨迹时间过长（收物室只有单条轨迹）
+                    long trackDurationMinutes = duration / 60;
+                    singleEvent.setHasLongTrack(trackDurationMinutes > trackDurationThreshold ? 1 : 0);
+
+                    // 判断事件时间过长（对单轨迹事件，事件时长=轨迹时长）
+                    singleEvent.setHasLongEvent(trackDurationMinutes > eventDurationThreshold ? 1 : 0);
+                }
+                else
+                {
+                    singleEvent.setDuration(0);
+                    singleEvent.setHasLongTrack(0);
+                    singleEvent.setHasLongEvent(0);
                 }
 
                 list.add(singleEvent);
