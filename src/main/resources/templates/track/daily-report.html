@@ -607,7 +607,7 @@
             // 总体判断
             const statusEl = document.getElementById('overallStatus');
             statusEl.className = 'overall-status ' + data.overallStatus;
-            statusEl.textContent = getStatusIcon(data.overallStatus) + ' ' + getStatusText(data.overallStatus);
+            statusEl.innerHTML = getStatusIcon(data.overallStatus) + ' ' + getStatusText(data.overallStatus);
 
             document.getElementById('overallDescription').textContent = data.overallDescription;
 
