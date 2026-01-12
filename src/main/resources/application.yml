@@ -27,6 +27,8 @@ system:
 
 # 报警配置
 alarm:
+  # 空闲时间阈值（单位：秒）- 轨迹间隔超过此值则分割为不同事件
+  idle-threshold: 120
   # 轨迹时长报警阈值（单位：分钟）
   track-duration-threshold: 3
   # 事件时长报警阈值（单位：分钟）

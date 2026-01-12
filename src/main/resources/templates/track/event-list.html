@@ -840,6 +840,13 @@
                         }
                     });
 
+                    // 对所有轨迹按开始时间降序排序（从新到旧）
+                    newEvents.sort((a, b) => {
+                        const timeA = new Date(a.pssj);
+                        const timeB = new Date(b.pssj);
+                        return timeB - timeA; // 降序：新的在前
+                    });
+
                     if (append) {
                         eventsData = eventsData.concat(newEvents);
                     } else {

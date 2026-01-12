@@ -65,8 +65,9 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     @Autowired
     private AppRoomipMapper appRoomipMapper;
 
-    // 空闲时间阈值：120秒（毫秒）- 轨迹间隔超过此值则分割为不同事件
-    private static final long IDLE_THRESHOLD = 120 * 1000;
+    // 空闲时间阈值（秒）- 轨迹间隔超过此值则分割为不同事件，从配置文件读取
+    @Value("${alarm.idle-threshold:120}")
+    private int idleThresholdSeconds;
 
     // 轨迹时长报警阈值（分钟），从配置文件读取
     @Value("${alarm.track-duration-threshold:3}")
@@ -493,8 +494,8 @@ public class CompositeEventServiceImpl implements ICompositeEventService
 
         System.out.println("========== 复合事件计算开始（新算法：向前查看） ==========");
         System.out.println("总轨迹数：" + tracks.size());
-        System.out.println("空闲阈值：" + (IDLE_THRESHOLD / 1000) + "秒");
-        System.out.println("逻辑：只要30秒内任意摄像头还检测到人，事件继续");
+        System.out.println("空闲阈值：" + idleThresholdSeconds + "秒");
+        System.out.println("逻辑：只要" + idleThresholdSeconds + "秒内任意摄像头还检测到人，事件继续");
 
         for (int i = 0; i < tracks.size(); i++)
         {
@@ -530,14 +531,14 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                 long timeToNext = nextTrack.getPssj().getTime() - currentEndTime.getTime();
                 long timeToNextSeconds = timeToNext / 1000;
 
-                if (timeToNext <= IDLE_THRESHOLD)
+                if (timeToNextSeconds <= idleThresholdSeconds)
                 {
                     hasNextTrackWithin30Sec = true;
                     System.out.println("    → 下一条轨迹在" + timeToNextSeconds + "秒后（从当前轨迹结束算起），事件继续");
                 }
                 else
                 {
-                    System.out.println("    → 下一条轨迹在" + timeToNextSeconds + "秒后(>" + (IDLE_THRESHOLD/1000) + "秒，从当前轨迹结束算起)，30秒空闲，事件结束");
+                    System.out.println("    → 下一条轨迹在" + timeToNextSeconds + "秒后(>" + idleThresholdSeconds + "秒，从当前轨迹结束算起)，" + idleThresholdSeconds + "秒空闲，事件结束");
                 }
             }
             else
