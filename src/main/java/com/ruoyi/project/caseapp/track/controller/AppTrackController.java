@@ -496,18 +496,50 @@ public class AppTrackController extends BaseController
 
     /**
      * 获取单个复合事件详情（包含轨迹和截图信息）
-     * 
-     * @param id 复合事件ID
+     *
+     * @param id 复合事件ID（或单轨迹ID）
      * @return 复合事件详情
      */
     @GetMapping("/compositeEvents/{id}")
     @ResponseBody
     public AjaxResult getCompositeEventDetail(@PathVariable("id") Long id)
     {
-        // 查询复合事件基本信息
+        // 首先尝试从复合事件表查询
         CompositeEvent event = compositeEventService.selectCompositeEventById(id);
+
+        // 如果复合事件表中不存在，可能是单轨迹事件（如收物室）
         if (event == null) {
-            return AjaxResult.error("复合事件不存在");
+            // 尝试作为单轨迹查询
+            AppTrack track = appTrackService.selectAppTrackById(id);
+            if (track == null) {
+                return AjaxResult.error("复合事件不存在");
+            }
+
+            // 构造单轨迹的复合事件对象
+            event = new CompositeEvent();
+            event.setId(track.getId());
+            event.setEventId(track.getId());
+            event.setStartTime(track.getPssj());
+            event.setEndTime(track.getJssj());
+            event.setQymc(track.getQymc());
+            event.setBzzt(track.getBzzt());
+            event.setXwyy(track.getXwyy());
+            event.setRyxm(track.getRyxm());
+            event.setWlry(track.getWlry());
+            event.setRemark(track.getRemark());
+            event.setRyslMax(track.getRysl());
+
+            // 查询该轨迹的所有截图
+            List<AppTrackScreenshot> screenshots = screenshotService.selectScreenshotsByTrackId(track.getId());
+            track.setScreenshots(screenshots);
+
+            // 设置单个轨迹
+            List<AppTrack> tracks = new ArrayList<>();
+            tracks.add(track);
+            event.setEvents(tracks);
+            event.setEventCount(1);
+
+            return AjaxResult.success().put("data", event);
         }
 
         // 从关系表查询轨迹ID列表（已按seq_no排序）
