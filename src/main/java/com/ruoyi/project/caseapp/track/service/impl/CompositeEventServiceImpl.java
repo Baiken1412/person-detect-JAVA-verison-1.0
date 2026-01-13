@@ -65,6 +65,10 @@ public class CompositeEventServiceImpl implements ICompositeEventService
     @Autowired
     private AppRoomipMapper appRoomipMapper;
 
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private com.ruoyi.project.caseapp.track.service.IAppTrackService appTrackService;
+
     // 空闲时间阈值（秒）- 轨迹间隔超过此值则分割为不同事件，从配置文件读取
     @Value("${alarm.idle-threshold:120}")
     private int idleThresholdSeconds;
@@ -967,7 +971,8 @@ public class CompositeEventServiceImpl implements ICompositeEventService
                     track.setRemark(remark);
                     track.setBzsj(DateUtil.now());
 
-                    int result = appTrackMapper.updateAppTrack(track);
+                    // 使用 service 层的 update 方法，这样会自动计算 trackDuration 和 isLongTrack
+                    int result = appTrackService.updateAppTrack(track);
                     if (result > 0) {
                         successCount++;
                         logger.info("  ✓ 轨迹 {} 标注信息已同步", trackId);
