@@ -158,30 +158,46 @@ public class AppTrackServiceImpl implements IAppTrackService
     /**
      * 如果需要则计算并更新轨迹时长
      * 用于处理 Python 等外部程序插入的数据
+     * 注意：只更新时长字段，不触发复合事件重新计算，避免破坏业务逻辑
      *
      * @param track 轨迹对象
      */
     private void calculateAndUpdateIfNeeded(AppTrack track)
     {
-        // 只有当 track_duration 为空且有开始结束时间时才计算
-        if (track.getTrackDuration() == null && track.getPssj() != null && track.getJssj() != null)
+        // 检查是否需要计算/重新计算时长
+        if (track.getPssj() != null && track.getJssj() != null)
         {
             try {
                 long durationMillis = track.getJssj().getTime() - track.getPssj().getTime();
                 int durationSeconds = (int) (durationMillis / 1000);
                 int durationMinutes = durationSeconds / 60;
 
-                track.setTrackDuration(durationSeconds);
-                track.setIsLongTrack(durationMinutes > trackDurationThreshold ? 1 : 0);
+                // 判断是否需要更新：1) track_duration为NULL 或 2) track_duration与实际时长不匹配
+                boolean needUpdate = false;
+                if (track.getTrackDuration() == null) {
+                    needUpdate = true;
+                    logger.info("轨迹 ID={} track_duration为NULL，需要计算", track.getId());
+                } else if (track.getTrackDuration() != durationSeconds) {
+                    needUpdate = true;
+                    logger.info("轨迹 ID={} track_duration不匹配：数据库={}秒，实际={}秒，需要重新计算",
+                        track.getId(), track.getTrackDuration(), durationSeconds);
+                }
 
-                // 更新数据库
-                appTrackMapper.updateAppTrack(track);
+                if (needUpdate) {
+                    track.setTrackDuration(durationSeconds);
+                    track.setIsLongTrack(durationMinutes > trackDurationThreshold ? 1 : 0);
 
-                logger.info("自动计算轨迹时长 ID={}, 时长={}秒({}分钟), 是否过长={}",
-                    track.getId(), durationSeconds, durationMinutes, track.getIsLongTrack());
+                    // 仅更新时长字段到数据库，不触发复合事件更新
+                    AppTrack updateTrack = new AppTrack();
+                    updateTrack.setId(track.getId());
+                    updateTrack.setTrackDuration(durationSeconds);
+                    updateTrack.setIsLongTrack(durationMinutes > trackDurationThreshold ? 1 : 0);
+                    appTrackMapper.updateAppTrack(updateTrack);
 
-                // 同时更新复合事件
-                compositeEventService.updateOrCreateCompositeEventByTrack(track);
+                    logger.info("自动更新轨迹时长 ID={}, 时长={}秒({}分钟), 是否过长={}",
+                        track.getId(), durationSeconds, durationMinutes, track.getIsLongTrack());
+                }
+
             } catch (Exception e) {
                 logger.error("自动计算轨迹 ID={} 时长失败", track.getId(), e);
             }
@@ -370,12 +386,60 @@ public class AppTrackServiceImpl implements IAppTrackService
                 AppTrack track = appTrackMapper.selectAppTrackById(trackId);
                 if (track != null)
                 {
+                    // 自动计算并更新 track_duration（如果需要）
+                    calculateAndUpdateIfNeeded(track);
                     tracks.add(track);
                 }
             }
 
             // 确保 events 字段始终有值（即使是空数组），避免前端报错
             event.setEvents(tracks);
+
+            // 根据实际轨迹数据重新计算复合事件的时间范围
+            // 修复：当轨迹jssj被更新后，复合事件的end_time没有同步更新的问题
+            if (!tracks.isEmpty())
+            {
+                Date minStartTime = null;
+                Date maxEndTime = null;
+
+                for (AppTrack track : tracks)
+                {
+                    // 找最早的开始时间
+                    if (minStartTime == null || (track.getPssj() != null && track.getPssj().before(minStartTime)))
+                    {
+                        minStartTime = track.getPssj();
+                    }
+
+                    // 找最晚的结束时间
+                    Date trackEndTime = track.getJssj();
+                    if (trackEndTime == null && track.getPssj() != null)
+                    {
+                        // 如果没有结束时间，使用开始时间+5秒作为默认值
+                        trackEndTime = new Date(track.getPssj().getTime() + 5000);
+                    }
+                    if (maxEndTime == null || (trackEndTime != null && trackEndTime.after(maxEndTime)))
+                    {
+                        maxEndTime = trackEndTime;
+                    }
+                }
+
+                // 更新复合事件的时间范围
+                if (minStartTime != null)
+                {
+                    event.setStartTime(minStartTime);
+                }
+                if (maxEndTime != null)
+                {
+                    event.setEndTime(maxEndTime);
+                }
+
+                // 重新计算持续时长
+                if (minStartTime != null && maxEndTime != null)
+                {
+                    long durationMillis = maxEndTime.getTime() - minStartTime.getTime();
+                    event.setDuration((int) (durationMillis / 1000));
+                }
+            }
         }
 
         return compositeEvents;
