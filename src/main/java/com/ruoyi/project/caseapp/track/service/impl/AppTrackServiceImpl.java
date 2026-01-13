@@ -62,10 +62,11 @@ public class AppTrackServiceImpl implements IAppTrackService
     {
         AppTrack track = appTrackMapper.selectAppTrackById(id);
 
-        // 实时计算并更新 track_duration（如果为空）
-        if (track != null) {
-            calculateAndUpdateIfNeeded(track);
-        }
+        // 移除查询时的实时更新逻辑（性能优化）
+        // 新数据会在 insertAppTrack 和 updateAppTrack 中自动计算
+        // if (track != null) {
+        //     calculateAndUpdateIfNeeded(track);
+        // }
 
         return track;
     }
@@ -81,12 +82,13 @@ public class AppTrackServiceImpl implements IAppTrackService
     {
         List<AppTrack> tracks = appTrackMapper.selectAppTrackList(appTrack);
 
-        // 实时计算并更新 track_duration（如果为空）
-        if (tracks != null) {
-            for (AppTrack track : tracks) {
-                calculateAndUpdateIfNeeded(track);
-            }
-        }
+        // 移除查询时的实时更新逻辑（性能优化）
+        // 新数据会在 insertAppTrack 和 updateAppTrack 中自动计算
+        // if (tracks != null) {
+        //     for (AppTrack track : tracks) {
+        //         calculateAndUpdateIfNeeded(track);
+        //     }
+        // }
 
         return tracks;
     }
@@ -412,8 +414,9 @@ public class AppTrackServiceImpl implements IAppTrackService
                 AppTrack track = appTrackMapper.selectAppTrackById(trackId);
                 if (track != null)
                 {
-                    // 自动计算并更新 track_duration（如果需要）
-                    calculateAndUpdateIfNeeded(track);
+                    // 移除查询时的实时更新逻辑（性能优化）
+                    // 新数据会在 insertAppTrack 和 updateAppTrack 中自动计算
+                    // calculateAndUpdateIfNeeded(track);
                     tracks.add(track);
                 }
             }
