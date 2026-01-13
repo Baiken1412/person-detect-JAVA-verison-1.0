@@ -89,7 +89,7 @@ public interface AppTrackMapper
 
     /**
      * 查询所有轨迹数据（用于复合事件分组，支持时间筛选）
-     * 
+     *
      * @param appTrack 轨迹（用于时间筛选）
      * @return 轨迹集合（按时间排序）
      */

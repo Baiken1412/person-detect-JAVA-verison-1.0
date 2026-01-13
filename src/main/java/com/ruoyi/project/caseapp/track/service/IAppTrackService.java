@@ -92,7 +92,7 @@ public interface IAppTrackService
     /**
      * 查询复合事件列表
      * qyid = 1 表示复合事件的标记点，两个标记点之间的所有数据组成一个复合事件
-     * 
+     *
      * @param appTrack 轨迹（用于时间筛选）
      * @return 复合事件集合
      */

@@ -14,6 +14,8 @@ import com.ruoyi.project.caseapp.track.service.IAppTrackService;
 import com.ruoyi.project.caseapp.track.service.ICompositeEventService;
 import com.ruoyi.common.utils.text.Convert;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 轨迹Service业务层处理
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AppTrackServiceImpl implements IAppTrackService
 {
+    private static final Logger logger = LoggerFactory.getLogger(AppTrackServiceImpl.class);
     @Autowired
     private AppTrackMapper appTrackMapper;
 
@@ -39,14 +42,21 @@ public class AppTrackServiceImpl implements IAppTrackService
 
     /**
      * 查询轨迹
-     * 
+     *
      * @param id 轨迹主键
      * @return 轨迹
      */
     @Override
     public AppTrack selectAppTrackById(Long id)
     {
-        return appTrackMapper.selectAppTrackById(id);
+        AppTrack track = appTrackMapper.selectAppTrackById(id);
+
+        // 实时计算并更新 track_duration（如果为空）
+        if (track != null) {
+            calculateAndUpdateIfNeeded(track);
+        }
+
+        return track;
     }
 
     /**
@@ -58,7 +68,16 @@ public class AppTrackServiceImpl implements IAppTrackService
     @Override
     public List<AppTrack> selectAppTrackList(AppTrack appTrack)
     {
-        return appTrackMapper.selectAppTrackList(appTrack);
+        List<AppTrack> tracks = appTrackMapper.selectAppTrackList(appTrack);
+
+        // 实时计算并更新 track_duration（如果为空）
+        if (tracks != null) {
+            for (AppTrack track : tracks) {
+                calculateAndUpdateIfNeeded(track);
+            }
+        }
+
+        return tracks;
     }
 
     /**
@@ -121,11 +140,51 @@ public class AppTrackServiceImpl implements IAppTrackService
 
             track.setTrackDuration(durationSeconds);
             track.setIsLongTrack(durationMinutes > trackDurationThreshold ? 1 : 0);
+
+            logger.debug("轨迹 ID={} 时长计算完成：开始={}, 结束={}, 时长={}秒({}分钟), 阈值={}分钟, 是否过长={}",
+                track.getId(), track.getPssj(), track.getJssj(), durationSeconds, durationMinutes,
+                trackDurationThreshold, track.getIsLongTrack());
         }
         else
         {
             track.setTrackDuration(null);
             track.setIsLongTrack(0);
+
+            logger.warn("轨迹 ID={} 无法计算时长：pssj={}, jssj={} （缺少开始或结束时间）",
+                track.getId(), track.getPssj(), track.getJssj());
+        }
+    }
+
+    /**
+     * 如果需要则计算并更新轨迹时长
+     * 用于处理 Python 等外部程序插入的数据
+     *
+     * @param track 轨迹对象
+     */
+    private void calculateAndUpdateIfNeeded(AppTrack track)
+    {
+        // 只有当 track_duration 为空且有开始结束时间时才计算
+        if (track.getTrackDuration() == null && track.getPssj() != null && track.getJssj() != null)
+        {
+            try {
+                long durationMillis = track.getJssj().getTime() - track.getPssj().getTime();
+                int durationSeconds = (int) (durationMillis / 1000);
+                int durationMinutes = durationSeconds / 60;
+
+                track.setTrackDuration(durationSeconds);
+                track.setIsLongTrack(durationMinutes > trackDurationThreshold ? 1 : 0);
+
+                // 更新数据库
+                appTrackMapper.updateAppTrack(track);
+
+                logger.info("自动计算轨迹时长 ID={}, 时长={}秒({}分钟), 是否过长={}",
+                    track.getId(), durationSeconds, durationMinutes, track.getIsLongTrack());
+
+                // 同时更新复合事件
+                compositeEventService.updateOrCreateCompositeEventByTrack(track);
+            } catch (Exception e) {
+                logger.error("自动计算轨迹 ID={} 时长失败", track.getId(), e);
+            }
         }
     }
 
