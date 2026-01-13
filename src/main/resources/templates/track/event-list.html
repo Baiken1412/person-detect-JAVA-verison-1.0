@@ -916,7 +916,7 @@
             let matches = false;
             if (specialFilters.includes('nonWorktime') && isNonWorktimeWarning(event)) matches = true;
             if (specialFilters.includes('abnormalPerson') && isAbnormalPersonCount(event)) matches = true;
-            if (specialFilters.includes('longTrack') && event.hasLongTrack === 1) matches = true;
+            if (specialFilters.includes('longTrack') && event.isLongTrack === 1) matches = true;
             return matches;
         });
     }

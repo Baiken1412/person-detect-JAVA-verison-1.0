@@ -16,6 +16,7 @@ import com.ruoyi.common.utils.text.Convert;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import javax.annotation.PostConstruct;
 
 /**
  * 轨迹Service业务层处理
@@ -39,6 +40,16 @@ public class AppTrackServiceImpl implements IAppTrackService
 
     @Autowired
     private EventTrackRelationMapper relationMapper;
+
+    /**
+     * 初始化方法：打印配置信息
+     */
+    @PostConstruct
+    public void init() {
+        logger.warn("==========================================================");
+        logger.warn("轨迹时长报警阈值配置：trackDurationThreshold = {} 分钟", trackDurationThreshold);
+        logger.warn("==========================================================");
+    }
 
     /**
      * 查询轨迹
@@ -171,31 +182,41 @@ public class AppTrackServiceImpl implements IAppTrackService
                 long durationMillis = track.getJssj().getTime() - track.getPssj().getTime();
                 int durationSeconds = (int) (durationMillis / 1000);
                 int durationMinutes = durationSeconds / 60;
+                int expectedIsLongTrack = durationMinutes > trackDurationThreshold ? 1 : 0;
 
-                // 判断是否需要更新：1) track_duration为NULL 或 2) track_duration与实际时长不匹配
+                // 判断是否需要更新：
+                // 1) track_duration为NULL
+                // 2) track_duration与实际时长不匹配
+                // 3) is_long_track与当前阈值判断不匹配（阈值配置改变的情况）
                 boolean needUpdate = false;
+                String updateReason = "";
+
                 if (track.getTrackDuration() == null) {
                     needUpdate = true;
-                    logger.info("轨迹 ID={} track_duration为NULL，需要计算", track.getId());
+                    updateReason = "track_duration为NULL";
                 } else if (track.getTrackDuration() != durationSeconds) {
                     needUpdate = true;
-                    logger.info("轨迹 ID={} track_duration不匹配：数据库={}秒，实际={}秒，需要重新计算",
-                        track.getId(), track.getTrackDuration(), durationSeconds);
+                    updateReason = String.format("track_duration不匹配：数据库=%d秒，实际=%d秒",
+                        track.getTrackDuration(), durationSeconds);
+                } else if (track.getIsLongTrack() == null || track.getIsLongTrack() != expectedIsLongTrack) {
+                    needUpdate = true;
+                    updateReason = String.format("is_long_track不匹配：数据库=%s，期望=%d（阈值=%d分钟，时长=%d分钟）",
+                        track.getIsLongTrack(), expectedIsLongTrack, trackDurationThreshold, durationMinutes);
                 }
 
                 if (needUpdate) {
                     track.setTrackDuration(durationSeconds);
-                    track.setIsLongTrack(durationMinutes > trackDurationThreshold ? 1 : 0);
+                    track.setIsLongTrack(expectedIsLongTrack);
 
                     // 仅更新时长字段到数据库，不触发复合事件更新
                     AppTrack updateTrack = new AppTrack();
                     updateTrack.setId(track.getId());
                     updateTrack.setTrackDuration(durationSeconds);
-                    updateTrack.setIsLongTrack(durationMinutes > trackDurationThreshold ? 1 : 0);
+                    updateTrack.setIsLongTrack(expectedIsLongTrack);
                     appTrackMapper.updateAppTrack(updateTrack);
 
-                    logger.info("自动更新轨迹时长 ID={}, 时长={}秒({}分钟), 是否过长={}",
-                        track.getId(), durationSeconds, durationMinutes, track.getIsLongTrack());
+                    logger.info("自动更新轨迹 ID={}, 原因：{}, 更新后：时长={}秒({}分钟), 是否过长={}",
+                        track.getId(), updateReason, durationSeconds, durationMinutes, expectedIsLongTrack);
                 }
 
             } catch (Exception e) {
@@ -367,6 +388,11 @@ public class AppTrackServiceImpl implements IAppTrackService
                 {
                     queryParam.getParams().put("xwyyList", reasonList);
                 }
+            }
+            // 修复：传递轨迹时间过长筛选条件
+            if (appTrack.getIsLongTrack() != null)
+            {
+                queryParam.setHasLongTrack(appTrack.getIsLongTrack());
             }
         }
 

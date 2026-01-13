@@ -47,6 +47,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="xwyy != null  and xwyy != ''"> and xwyy = #{xwyy}</if>
             <if test="ryxm != null  and ryxm != ''"> and ryxm like concat('%', #{ryxm}, '%')</if>
             <if test="wlry != null  and wlry != ''"> and wlry = #{wlry}</if>
+            <if test="isLongTrack != null"> and is_long_track = #{isLongTrack}</if>
         </where>
         order by pssj desc
     </select>
