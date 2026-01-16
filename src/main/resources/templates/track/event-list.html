@@ -761,10 +761,8 @@
         formData.append('params[beginPssj]', formatDate(beginDate));
         formData.append('params[endPssj]', formatDate(endDate));
 
-        // 轨迹页面包含收物室轨迹
-        formData.append('includeReceivingRoom', 'true');
-
-        fetch('/caseapp/track/compositeEvents', { method: 'POST', body: formData })
+        // 轨迹页面使用 allTracks 接口，显示所有轨迹，不受 eventGroup 分组影响
+        fetch('/caseapp/track/allTracks', { method: 'POST', body: formData })
             .then(response => response.json())
             .then(data => {
                 isLoading = false;

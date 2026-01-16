@@ -469,8 +469,87 @@ public class AppTrackController extends BaseController
     }
 
     /**
+     * 查询所有轨迹列表（轨迹页面专用，不受 eventGroup 分组影响）
+     * 每条轨迹包装成单轨迹复合事件格式返回，便于前端统一处理
+     *
+     * @param appTrack 轨迹（用于时间筛选）
+     * @return 轨迹列表（包装成复合事件格式）
+     */
+    @PostMapping("/allTracks")
+    @ResponseBody
+    public TableDataInfo getAllTracks(AppTrack appTrack)
+    {
+        startPage();
+        List<AppTrack> tracks = appTrackService.selectAppTrackList(appTrack);
+
+        // 将每条轨迹包装成单轨迹复合事件格式
+        List<CompositeEvent> list = new ArrayList<>();
+        for (AppTrack track : tracks)
+        {
+            CompositeEvent singleEvent = new CompositeEvent();
+            singleEvent.setId(track.getId());
+            singleEvent.setEventId(track.getId());
+            singleEvent.setStartTime(track.getPssj());
+            singleEvent.setEndTime(track.getJssj());
+            singleEvent.setQymc(track.getQymc());
+            singleEvent.setBzzt(track.getBzzt());
+            singleEvent.setXwyy(track.getXwyy());
+            singleEvent.setRyxm(track.getRyxm());
+            singleEvent.setWlry(track.getWlry());
+            singleEvent.setRemark(track.getRemark());
+            singleEvent.setRyslMax(track.getRysl());
+            singleEvent.setTrackCount(1);
+
+            // 设置单个轨迹
+            List<AppTrack> singleTrackList = new ArrayList<>();
+            singleTrackList.add(track);
+            singleEvent.setEvents(singleTrackList);
+
+            // 计算时长
+            if (track.getPssj() != null && track.getJssj() != null)
+            {
+                long duration = (track.getJssj().getTime() - track.getPssj().getTime()) / 1000;
+                singleEvent.setDuration((int) duration);
+
+                // 判断轨迹时间过长
+                long trackDurationMinutes = duration / 60;
+                singleEvent.setHasLongTrack(trackDurationMinutes > trackDurationThreshold ? 1 : 0);
+                singleEvent.setHasLongEvent(trackDurationMinutes > eventDurationThreshold ? 1 : 0);
+            }
+
+            // 判断非工作时间
+            if (track.getPssj() != null)
+            {
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTime(track.getPssj());
+                int hour = cal.get(java.util.Calendar.HOUR_OF_DAY);
+                singleEvent.setHasNonworktime((hour < 9 || hour >= 17) ? 1 : 0);
+            }
+
+            // 判断人数异常
+            Integer rysl = track.getRysl();
+            if (rysl != null && rysl > 0)
+            {
+                singleEvent.setHasAbnormalPerson((rysl < 2 || rysl >= 3) ? 1 : 0);
+            }
+
+            list.add(singleEvent);
+        }
+
+        // 按时间降序排序
+        list.sort((e1, e2) -> {
+            if (e1.getStartTime() == null && e2.getStartTime() == null) return 0;
+            if (e1.getStartTime() == null) return 1;
+            if (e2.getStartTime() == null) return -1;
+            return e2.getStartTime().compareTo(e1.getStartTime());
+        });
+
+        return getDataTable(list);
+    }
+
+    /**
      * 查询复合事件列表（不分页，用于导出等场景）
-     * 
+     *
      * @param appTrack 轨迹（用于时间筛选）
      * @return 复合事件列表
      */

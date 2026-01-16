@@ -255,34 +255,43 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             return;
         }
 
-        // 过滤掉"收物室"的轨迹 - 不参与复合事件计算
-        List<AppTrack> filteredTracks = new ArrayList<>();
+        // 按 eventGroup 分组轨迹 - eventGroup 为 null 或 0 的不参与复合事件计算
+        // 相同 eventGroup 的摄像头一起计算复合事件
+        Map<Integer, List<AppTrack>> groupedTracks = new HashMap<>();
         for (AppTrack track : windowTracks)
         {
             // 通过 qyid 查询对应的摄像头配置
             if (track.getQyid() != null)
             {
                 AppRoomip roomip = appRoomipMapper.selectAppRoomipById(track.getQyid());
-                // 如果 fjmc 不是"收物室"，则加入计算列表
-                if (roomip == null || !"收物室".equals(roomip.getFjmc()))
+                if (roomip != null)
                 {
-                    filteredTracks.add(track);
+                    Integer eventGroup = roomip.getEventGroup();
+                    // eventGroup 为 null 或 0 的不参与计算
+                    if (eventGroup != null && eventGroup > 0)
+                    {
+                        groupedTracks.computeIfAbsent(eventGroup, k -> new ArrayList<>()).add(track);
+                    }
                 }
-            }
-            else
-            {
-                // qyid 为空的轨迹保留
-                filteredTracks.add(track);
             }
         }
 
-        if (filteredTracks.isEmpty())
+        if (groupedTracks.isEmpty())
         {
             return;
         }
 
-        // 2. 使用30秒算法计算复合事件
-        List<CompositeEvent> newEvents = calculate30SecondCompositeEvents(filteredTracks);
+        // 2. 对每个分组使用30秒算法计算复合事件
+        List<CompositeEvent> newEvents = new ArrayList<>();
+        for (Map.Entry<Integer, List<AppTrack>> entry : groupedTracks.entrySet())
+        {
+            List<AppTrack> groupTracks = entry.getValue();
+            if (!groupTracks.isEmpty())
+            {
+                List<CompositeEvent> groupEvents = calculate30SecondCompositeEvents(groupTracks);
+                newEvents.addAll(groupEvents);
+            }
+        }
 
         // 3. 删除该时间窗口内的旧复合事件（通过关系表查询）
         for (AppTrack t : windowTracks)
@@ -351,34 +360,45 @@ public class CompositeEventServiceImpl implements ICompositeEventService
             return 0;
         }
 
-        // 过滤掉"收物室"的轨迹 - 不参与复合事件计算
-        List<AppTrack> filteredTracks = new ArrayList<>();
+        // 按 eventGroup 分组轨迹 - eventGroup 为 null 或 0 的不参与复合事件计算
+        // 相同 eventGroup 的摄像头一起计算复合事件
+        Map<Integer, List<AppTrack>> groupedTracks = new HashMap<>();
         for (AppTrack track : allTracks)
         {
             // 通过 qyid 查询对应的摄像头配置
             if (track.getQyid() != null)
             {
                 AppRoomip roomip = appRoomipMapper.selectAppRoomipById(track.getQyid());
-                // 如果 fjmc 不是"收物室"，则加入计算列表
-                if (roomip == null || !"收物室".equals(roomip.getFjmc()))
+                if (roomip != null)
                 {
-                    filteredTracks.add(track);
+                    Integer eventGroup = roomip.getEventGroup();
+                    // eventGroup 为 null 或 0 的不参与计算
+                    if (eventGroup != null && eventGroup > 0)
+                    {
+                        groupedTracks.computeIfAbsent(eventGroup, k -> new ArrayList<>()).add(track);
+                    }
                 }
-            }
-            else
-            {
-                // qyid 为空的轨迹保留
-                filteredTracks.add(track);
             }
         }
 
-        if (filteredTracks.isEmpty())
+        if (groupedTracks.isEmpty())
         {
             return 0;
         }
 
-        // 2. 使用30秒算法计算复合事件
-        List<CompositeEvent> events = calculate30SecondCompositeEvents(filteredTracks);
+        // 2. 对每个分组使用30秒算法计算复合事件
+        List<CompositeEvent> events = new ArrayList<>();
+        for (Map.Entry<Integer, List<AppTrack>> entry : groupedTracks.entrySet())
+        {
+            Integer groupId = entry.getKey();
+            List<AppTrack> groupTracks = entry.getValue();
+            if (!groupTracks.isEmpty())
+            {
+                System.out.println("处理分组 " + groupId + "，轨迹数量：" + groupTracks.size());
+                List<CompositeEvent> groupEvents = calculate30SecondCompositeEvents(groupTracks);
+                events.addAll(groupEvents);
+            }
+        }
 
         // 3. 清空旧数据（如果有时间范围限制，只删除该范围内的）
         if (appTrack != null && appTrack.getParams().get("beginPssj") != null)

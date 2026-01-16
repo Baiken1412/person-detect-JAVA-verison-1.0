@@ -16,10 +16,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="sblx"    column="sblx"    />
         <result property="gnslx"    column="gnslx"    />
         <result property="rtspssl"    column="rtspssl"    />
+        <result property="eventGroup"    column="event_group"    />
     </resultMap>
 
     <sql id="selectAppRoomipVo">
-        select id, fjmc, ip, dk, tdh, xh, zh, mm, sblx, gnslx, rtspssl from app_roomip
+        select id, fjmc, ip, dk, tdh, xh, zh, mm, sblx, gnslx, rtspssl, event_group from app_roomip
     </sql>
 
     <select id="selectAppRoomipList" parameterType="AppRoomip" resultMap="AppRoomipResult">
@@ -35,6 +36,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sblx != null  and sblx != ''"> and sblx = #{sblx}</if>
             <if test="gnslx != null  and gnslx != ''"> and gnslx = #{gnslx}</if>
             <if test="rtspssl != null  and rtspssl != ''"> and rtspssl = #{rtspssl}</if>
+            <if test="eventGroup != null"> and event_group = #{eventGroup}</if>
         </where>
     </select>
     
@@ -56,6 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sblx != null">sblx,</if>
             <if test="gnslx != null">gnslx,</if>
             <if test="rtspssl != null">rtspssl,</if>
+            <if test="eventGroup != null">event_group,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="fjmc != null">#{fjmc},</if>
@@ -68,6 +71,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sblx != null">#{sblx},</if>
             <if test="gnslx != null">#{gnslx},</if>
             <if test="rtspssl != null">#{rtspssl},</if>
+            <if test="eventGroup != null">#{eventGroup},</if>
          </trim>
     </insert>
 
@@ -84,6 +88,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sblx != null">sblx = #{sblx},</if>
             <if test="gnslx != null">gnslx = #{gnslx},</if>
             <if test="rtspssl != null">rtspssl = #{rtspssl},</if>
+            <if test="eventGroup != null">event_group = #{eventGroup},</if>
         </trim>
         where id = #{id}
     </update>

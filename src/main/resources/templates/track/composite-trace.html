@@ -803,7 +803,7 @@
             const node = document.getElementById('traceNode' + index);
             if (node) {
                 node.classList.add('active');
-                node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // 不再自动滚动到对应时间轴位置
             }
         }
 

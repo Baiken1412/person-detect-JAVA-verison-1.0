@@ -58,6 +58,10 @@ public class AppRoomip extends BaseEntity
     @Excel(name = "rtsp流")
     private String rtspssl;
 
+    /** 事件分组（null或0=不参与复合事件计算，相同数字的摄像头一起计算复合事件） */
+    @Excel(name = "事件分组")
+    private Integer eventGroup;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -158,6 +162,16 @@ public class AppRoomip extends BaseEntity
         return rtspssl;
     }
 
+    public void setEventGroup(Integer eventGroup)
+    {
+        this.eventGroup = eventGroup;
+    }
+
+    public Integer getEventGroup()
+    {
+        return eventGroup;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -172,6 +186,7 @@ public class AppRoomip extends BaseEntity
             .append("sblx", getSblx())
             .append("gnslx", getGnslx())
             .append("rtspssl", getRtspssl())
+            .append("eventGroup", getEventGroup())
             .toString();
     }
 }
