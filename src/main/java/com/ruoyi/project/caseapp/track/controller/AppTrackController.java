@@ -482,6 +482,9 @@ public class AppTrackController extends BaseController
         startPage();
         List<AppTrack> tracks = appTrackService.selectAppTrackList(appTrack);
 
+        // 先获取分页信息（在转换之前，此时 tracks 是 Page 对象，包含正确的 total）
+        TableDataInfo dataTable = getDataTable(tracks);
+
         // 将每条轨迹包装成单轨迹复合事件格式
         List<CompositeEvent> list = new ArrayList<>();
         for (AppTrack track : tracks)
@@ -544,7 +547,9 @@ public class AppTrackController extends BaseController
             return e2.getStartTime().compareTo(e1.getStartTime());
         });
 
-        return getDataTable(list);
+        // 使用原始的分页信息（total 正确），但替换 rows 为转换后的数据
+        dataTable.setRows(list);
+        return dataTable;
     }
 
     /**

@@ -210,7 +210,7 @@ hkpt:
   appSecret: REDACTED_APPSECRET
   #业务区业务中心编号
   baqbh: REDACTED_CENTER_CODE
-  #下载模式：1总部模式，2分支模式，3全局模式
+  #下载模式:OGPU，1CPU
   xzms: 1
 #场所视频存储
 csspcz:

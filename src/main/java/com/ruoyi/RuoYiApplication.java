@@ -22,7 +22,7 @@ public class RuoYiApplication
         // ==================== 许可证验证（已临时禁用） ====================
         // 注意：正式部署时请取消注释以启用许可证验证
 
-        /*System.out.println("正在验证许可证...");
+        System.out.println("正在验证许可证...");
         boolean isLicenseValid = LicenseValidator.validate();
 
         if (!isLicenseValid) {
@@ -37,7 +37,7 @@ public class RuoYiApplication
             return;
         }
         System.out.println("许可证验证通过，正在启动系统...");
-        System.out.println("========================================");*/
+        System.out.println("========================================");
 
         // ==================== 许可证验证结束 ====================
 

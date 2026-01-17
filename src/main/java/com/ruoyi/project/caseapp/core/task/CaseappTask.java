@@ -44,6 +44,8 @@ public class CaseappTask {
     private String appKey;
     @Value("${hkpt.appSecret}")
     private String appSecret;
+    @Value("${hkpt.xzms}")
+    private Integer xzms;
     private static final String FFMPEG_PATH = "ffmpeg";
     // 视频下载接口的地址/api/video/v1/cameras/playbackURLs
     String url = "/api/video/v1/cameras/playbackURLs";
@@ -96,35 +98,17 @@ public class CaseappTask {
                     System.out.println("警告：轨迹记录ID=" + track.getId() + " 的jssj为NULL，使用默认时长30秒");
                 }
 
-                // 视频截取时间调整：开始时间前5秒，结束时间后5秒
-                Date videoStartTime = kssjNew;
-                Date videoEndTime = jssjNew;
-
-                if (kssjNew != null) {
-                    Calendar calStart = Calendar.getInstance();
-                    calStart.setTime(kssjNew);
-                    calStart.add(Calendar.SECOND, -5);  // 开始时间前5秒
-                    videoStartTime = calStart.getTime();
-                }
-
-                if (jssjNew != null) {
-                    Calendar calEnd = Calendar.getInstance();
-                    calEnd.setTime(jssjNew);
-                    calEnd.add(Calendar.SECOND, 5);  // 结束时间后5秒
-                    videoEndTime = calEnd.getTime();
-                }
-
-                    map.put("kssj",videoStartTime);
-                    map.put("jssj",videoEndTime);
+                    map.put("kssj",kssjNew);
+                    map.put("jssj",jssjNew);
                     map.put("ip",appRoomip.getIp());
                     map.put("wjdz",wjdz);
                     map.put("wjmc",wjmc);
                     map.put("gpu",gpu % 2);
                     gpu++;
                     track.setJqzt("2");
-                    // 计算视频时长：使用调整后的时间（前5秒+后5秒），转换为秒
-                    if(videoStartTime != null && videoEndTime != null) {
-                        long durationMillis = videoEndTime.getTime() - videoStartTime.getTime();
+                    // 计算视频时长：jssjNew减去kssjNew，转换为秒
+                    if(kssjNew != null && jssjNew != null) {
+                        long durationMillis = jssjNew.getTime() - kssjNew.getTime();
                         long durationSeconds = durationMillis / 1000;
                         track.setSpsc(String.valueOf(durationSeconds));
                     }
@@ -173,26 +157,32 @@ public class CaseappTask {
     private Integer convertToMp4(Integer gpu, String urlrtsp, String wjmc) {
         int exitCode = 0;
         try {
-            //启用GPU
-            /*String[] command = {
-                    FFMPEG_PATH,
-                    "-err_detect", "ignore_err",
-                    "-y",
-                    "-hwaccel_device", String.valueOf(gpu),
-                    "-hwaccel", "cuda",
-                    "-i", urlrtsp,
-                    "-c:v", "h264_nvenc",wjmc
-            };*/
-            //启用CPU
-            String[] command = {
-                    FFMPEG_PATH,
-                    "-err_detect", "ignore_err",
-                    "-y",
-                    "-rtsp_transport", "tcp",
-                    "-i", urlrtsp,  // 输入RTSP流
-                    "-c:v", "libx264",  // 替换为CPU编码器
-                    wjmc  // 输出文件路径
-            };
+            String[] command;
+            // 根据配置选择GPU或CPU模式：0=GPU，1=CPU
+            if (xzms != null && xzms == 0) {
+                // 启用GPU
+                command = new String[]{
+                        FFMPEG_PATH,
+                        "-err_detect", "ignore_err",
+                        "-y",
+                        "-hwaccel_device", String.valueOf(gpu),
+                        "-hwaccel", "cuda",
+                        "-i", urlrtsp,
+                        "-c:v", "h264_nvenc",
+                        wjmc
+                };
+            } else {
+                // 启用CPU
+                command = new String[]{
+                        FFMPEG_PATH,
+                        "-err_detect", "ignore_err",
+                        "-y",
+                        "-rtsp_transport", "tcp",
+                        "-i", urlrtsp,  // 输入RTSP流
+                        "-c:v", "libx264",  // CPU编码器
+                        wjmc  // 输出文件路径
+                };
+            }
             ProcessBuilder processBuilder = new ProcessBuilder(command);
             processBuilder.inheritIO();
             Process process = processBuilder.start();
