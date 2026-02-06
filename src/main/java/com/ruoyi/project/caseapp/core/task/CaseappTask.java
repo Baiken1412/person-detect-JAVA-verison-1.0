@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Component("caseappTask")
 public class CaseappTask {
@@ -47,6 +48,8 @@ public class CaseappTask {
     @Value("${hkpt.xzms}")
     private Integer xzms;
     private static final String FFMPEG_PATH = "ffmpeg";
+    /** 单次转码最大等待时间（分钟），超时则终止 FFmpeg，避免卡死 */
+    private static final int CONVERT_TIMEOUT_MINUTES = 60;
     // 视频下载接口的地址/api/video/v1/cameras/playbackURLs
     String url = "/api/video/v1/cameras/playbackURLs";
 
@@ -86,16 +89,17 @@ public class CaseappTask {
                 Date kssjNew = track.getPssj();
                 Date jssjNew = track.getJssj();
 
-                // 保护逻辑：如果jssj为NULL，使用默认时长
-                // 这种情况通常发生在人员只被检测到一次，没有触发记录合并的情况
-                if (jssjNew == null && kssjNew != null) {
-                    Calendar cal = Calendar.getInstance();
-                    cal.setTime(kssjNew);
-                    // 默认截取30秒视频（可根据实际需求调整）
+                // 结束时间在原有基础上延后30秒；若jssj为NULL则用开始时间+30秒
+                Calendar cal = Calendar.getInstance();
+                if (jssjNew != null) {
+                    cal.setTime(jssjNew);
                     cal.add(Calendar.SECOND, 30);
                     jssjNew = cal.getTime();
-                    // 记录警告日志
-                    System.out.println("警告：轨迹记录ID=" + track.getId() + " 的jssj为NULL，使用默认时长30秒");
+                } else if (kssjNew != null) {
+                    cal.setTime(kssjNew);
+                    cal.add(Calendar.SECOND, 30);
+                    jssjNew = cal.getTime();
+                    System.out.println("警告：轨迹记录ID=" + track.getId() + " 的jssj为NULL，使用开始时间+30秒");
                 }
 
                     map.put("kssj",kssjNew);
@@ -131,7 +135,7 @@ public class CaseappTask {
                             // 根据调用接口返回的参数拿到返回的rtsp数据
                             String urlrtsp = hikVedioUtil.getContentByJson(result, "url");
                             if(urlrtsp!=null){
-                                urlrtsp = urlrtsp+"?beginTime="+kssj+"&endTime="+jssj;
+//                                urlrtsp = urlrtsp+"?beginTime="+kssj+"&endTime="+jssj;
                                 int exitCode = convertToMp4((int) map.get("gpu"),urlrtsp,(String) map.get("wjdz"));
                                 if(exitCode==0){
                                     track.setJqzt("1");
@@ -153,43 +157,76 @@ public class CaseappTask {
 
     /**
      * 视频转码
+     * 不同地点/摄像头可能编码格式、像素格式不一致，统一输出为 yuv420p 并固定 RTSP 走 TCP，避免花屏。
+     * 带超时与错误输出记录，避免 RTSP 断流或网络问题时进程卡死、中断原因难排查。
      * */
     private Integer convertToMp4(Integer gpu, String urlrtsp, String wjmc) {
-        int exitCode = 0;
+        int exitCode = -1;
+        Process process = null;
         try {
             String[] command;
-            // 根据配置选择GPU或CPU模式：0=GPU，1=CPU
             if (xzms != null && xzms == 0) {
-                // 启用GPU
-                command = new String[]{
-                        FFMPEG_PATH,
-                        "-err_detect", "ignore_err",
-                        "-y",
-                        "-hwaccel_device", String.valueOf(gpu),
-                        "-hwaccel", "cuda",
-                        "-i", urlrtsp,
-                        "-c:v", "h264_nvenc",
-                        wjmc
-                };
-            } else {
-                // 启用CPU
                 command = new String[]{
                         FFMPEG_PATH,
                         "-err_detect", "ignore_err",
                         "-y",
                         "-rtsp_transport", "tcp",
-                        "-i", urlrtsp,  // 输入RTSP流
-                        "-c:v", "libx264",  // CPU编码器
-                        wjmc  // 输出文件路径
+                        "-hwaccel_device", String.valueOf(gpu),
+                        "-hwaccel", "cuda",
+                        "-i", urlrtsp,
+                        "-c:v", "h264_nvenc",
+                        "-pix_fmt", "yuv420p",
+                        wjmc
+                };
+            } else {
+                command = new String[]{
+                        FFMPEG_PATH,
+                        "-err_detect", "ignore_err",
+                        "-y",
+                        "-rtsp_transport", "tcp",
+                        "-i", urlrtsp,
+                        "-c:v", "libx264",
+                        "-pix_fmt", "yuv420p",
+                        wjmc
                 };
             }
             ProcessBuilder processBuilder = new ProcessBuilder(command);
-            processBuilder.inheritIO();
-            Process process = processBuilder.start();
+            processBuilder.redirectErrorStream(true);
+            process = processBuilder.start();
+            final Process proc = process;
 
-            exitCode = process.waitFor();
+            // 消费 FFmpeg 输出，防止缓冲区满导致进程阻塞；失败时便于从日志排查
+            StringBuilder errLog = new StringBuilder();
+            Thread consume = new Thread(() -> {
+                try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(proc.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        errLog.append(line).append("\n");
+                    }
+                } catch (IOException ignored) {
+                }
+            }, "ffmpeg-stderr");
+            consume.setDaemon(true);
+            consume.start();
+
+            boolean finished = process.waitFor(CONVERT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+            if (!finished) {
+                process.destroyForcibly();
+                process.waitFor(5, TimeUnit.SECONDS);
+                System.err.println("视频转码超时(" + CONVERT_TIMEOUT_MINUTES + "分钟)，已终止: " + wjmc);
+                return -1;
+            }
+            exitCode = process.exitValue();
+            if (exitCode != 0 && errLog.length() > 0) {
+                System.err.println("FFmpeg 退出码=" + exitCode + ", 输出: " + errLog.substring(Math.max(0, errLog.length() - 2000)));
+            }
         } catch (Exception e) {
             e.printStackTrace();
+            if (process != null && process.isAlive()) {
+                process.destroyForcibly();
+            }
+            return -1;
         }
         return exitCode;
     }
