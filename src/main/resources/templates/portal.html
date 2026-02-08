@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>某地区政府机构资产视频分析平台</title>
+    <link th:href="@{/css/font-awesome.min.css?v=4.7.0}" rel="stylesheet"/>
+    <script src="../static/js/echarts.min.js" th:src="@{/js/echarts.min.js}"></script>
+    <script src="../static/js/beijing-map.js" th:src="@{/js/beijing-map.js}"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        /* ===== 粒子动画背景 ===== */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            animation: float linear infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        /* ===== 顶部大标题区 ===== */
+        .portal-header {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            padding: 50px 30px 45px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .portal-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .portal-header::after {
+            content: '';
+            position: absolute;
+            bottom: -40%;
+            left: -5%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(42,82,152,0.2) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .header-inner {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .portal-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 20px;
+            padding: 5px 18px;
+            font-size: 13px;
+            letter-spacing: 2px;
+            margin-bottom: 18px;
+            backdrop-filter: blur(4px);
+        }
+
+        .portal-header h1 {
+            font-size: 38px;
+            font-weight: 600;
+            letter-spacing: 4px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 12px;
+        }
+
+        .portal-header .subtitle {
+            font-size: 17px;
+            opacity: 0.9;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .portal-header .desc {
+            font-size: 14px;
+            opacity: 0.6;
+            letter-spacing: 1px;
+        }
+
+        /* ===== 全局统计概览 ===== */
+        .global-stats {
+            max-width: 1200px;
+            margin: -30px auto 0;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+
+        .g-stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 22px 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.3s;
+        }
+
+        .g-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+        }
+
+        .g-stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .g-stat-icon.blue { background: linear-gradient(135deg, #4c6ef5, #364fc7); }
+        .g-stat-icon.green { background: linear-gradient(135deg, #20c997, #12b886); }
+        .g-stat-icon.orange { background: linear-gradient(135deg, #ff9800, #f57c00); }
+        .g-stat-icon.purple { background: linear-gradient(135deg, #9775fa, #7c4dff); }
+
+        .g-stat-info h4 {
+            font-size: 13px;
+            color: #999;
+            font-weight: 400;
+            margin-bottom: 4px;
+        }
+
+        .g-stat-info .number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .g-stat-info .number span {
+            font-size: 14px;
+            color: #999;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+
+        /* ===== 分部卡片区 ===== */
+        .section-title {
+            max-width: 1200px;
+            margin: 40px auto 20px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .section-title .line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, #dee2e6, transparent);
+        }
+
+        .section-title .count-badge {
+            background: #2a5298;
+            color: white;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .bureau-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .bureau-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .bureau-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(42,82,152,0.18);
+            border-color: #2a5298;
+        }
+
+        .bureau-card:hover .card-header-bar {
+            background: linear-gradient(135deg, #2a5298, #1e3c72);
+        }
+
+        .card-header-bar {
+            background: linear-gradient(135deg, #203a43, #2c5364);
+            padding: 18px 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.3s;
+        }
+
+        .card-header-bar .bureau-icon {
+            width: 42px;
+            height: 42px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .card-header-bar .bureau-name {
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .card-header-bar .bureau-code {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
+
+        .card-body {
+            padding: 18px 20px;
+        }
+
+        .card-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .card-stat-item {
+            text-align: center;
+            padding: 10px 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .card-stat-item .val {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2a5298;
+        }
+
+        .card-stat-item .label {
+            font-size: 12px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .card-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 14px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .status-dot {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .status-dot::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #20c997;
+            display: inline-block;
+            animation: pulse-dot 2s infinite;
+        }
+
+        .status-dot.offline::before {
+            background: #dee2e6;
+            animation: none;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .enter-btn {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .enter-btn:hover {
+            background: #1e3c72;
+            transform: translateX(2px);
+        }
+
+        /* ===== 未接入卡片样式 ===== */
+        .bureau-card.not-connected {
+            cursor: default;
+            opacity: 0.6;
+            filter: grayscale(40%);
+        }
+
+        .bureau-card.not-connected:hover {
+            transform: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-color: transparent;
+        }
+
+        .bureau-card.not-connected:hover .card-header-bar {
+            background: linear-gradient(135deg, #6b7b8d, #8595a6);
+        }
+
+        .bureau-card.not-connected .card-header-bar {
+            background: linear-gradient(135deg, #6b7b8d, #8595a6);
+        }
+
+        .bureau-card.not-connected .card-stat-item .val {
+            color: #adb5bd;
+        }
+
+        .bureau-card.not-connected .enter-btn {
+            background: #adb5bd;
+            cursor: default;
+        }
+
+        .bureau-card.not-connected .enter-btn:hover {
+            background: #adb5bd;
+            transform: none;
+        }
+
+        /* 接入状态角标 */
+        .connect-badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            z-index: 1;
+        }
+
+        .connect-badge.online {
+            background: rgba(32, 201, 151, 0.2);
+            color: #20c997;
+            border: 1px solid rgba(32, 201, 151, 0.4);
+        }
+
+        .connect-badge.pending {
+            background: rgba(173, 181, 189, 0.2);
+            color: #868e96;
+            border: 1px solid rgba(173, 181, 189, 0.4);
+        }
+
+        /* 已接入卡片的强调边框 */
+        .bureau-card.connected {
+            border: 2px solid rgba(32, 201, 151, 0.3);
+        }
+
+        .bureau-card.connected:hover {
+            border-color: #2a5298;
+        }
+
+        /* ===== 某政府机构（总部）特殊样式 ===== */
+        .card-header-bar.hq {
+            background: linear-gradient(135deg, #1a237e, #283593) !important;
+        }
+
+        .bureau-card.connected:hover .card-header-bar.hq {
+            background: linear-gradient(135deg, #0d47a1, #1565c0) !important;
+        }
+
+        .card-header-bar.hq .bureau-icon {
+            background: rgba(255, 215, 0, 0.25);
+            color: #ffd700;
+        }
+
+        /* ===== 底部 ===== */
+        .portal-footer {
+            background: #2c3e50;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 24px 20px;
+            margin-top: 50px;
+            font-size: 14px;
+        }
+
+        .portal-footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .portal-footer .footer-links {
+            margin-bottom: 10px;
+        }
+
+        .portal-footer .footer-links a {
+            margin: 0 15px;
+            font-size: 13px;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .portal-footer .footer-links a:hover {
+            opacity: 1;
+        }
+
+        /* ===== 搜索栏 ===== */
+        .search-bar {
+            max-width: 1200px;
+            margin: 30px auto 0;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            max-width: 360px;
+            padding: 10px 16px 10px 40px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 14px center no-repeat;
+            transition: all 0.3s;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 0 4px rgba(42,82,152,0.1);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 4px;
+            background: white;
+            border-radius: 8px;
+            padding: 4px;
+            border: 2px solid #dee2e6;
+        }
+
+        .view-toggle button {
+            padding: 8px 14px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #666;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .view-toggle button.active {
+            background: #2a5298;
+            color: white;
+        }
+
+        /* ===== 地图视图 ===== */
+        .map-view {
+            max-width: 1200px;
+            margin: 20px auto 0;
+            padding: 0 20px;
+            display: none;
+        }
+
+        .map-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #bjMap {
+            width: 100%;
+            height: 620px;
+        }
+
+        .map-legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 8px;
+            padding: 12px 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 13px;
+            z-index: 10;
+        }
+
+        .map-legend .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .map-legend .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .map-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            z-index: 20;
+            transition: opacity 0.3s;
+        }
+
+        .map-loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .map-loading i {
+            font-size: 32px;
+            color: #2a5298;
+            animation: spin 1s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .map-loading p {
+            font-size: 14px;
+            color: #999;
+        }
+
+        /* ===== 卡片视图包装 ===== */
+        .card-view { display: block; }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 1024px) {
+            .bureau-grid { grid-template-columns: repeat(3, 1fr); }
+            .global-stats { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .bureau-grid { grid-template-columns: repeat(2, 1fr); }
+            .portal-header h1 { font-size: 28px; }
+            .portal-header { padding: 35px 20px; }
+        }
+
+        @media (max-width: 480px) {
+            .bureau-grid { grid-template-columns: 1fr; }
+            .global-stats { grid-template-columns: 1fr; }
+            .portal-header h1 { font-size: 22px; letter-spacing: 2px; }
+        }
+
+        /* ===== 加载动画 ===== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bureau-card {
+            animation: fadeInUp 0.5s ease-out both;
+        }
+
+        .bureau-card:nth-child(1)  { animation-delay: 0.05s; }
+        .bureau-card:nth-child(2)  { animation-delay: 0.10s; }
+        .bureau-card:nth-child(3)  { animation-delay: 0.15s; }
+        .bureau-card:nth-child(4)  { animation-delay: 0.20s; }
+        .bureau-card:nth-child(5)  { animation-delay: 0.25s; }
+        .bureau-card:nth-child(6)  { animation-delay: 0.30s; }
+        .bureau-card:nth-child(7)  { animation-delay: 0.35s; }
+        .bureau-card:nth-child(8)  { animation-delay: 0.40s; }
+        .bureau-card:nth-child(9)  { animation-delay: 0.45s; }
+        .bureau-card:nth-child(10) { animation-delay: 0.50s; }
+        .bureau-card:nth-child(11) { animation-delay: 0.55s; }
+        .bureau-card:nth-child(12) { animation-delay: 0.60s; }
+        .bureau-card:nth-child(13) { animation-delay: 0.65s; }
+        .bureau-card:nth-child(14) { animation-delay: 0.70s; }
+        .bureau-card:nth-child(15) { animation-delay: 0.75s; }
+        .bureau-card:nth-child(16) { animation-delay: 0.80s; }
+    </style>
+</head>
+<body>
+
+<!-- 粒子动画背景 -->
+<div class="particles" id="particles"></div>
+
+<!-- ===== 顶部 ===== -->
+<div class="portal-header">
+    <div class="header-inner">
+        <div class="portal-badge">BEIJING PUBLIC SECURITY BUREAU</div>
+        <h1>某地区政府机构资产视频分析平台</h1>
+        <p class="subtitle">人员活动自动识别与追溯管理系统 - 总控中心</p>
+        <p class="desc">实时监控 &middot; 智能分析 &middot; 统一管理 &middot; 全局掌控</p>
+    </div>
+</div>
+
+<!-- ===== 全局统计 ===== -->
+<div class="global-stats">
+    <div class="g-stat-card">
+        <div class="g-stat-icon blue"><i class="fa fa-building"></i></div>
+        <div class="g-stat-info">
+            <h4>接入单位</h4>
+            <div class="number">5<span> / 17</span></div>
+        </div>
+    </div>
+    <div class="g-stat-card">
+        <div class="g-stat-icon green"><i class="fa fa-video-camera"></i></div>
+        <div class="g-stat-info">
+            <h4>已接入点位</h4>
+            <div class="number">276<span>路</span></div>
+        </div>
+    </div>
+    <div class="g-stat-card">
+        <div class="g-stat-icon orange"><i class="fa fa-bell"></i></div>
+        <div class="g-stat-info">
+            <h4>今日告警事件</h4>
+            <div class="number">59<span>条</span></div>
+        </div>
+    </div>
+    <div class="g-stat-card">
+        <div class="g-stat-icon purple"><i class="fa fa-check-circle"></i></div>
+        <div class="g-stat-info">
+            <h4>已标注事件</h4>
+            <div class="number">89.6<span>%</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 搜索与视图切换 ===== -->
+<div class="search-bar">
+    <input type="text" id="searchInput" placeholder="搜索分部名称..." oninput="filterBureaus()">
+    <div class="view-toggle">
+        <button class="active" onclick="switchView('card', this)"><i class="fa fa-th-large"></i> 卡片</button>
+        <button onclick="switchView('map', this)"><i class="fa fa-map-marker"></i> 地图</button>
+    </div>
+</div>
+
+<!-- ===== 分部区域标题 ===== -->
+<div class="section-title">
+    <h2><i class="fa fa-shield" style="color:#2a5298; margin-right:8px;"></i>总部及分支机构一览</h2>
+    <div class="line"></div>
+    <div class="count-badge">已接入 5 / 17 个单位</div>
+</div>
+
+<!-- ===== 卡片视图 ===== -->
+<div class="card-view" id="cardView">
+    <div class="bureau-grid" id="bureauGrid">
+        <!-- 16个分支机构卡片 -->
+    </div>
+</div>
+
+<!-- ===== 地图视图 ===== -->
+<div class="map-view" id="mapView">
+    <div class="map-container">
+        <div class="map-loading" id="mapLoading">
+            <i class="fa fa-spinner"></i>
+            <p>正在加载区域行政区划数据...</p>
+        </div>
+        <div id="bjMap"></div>
+        <div class="map-legend">
+            <div class="legend-item">
+                <div class="legend-dot" style="background:#2a5298;"></div>
+                <span>已接入（可点击进入）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:#d0d5dd;"></div>
+                <span>未接入</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:#ffd700; border:1px solid #e6c200;"></div>
+                <span>某政府机构</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 底部 ===== -->
+<div class="portal-footer">
+    <div class="footer-links">
+        <a href="#">平台使用说明</a>
+        <a href="#">系统运维管理</a>
+        <a href="#">联系技术支持</a>
+    </div>
+    <p>&copy; 2025 某地区政府机构 &middot; 资产视频分析平台 &middot; 技术支持：某科技公司</p>
+</div>
+
+<script>
+    // ===== 分部数据 =====
+    var bureauData = [
+        // ===== 已接入（排在前面） =====
+        { name: '某政府机构',   code: 'DEMOAGENCY', cameras: 36,  todayEvents: 10, annotated: 93, connected: true },
+        { name: '某区域01分部', code: 'RG01', cameras: 62,  todayEvents: 15, annotated: 95, connected: true },
+        { name: '某区域02分部',   code: 'RG02',  cameras: 84,  todayEvents: 22, annotated: 89, connected: true },
+        { name: '某区域03分部',   code: 'RG03',  cameras: 49,  todayEvents: 4,  annotated: 94, connected: true },
+        { name: '某区域04分部', code: 'RG04', cameras: 45,  todayEvents: 8,  annotated: 97, connected: true },
+        // ===== 未接入 =====
+        { name: '某区域05分部',   code: 'RG05',  cameras: 96,  todayEvents: 0, annotated: 0, connected: false },
+        { name: '某区域06分部',   code: 'RG06',  cameras: 102, todayEvents: 0, annotated: 0, connected: false },
+        { name: '某区域07分部',   code: 'RG07',  cameras: 156, todayEvents: 0, annotated: 0, connected: false },
+        { name: '某区域08分部',   code: 'RG08',  cameras: 134, todayEvents: 0, annotated: 0, connected: false },
+        { name: '某区域09分部',   code: 'RG09',  cameras: 88,  todayEvents: 0, annotated: 0, connected: false },
+        { name: '某区域10分部',   code: 'RG10',  cameras: 72,  todayEvents: 0, annotated: 0, connected: false },
+        { name: '某区域11分部',   code: 'RG11',  cameras: 98,  todayEvents: 0, annotated: 0, connected: false },
+        { name: '某区域12分部',   code: 'RG12',  cameras: 76,  todayEvents: 0, annotated: 0, connected: false },
+        { name: '某区域13分部',   code: 'RG13',  cameras: 90,  todayEvents: 0, annotated: 0, connected: false },
+        { name: '某区域14分部',   code: 'RG14',  cameras: 38,  todayEvents: 0, annotated: 0, connected: false },
+        { name: '某区域15分部',   code: 'RG15',  cameras: 42,  todayEvents: 0, annotated: 0, connected: false },
+        { name: '某区域16分部',   code: 'RG16',  cameras: 52,  todayEvents: 0, annotated: 0, connected: false }
+    ];
+
+    // ===== 渲染分部卡片 =====
+    function renderBureaus(data) {
+        var grid = document.getElementById('bureauGrid');
+        grid.innerHTML = '';
+        data.forEach(function(b, i) {
+            var card = document.createElement('div');
+            var isConnected = b.connected;
+            card.className = 'bureau-card ' + (isConnected ? 'connected' : 'not-connected');
+            card.style.animationDelay = (i * 0.05 + 0.05) + 's';
+
+            if (isConnected) {
+                card.onclick = function() { enterBureau(b.code, b.name); };
+            }
+
+            // 角标
+            var badgeHtml = isConnected
+                ? '<div class="connect-badge online">已接入</div>'
+                : '<div class="connect-badge pending">未接入</div>';
+
+            // 数据区：未接入显示 "--"
+            var camerasVal  = isConnected ? b.cameras : '--';
+            var eventsVal   = isConnected ? b.todayEvents : '--';
+            var annotateVal = isConnected ? b.annotated + '%' : '--';
+            var triggerVal  = isConnected ? (b.cameras > 0 ? Math.floor(b.todayEvents / b.cameras * 100) : 0) + '%' : '--';
+
+            // 状态与按钮
+            var statusHtml = isConnected
+                ? '<div class="status-dot">在线运行中</div>' +
+                  '<button class="enter-btn">进入 <i class="fa fa-arrow-right"></i></button>'
+                : '<div class="status-dot offline">待接入</div>' +
+                  '<button class="enter-btn" onclick="event.stopPropagation()">敬请期待</button>';
+
+            // 总部用星标图标 + 金色高亮，分部用盾牌图标
+            var isHQ = (b.code === 'DEMOAGENCY');
+            var iconClass = isHQ ? 'fa fa-star' : 'fa fa-shield';
+            var headerExtra = isHQ ? ' hq' : '';
+
+            card.innerHTML =
+                badgeHtml +
+                '<div class="card-header-bar' + headerExtra + '">' +
+                    '<div class="bureau-icon"><i class="' + iconClass + '"></i></div>' +
+                    '<div>' +
+                        '<div class="bureau-name">' + b.name + '</div>' +
+                        '<div class="bureau-code">' + b.code + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="card-body">' +
+                    '<div class="card-stats">' +
+                        '<div class="card-stat-item">' +
+                            '<div class="val">' + camerasVal + '</div>' +
+                            '<div class="label">监控点位</div>' +
+                        '</div>' +
+                        '<div class="card-stat-item">' +
+                            '<div class="val">' + eventsVal + '</div>' +
+                            '<div class="label">今日事件</div>' +
+                        '</div>' +
+                        '<div class="card-stat-item">' +
+                            '<div class="val">' + annotateVal + '</div>' +
+                            '<div class="label">标注率</div>' +
+                        '</div>' +
+                        '<div class="card-stat-item">' +
+                            '<div class="val">' + triggerVal + '</div>' +
+                            '<div class="label">触发率</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="card-status">' + statusHtml + '</div>' +
+                '</div>';
+            grid.appendChild(card);
+        });
+    }
+
+    // ===== 搜索过滤 =====
+    function filterBureaus() {
+        var keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+        if (!keyword) {
+            renderBureaus(bureauData);
+            return;
+        }
+        var filtered = bureauData.filter(function(b) {
+            return b.name.toLowerCase().indexOf(keyword) !== -1 || b.code.toLowerCase().indexOf(keyword) !== -1;
+        });
+        renderBureaus(filtered);
+    }
+
+    // ===== 视图切换 =====
+    var mapInited = false;
+    function switchView(view, btn) {
+        var btns = document.querySelectorAll('.view-toggle button');
+        btns.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+
+        document.getElementById('cardView').style.display = view === 'card' ? 'block' : 'none';
+        document.getElementById('mapView').style.display = view === 'map' ? 'block' : 'none';
+
+        // 首次切换到地图时加载
+        if (view === 'map' && !mapInited) {
+            mapInited = true;
+            initBjMap();
+        }
+        // 地图 resize
+        if (view === 'map' && window._bjMapChart) {
+            window._bjMapChart.resize();
+        }
+    }
+
+    // ===== 进入分部 =====
+    function enterBureau(code, name) {
+        window.location.href = '/sy?bureauCode=' + encodeURIComponent(code) + '&bureauName=' + encodeURIComponent(name);
+    }
+
+    // ===== 区名 → 分部数据映射 =====
+    var districtToBureau = {
+        '某区域05': 'RG05',  '某区域06': 'RG06',  '某区域07': 'RG07',
+        '某区域08': 'RG08',  '某区域09': 'RG09',  '某区域01': 'RG01',
+        '某区域04': 'RG04','某区域10': 'RG10',  '某区域11': 'RG11',
+        '某区域12': 'RG12',  '某区域02': 'RG02',  '某区域13': 'RG13',
+        '某区域14': 'RG14',  '某区域15': 'RG15',  '某区域16': 'RG16',
+        '某区域03': 'RG03'
+    };
+
+    // 通过 code 查分部数据
+    function getBureauByCode(code) {
+        for (var i = 0; i < bureauData.length; i++) {
+            if (bureauData[i].code === code) return bureauData[i];
+        }
+        return null;
+    }
+
+    // ===== 总部标记点坐标（市中心附近代表总部） =====
+    var hqPoint = { lng: 116.403, lat: 39.915 };
+
+    // ===== 脚本加载辅助 =====
+    function loadScriptFallback(srcList, cb) {
+        var idx = 0;
+        function tryNext() {
+            if (idx >= srcList.length) {
+                if (cb) cb(new Error('load failed'));
+                return;
+            }
+            var src = srcList[idx++];
+            if (document.querySelector('script[data-src="' + src + '"]')) {
+                if (cb) cb();
+                return;
+            }
+            var s = document.createElement('script');
+            s.src = src;
+            s.setAttribute('data-src', src);
+            s.onload = function() { if (cb) cb(); };
+            s.onerror = function() { tryNext(); };
+            document.head.appendChild(s);
+        }
+        tryNext();
+    }
+
+    // ===== ECharts 北京地图初始化 =====
+    function initBjMap() {
+        var loadingEl = document.getElementById('mapLoading');
+        try {
+            if (!window.echarts) {
+                // 直接打开 HTML 时，路径以 templates 为基准
+                loadScriptFallback(['../static/js/echarts.min.js', 'js/echarts.min.js'], function(err) {
+                    if (err) {
+                        loadingEl.innerHTML = '<i class="fa fa-exclamation-triangle" style="animation:none;color:#ff6b6b;"></i><p>地图初始化失败: echarts 未加载</p>';
+                        return;
+                    }
+                    initBjMap();
+                });
+                return;
+            }
+            if (!window.BEIJING_GEO_JSON) {
+                loadScriptFallback(['../static/js/beijing-map.js', 'js/beijing-map.js'], function(err) {
+                    if (err) {
+                        loadingEl.innerHTML = '<i class="fa fa-exclamation-triangle" style="animation:none;color:#ff6b6b;"></i><p>地图初始化失败: 地图数据未加载</p>';
+                        return;
+                    }
+                    initBjMap();
+                });
+                return;
+            }
+            echarts.registerMap('beijing', BEIJING_GEO_JSON);
+            renderMap();
+            loadingEl.classList.add('hidden');
+        } catch(err) {
+            console.error('地图初始化失败:', err);
+            loadingEl.innerHTML = '<i class="fa fa-exclamation-triangle" style="animation:none;color:#ff6b6b;"></i><p>地图初始化失败: ' + err.message + '</p>';
+        }
+    }
+
+    function renderMap() {
+        var chart = echarts.init(document.getElementById('bjMap'));
+        window._bjMapChart = chart;
+
+        // 构建区域颜色数据
+        var mapData = [];
+        var connectedCodes = {};
+        bureauData.forEach(function(b) {
+            if (b.connected) connectedCodes[b.code] = b;
+        });
+
+        Object.keys(districtToBureau).forEach(function(district) {
+            var code = districtToBureau[district];
+            var bureau = getBureauByCode(code);
+            var isConn = bureau && bureau.connected;
+            mapData.push({
+                name: district,
+                value: isConn ? 1 : 0,
+                bureauCode: code,
+                bureauName: bureau ? bureau.name : district,
+                connected: isConn,
+                cameras: bureau ? bureau.cameras : 0,
+                todayEvents: bureau ? bureau.todayEvents : 0,
+                annotated: bureau ? bureau.annotated : 0
+            });
+        });
+
+        // 已接入区域的散点标记（区域中心）
+        var connectedScatter = [];
+        var notConnectedScatter = [];
+        mapData.forEach(function(d) {
+            // 用 ECharts geo 坐标转换，先不加散点（区域着色已足够区分）
+        });
+
+        var option = {
+            backgroundColor: '#f8fafc',
+            title: {
+                text: '各区域监控接入分布',
+                subtext: '点击已接入区域可直接进入对应分部',
+                left: 'center',
+                top: 15,
+                textStyle: {
+                    color: '#2c3e50',
+                    fontSize: 18,
+                    fontWeight: 600,
+                    fontFamily: 'Microsoft YaHei'
+                },
+                subtextStyle: {
+                    color: '#999',
+                    fontSize: 13
+                }
+            },
+            tooltip: {
+                trigger: 'item',
+                backgroundColor: 'rgba(255,255,255,0.96)',
+                borderColor: '#dee2e6',
+                borderWidth: 1,
+                padding: [12, 16],
+                textStyle: {
+                    color: '#333',
+                    fontSize: 13,
+                    fontFamily: 'Microsoft YaHei'
+                },
+                formatter: function(params) {
+                    var d = params.data;
+                    if (!d) return params.name;
+                    if (d.connected) {
+                        return '<div style="font-weight:600;font-size:15px;margin-bottom:8px;color:#2a5298;">' +
+                            '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#20c997;margin-right:6px;"></span>' +
+                            d.bureauName + ' <span style="font-size:12px;color:#20c997;">已接入</span></div>' +
+                            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:13px;">' +
+                            '<div>监控点位：<b>' + d.cameras + '</b> 路</div>' +
+                            '<div>今日事件：<b>' + d.todayEvents + '</b> 条</div>' +
+                            '<div>标注率：<b>' + d.annotated + '%</b></div>' +
+                            '<div style="color:#2a5298;cursor:pointer;">点击进入 →</div>' +
+                            '</div>';
+                    } else {
+                        return '<div style="font-weight:600;font-size:15px;margin-bottom:4px;color:#868e96;">' +
+                            '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#dee2e6;margin-right:6px;"></span>' +
+                            d.bureauName + ' <span style="font-size:12px;color:#adb5bd;">未接入</span></div>' +
+                            '<div style="color:#adb5bd;font-size:13px;">该分部尚未接入系统</div>';
+                    }
+                }
+            },
+            // 总部标记点
+            geo: {
+                map: 'beijing',
+                roam: true,
+                zoom: 1.15,
+                center: [116.4, 40.2],
+                scaleLimit: { min: 0.8, max: 5 },
+                label: {
+                    show: true,
+                    fontSize: 11,
+                    color: '#666',
+                    fontFamily: 'Microsoft YaHei',
+                    formatter: function(params) {
+                        // 简写区名
+                        return params.name.replace('区', '');
+                    }
+                },
+                emphasis: {
+                    label: {
+                        fontSize: 13,
+                        fontWeight: 'bold',
+                        color: '#fff'
+                    },
+                    itemStyle: {
+                        areaColor: '#2a5298',
+                        shadowBlur: 20,
+                        shadowColor: 'rgba(42,82,152,0.4)'
+                    }
+                },
+                itemStyle: {
+                    borderColor: '#fff',
+                    borderWidth: 2
+                },
+                regions: (function() {
+                    var regions = [];
+                    Object.keys(districtToBureau).forEach(function(district) {
+                        var code = districtToBureau[district];
+                        var bureau = getBureauByCode(code);
+                        var isConn = bureau && bureau.connected;
+                        regions.push({
+                            name: district,
+                            itemStyle: {
+                                areaColor: isConn ? '#2a5298' : '#e9ecef',
+                                opacity: isConn ? 0.85 : 0.6
+                            },
+                            label: {
+                                color: isConn ? '#fff' : '#999'
+                            },
+                            emphasis: {
+                                itemStyle: {
+                                    areaColor: isConn ? '#1e3c72' : '#ced4da'
+                                },
+                                label: {
+                                    color: isConn ? '#fff' : '#666'
+                                }
+                            }
+                        });
+                    });
+                    return regions;
+                })()
+            },
+            series: [
+                // 某政府机构标记点
+                {
+                    type: 'scatter',
+                    coordinateSystem: 'geo',
+                    symbol: 'pin',
+                    symbolSize: 36,
+                    itemStyle: {
+                        color: '#ffd700',
+                        borderColor: '#e6ac00',
+                        borderWidth: 1,
+                        shadowBlur: 8,
+                        shadowColor: 'rgba(255,215,0,0.4)'
+                    },
+                    label: {
+                        show: true,
+                        formatter: '总部',
+                        color: '#7a6400',
+                        fontSize: 9,
+                        fontWeight: 'bold',
+                        offset: [0, -2]
+                    },
+                    data: [{
+                        name: '某政府机构',
+                        value: [hqPoint.lng, hqPoint.lat, 1]
+                    }],
+                    tooltip: {
+                        formatter: function() {
+                            var hq = getBureauByCode('DEMOAGENCY');
+                            return '<div style="font-weight:600;font-size:15px;margin-bottom:8px;color:#1a237e;">' +
+                                '<span style="color:#ffd700;">★</span> 某地区政府机构 <span style="font-size:12px;color:#20c997;">已接入</span></div>' +
+                                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:13px;">' +
+                                '<div>监控点位：<b>' + (hq ? hq.cameras : '--') + '</b> 路</div>' +
+                                '<div>今日事件：<b>' + (hq ? hq.todayEvents : '--') + '</b> 条</div>' +
+                                '<div>标注率：<b>' + (hq ? hq.annotated + '%' : '--') + '</b></div>' +
+                                '<div style="color:#2a5298;">点击进入 →</div></div>';
+                        }
+                    },
+                    z: 10
+                }
+            ]
+        };
+
+        chart.setOption(option);
+
+        // 点击区域 → 进入分部
+        chart.on('click', function(params) {
+            // 点击总部标记点
+            if (params.seriesType === 'scatter' && params.name === '某政府机构') {
+                enterBureau('DEMOAGENCY', '某政府机构');
+                return;
+            }
+            // 点击区域
+            var code = districtToBureau[params.name];
+            if (code) {
+                var bureau = getBureauByCode(code);
+                if (bureau && bureau.connected) {
+                    enterBureau(bureau.code, bureau.name);
+                }
+            }
+        });
+
+        // 响应窗口缩放
+        window.addEventListener('resize', function() {
+            chart.resize();
+        });
+    }
+
+    // ===== 粒子动画 =====
+    function createParticles() {
+        var container = document.getElementById('particles');
+        for (var i = 0; i < 30; i++) {
+            var p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDuration = (Math.random() * 10 + 10) + 's';
+            p.style.animationDelay = (Math.random() * 10) + 's';
+            p.style.width = (Math.random() * 2 + 1) + 'px';
+            p.style.height = p.style.width;
+            container.appendChild(p);
+        }
+    }
+
+    // ===== 初始化 =====
+    createParticles();
+    renderBureaus(bureauData);
+</script>
+
+</body>
+</html>
