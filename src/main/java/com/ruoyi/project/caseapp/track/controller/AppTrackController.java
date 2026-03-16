@@ -650,13 +650,24 @@ public class AppTrackController extends BaseController
 
     /**
      * 跳转到事件经过还原（复合事件）页面
-     * 
+     *
      * @return 页面路径
      */
     @GetMapping("/compositeTrace")
     public String compositeTrace()
     {
         return prefix + "/composite-trace";
+    }
+
+    /**
+     * 跳转到预警规则说明页面
+     *
+     * @return 页面路径
+     */
+    @GetMapping("/warningRules")
+    public String warningRules()
+    {
+        return prefix + "/warning-rules";
     }
 
     /**

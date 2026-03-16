@@ -433,6 +433,9 @@
             <button onclick="goToShelfTrajectory()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
                 <i class="fa fa-cube"></i> 货位位置查询
             </button>
+            <button onclick="window.open('/caseapp/track/warningRules','_blank')" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                <i class="fa fa-shield"></i> 预警规则
+            </button>
             <a th:href="@{/logout}" class="logout-button">
                 <i class="fa fa-sign-out"></i> 退出登录
             </a>
@@ -488,7 +491,6 @@
             <label for="specialFilter"><i class="fa fa-warning"></i> 特殊筛选：</label>
             <select id="specialFilter" class="form-control noselect2" multiple>
                 <option value="nonWorktime">非工作时间提示</option>
-                <option value="abnormalPerson">人员异常数量</option>
                 <option value="longTrack">轨迹时间过长</option>
             </select>
         </div>
@@ -903,17 +905,11 @@
         return (!event.rysl || event.rysl < 1) ? false : true;
     }
 
-    function isAbnormalPersonCount(event) {
-        if (!event.rysl || event.rysl === 0) return false;
-        return event.rysl < 2 || event.rysl >= 3;
-    }
-
     function filterEventsBySpecial(events, specialFilters) {
         if (!specialFilters || specialFilters.length === 0) return events;
         return events.filter(event => {
             let matches = false;
             if (specialFilters.includes('nonWorktime') && isNonWorktimeWarning(event)) matches = true;
-            if (specialFilters.includes('abnormalPerson') && isAbnormalPersonCount(event)) matches = true;
             if (specialFilters.includes('longTrack') && event.isLongTrack === 1) matches = true;
             return matches;
         });
@@ -951,12 +947,11 @@
         const eventsToRender = append && newEvents ? newEvents : events;
         const eventsHTML = eventsToRender.map(event => {
             const isNonWorktime = isNonWorktimeWarning(event);
-            const isAbnormal = isAbnormalPersonCount(event);
 
             // 使用数据库中保存的 isLongTrack 字段（已经由后端计算好）
             const isLongTrack = event.isLongTrack === 1;
 
-            const warningClass = (isNonWorktime || isAbnormal || isLongTrack) ? 'worktime-warning' : '';
+            const warningClass = (isNonWorktime || isLongTrack) ? 'worktime-warning' : '';
 
             // 构建跳转URL，带上复合事件ID
             const detailUrl = `/caseapp/track/detail/${event.trackId}?compositeId=${event.compositeId}`;
@@ -969,8 +964,7 @@
                     </div>
                     <div class="event-info">
                         <div class="event-time">${event.time}</div>
-                        <div class="event-location">${event.area} ${event.rysl ? `（${event.rysl}人）` : ''}</div>
-                        ${isAbnormal ? `<div class="worktime-warning-badge" style="background: #e74c3c;"><i class="fa fa-warning"></i> 人员数量异常</div>` : ''}
+                        <div class="event-location">${event.area}</div>
                         ${isNonWorktime ? `<div class="worktime-warning-badge" style="background: #ff9800;"><i class="fa fa-warning"></i> 非工作时间</div>` : ''}
                         ${isLongTrack ? `<div class="worktime-warning-badge" style="background: #9b59b6;"><i class="fa fa-clock-o"></i> 轨迹时间过长</div>` : ''}
                         ${event.status === 'labeled' ? `

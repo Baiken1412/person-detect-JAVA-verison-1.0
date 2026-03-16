@@ -647,23 +647,17 @@
                         isNonWorktime = (hour < 9 || hour >= 17);
                     }
 
-                    // 检查人员异常（<2人或≥3人）
-                    const isAbnormalPerson = e.rysl > 0 && (e.rysl < 2 || e.rysl >= 3);
-
                     // 生成警告标签
                     const warningTags = [];
                     if (isNonWorktime) {
                         warningTags.push('<span style="background: #ff9800; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px; margin-left: 4px;"><i class="fa fa-warning"></i> 非工作时间</span>');
-                    }
-                    if (isAbnormalPerson) {
-                        warningTags.push('<span style="background: #e74c3c; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px; margin-left: 4px;"><i class="fa fa-warning"></i> 人数异常</span>');
                     }
 
                     return `
                         <div class="trace-node ${i === 0 ? 'active' : ''}" id="traceNode${i}" onclick="playTraceVideo(${i}, true)">
                             ${duration ? `<div class="trace-duration"><i class="fa fa-clock-o"></i> 间隔 ${duration}</div>` : ''}
                             <div class="trace-time">${e.time}</div>
-                            <div class="trace-area">📍 ${e.area} ${e.rysl ? `(${e.rysl}人)` : ''}${warningTags.join('')}</div>
+                            <div class="trace-area">📍 ${e.area}${warningTags.join('')}</div>
                         </div>
                     `;
                 }).join('');

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>预警规则说明 - 资产视频分析插件</title>
+    <link th:href="@{/css/font-awesome.min.css?v=4.7.0}" rel="stylesheet"/>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 0 30px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .header-left img { height: 40px; }
+        .header-left h1 { font-size: 18px; font-weight: bold; }
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid white;
+            color: white;
+            padding: 8px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.35); }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px 60px;
+        }
+        .page-title {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .page-title h2 { font-size: 24px; margin-bottom: 8px; }
+        .page-title p { font-size: 13px; color: rgba(255,255,255,0.6); }
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 28px 32px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .rule-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .rule-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .rule-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: white;
+            font-weight: bold;
+            white-space: nowrap;
+            min-width: 90px;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .rule-content { flex: 1; }
+        .rule-content h4 { font-size: 14px; color: #2c3e50; margin-bottom: 6px; }
+        .rule-content p { font-size: 13px; color: #555; line-height: 1.7; }
+        .rule-content .example {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-left: 3px solid #dee2e6;
+            border-radius: 0 4px 4px 0;
+            font-size: 12px;
+            color: #666;
+        }
+        .note-box {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 6px;
+            padding: 14px 18px;
+            font-size: 13px;
+            color: #795548;
+            line-height: 1.7;
+        }
+        .note-box i { color: #f59f00; margin-right: 6px; }
+        .update-info {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="header-left">
+        <img src="/图片1.png" alt="Logo" onerror="this.style.display='none'">
+        <h1>资产视频分析插件</h1>
+    </div>
+    <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-left"></i> 返回</a>
+</div>
+
+<div class="container">
+    <div class="page-title">
+        <h2><i class="fa fa-shield"></i> 预警规则说明</h2>
+        <p>本文档说明系统当前使用的预警判定标准，供人员查阅与核查使用</p>
+    </div>
+
+    <div class="section">
+        <div class="section-title"><i class="fa fa-warning" style="color:#e67e22;"></i> 预警标签说明</div>
+
+        <div class="rule-item">
+            <span class="rule-tag" style="background:#ff9800;"><i class="fa fa-warning"></i> 非工作时间</span>
+            <div class="rule-content">
+                <h4>触发条件 &nbsp;<span style="font-size:12px; color:#888; font-weight:normal;">工作时间：09:00 ~ 17:00</span></h4>
+                <p>事件发生时间（以开始时间为准）落在 <strong>09:00 之前</strong> 或 <strong>17:00 及以后</strong>，即触发此预警。</p>
+                <div class="example">示例：某条轨迹于 18:30 开始记录，系统判定为非工作时间，自动添加此预警标签。</div>
+            </div>
+        </div>
+
+        <div class="rule-item">
+            <span class="rule-tag" style="background:#9b59b6;"><i class="fa fa-clock-o"></i> 轨迹时间过长</span>
+            <div class="rule-content">
+                <h4>触发条件 &nbsp;<span style="font-size:12px; color:#888; font-weight:normal;">阈值：单条轨迹 &gt; 1 分钟</span></h4>
+                <p>单条人员轨迹记录的持续时长 <strong>超过 1 分钟</strong>，由后台计算后自动标记。</p>
+                <div class="example">示例：人员在某区域从进入到离开共持续 90 秒（1.5 分钟），系统自动添加此预警标签。</div>
+            </div>
+        </div>
+
+        <div class="rule-item">
+            <span class="rule-tag" style="background:#3498db;"><i class="fa fa-hourglass-end"></i> 事件时间过长</span>
+            <div class="rule-content">
+                <h4>触发条件 &nbsp;<span style="font-size:12px; color:#888; font-weight:normal;">阈值：复合事件总时长 &gt; 30 分钟</span></h4>
+                <p>复合事件整体持续时长（从首条轨迹开始至最后一条轨迹结束）<strong>超过 30 分钟</strong>，由后台计算后自动标记。</p>
+                <div class="example">示例：某次入库活动从 10:00 开始，到 10:35 结束，共 35 分钟，系统自动在对应复合事件上添加此预警标签。</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title"><i class="fa fa-info-circle" style="color:#3498db;"></i> 使用说明</div>
+        <ul style="padding-left: 18px; font-size: 13px; color: #555; line-height: 2;">
+            <li>预警标签仅作为辅助判断参考，不代表事件存在违规行为，需结合视频内容综合判断。</li>
+            <li>在事件页面和轨迹页面可通过"特殊筛选"按条件过滤含对应预警标签的记录。</li>
+            <li>事件标注完成后，预警标签不影响标注结果的准确性。</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="note-box">
+            <i class="fa fa-lightbulb-o"></i>
+            <strong>说明：</strong>系统仅对<strong>非工作时间</strong>、<strong>轨迹时间过长</strong>、<strong>事件时间过长</strong>三类情况进行自动标注。
+            人员数量相关的标识已于 2026 年 2 月调整移除，以避免因识别准确性不足导致的误判。
+        </div>
+    </div>
+
+    <div class="update-info">最近更新：2026年2月 &nbsp;|&nbsp; 资产视频分析插件运维组</div>
+</div>
+</body>
+</html>

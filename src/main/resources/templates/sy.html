@@ -488,6 +488,9 @@
             <button onclick="goToShelfTrajectory()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
                 <i class="fa fa-cube"></i> 货位位置查询
             </button>
+            <button onclick="window.open('/caseapp/track/warningRules','_blank')" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">
+                <i class="fa fa-shield"></i> 预警规则
+            </button>
             <a th:href="@{/logout}" class="logout-button">
                 <i class="fa fa-sign-out"></i> 退出登录
             </a>
@@ -554,7 +557,6 @@
             <label for="specialFilter"><i class="fa fa-warning"></i> 特殊筛选：</label>
             <select id="specialFilter" class="form-control noselect2" multiple>
                 <option value="nonWorktime">非工作时间提示</option>
-                <option value="abnormalPerson">人员异常数量</option>
                 <option value="longTrack">轨迹时间过长</option>
                 <option value="longEvent">事件时间过长</option>
             </select>
@@ -961,16 +963,6 @@
                             });
                         }
 
-                        if (comp.hasAbnormalPerson === 1 || comp.hasAbnormalPerson === '1') {
-                            specialTags.push('人员异常');
-                        } else {
-                            events.forEach(event => {
-                                if (event.rysl > 0 && (event.rysl < 2 || event.rysl >= 3)) {
-                                    if (!specialTags.includes('人员异常')) specialTags.push('人员异常');
-                                }
-                            });
-                        }
-
                         if (comp.hasLongTrack === 1 || comp.hasLongTrack === '1') {
                             specialTags.push('轨迹时间过长');
                         }
@@ -1010,9 +1002,6 @@
                             let matches = false;
                             if (specialFilter.includes('nonWorktime')) {
                                 if (comp.specialTags.includes('非工作时间')) matches = true;
-                            }
-                            if (specialFilter.includes('abnormalPerson')) {
-                                if (comp.specialTags.includes('人员异常')) matches = true;
                             }
                             if (specialFilter.includes('longTrack')) {
                                 if (comp.specialTags.includes('轨迹时间过长')) matches = true;
@@ -1076,8 +1065,6 @@
                     let icon = 'fa-warning';
                     if (tag === '非工作时间') {
                         color = '#ff9800'; // 橙色
-                    } else if (tag === '人员异常') {
-                        color = '#e74c3c'; // 红色
                     } else if (tag === '轨迹时间过长') {
                         color = '#9b59b6'; // 紫色
                         icon = 'fa-clock-o';
@@ -1089,10 +1076,6 @@
                 }).join('')
                 : '';
 
-            const ryslMaxHtml = comp.ryslMax > 0
-                ? `<span style="margin-left: 8px; padding: 2px 8px; background: ${comp.hasAbnormalPerson ? '#ffe5e5' : '#e8f5e9'}; color: ${comp.hasAbnormalPerson ? '#d32f2f' : '#2e7d32'}; border-radius: 10px; font-size: 11px; font-weight: bold;"><i class="fa fa-users"></i> 最多${comp.ryslMax}人</span>`
-                : '';
-
             return `
                     <div class="composite-card" id="composite-card-${comp.id}">
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
@@ -1101,7 +1084,7 @@
                                    onclick="event.stopPropagation();">
                             <div style="flex: 1;">
                                 <div class="composite-header" onclick="openCompositeTrace('${comp.id}')">
-                                    <div class="composite-title">复合事件 #${comp.eventIndex} <span style="color: #868e96; font-size: 13px; font-weight: normal;">(ID: ${comp.id})</span>${statusBadge}${specialTagsHtml}${ryslMaxHtml}</div>
+                                    <div class="composite-title">复合事件 #${comp.eventIndex} <span style="color: #868e96; font-size: 13px; font-weight: normal;">(ID: ${comp.id})</span>${statusBadge}${specialTagsHtml}</div>
                                     <div class="composite-badge">${comp.eventCount || comp.events.length} 个关联事件</div>
                                 </div>
                                 <div onclick="openCompositeTrace('${comp.id}')">
