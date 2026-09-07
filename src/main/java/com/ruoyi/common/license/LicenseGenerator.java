@@ -21,8 +21,9 @@ public class LicenseGenerator {
 
     /**
      * AES加密密钥（16位）- 必须与LicenseValidator中的密钥一致
+     * 可通过环境变量 LICENSE_SECRET_KEY 覆盖，未设置时使用开发默认值
      */
-    private static final String SECRET_KEY = "RuoYi2025License";
+    private static final String SECRET_KEY = System.getenv().getOrDefault("LICENSE_SECRET_KEY", "RuoYi2025License");
 
     /**
      * 默认有效期（天数）

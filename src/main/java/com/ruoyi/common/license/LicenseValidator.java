@@ -24,9 +24,9 @@ public class LicenseValidator {
     private static final String LICENSE_FILE_PATH = "license.dat";
 
     /**
-     * AES加密密钥（16位）- 请修改为你自己的密钥
+     * AES加密密钥（16位）- 可通过环境变量 LICENSE_SECRET_KEY 覆盖，未设置时使用开发默认值
      */
-    private static final String SECRET_KEY = "RuoYi2025License";
+    private static final String SECRET_KEY = System.getenv().getOrDefault("LICENSE_SECRET_KEY", "RuoYi2025License");
 
     /**
      * 验证许可证
