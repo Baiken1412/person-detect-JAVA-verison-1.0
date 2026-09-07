@@ -4,6 +4,15 @@
 .svn/
 
 ######################################################################
+# Real key/cert material — generate locally, never commit
+
+*.keystore
+*.jks
+*.pem
+*.p12
+*.pfx
+
+######################################################################
 # Build Tools
 
 .gradle
