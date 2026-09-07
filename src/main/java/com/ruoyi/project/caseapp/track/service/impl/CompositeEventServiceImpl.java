@@ -258,19 +258,19 @@ public class CompositeEventServiceImpl implements ICompositeEventService
         // 按 eventGroup 分组轨迹 - eventGroup 为 null 或 0 的不参与复合事件计算
         // 相同 eventGroup 的摄像头一起计算复合事件
         Map<Integer, List<AppTrack>> groupedTracks = new HashMap<>();
-        for (AppTrack track : windowTracks)
+        for (AppTrack t : windowTracks)
         {
             // 通过 qyid 查询对应的摄像头配置
-            if (track.getQyid() != null)
+            if (t.getQyid() != null)
             {
-                AppRoomip roomip = appRoomipMapper.selectAppRoomipById(track.getQyid());
+                AppRoomip roomip = appRoomipMapper.selectAppRoomipById(t.getQyid());
                 if (roomip != null)
                 {
                     Integer eventGroup = roomip.getEventGroup();
                     // eventGroup 为 null 或 0 的不参与计算
                     if (eventGroup != null && eventGroup > 0)
                     {
-                        groupedTracks.computeIfAbsent(eventGroup, k -> new ArrayList<>()).add(track);
+                        groupedTracks.computeIfAbsent(eventGroup, k -> new ArrayList<>()).add(t);
                     }
                 }
             }

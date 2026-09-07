@@ -1,8 +1,8 @@
-# Case-Property Video Surveillance System
+# Asset Video Surveillance System
 
 **🌐 [English](README.md) | [中文](README.zh.md)**
 
-A case-property video surveillance and management system built on Spring Boot + MyBatis + Thymeleaf.
+A asset video surveillance and management system built on Spring Boot + MyBatis + Thymeleaf.
 
 **Version**: 4.7.8
 **Stack**: Spring Boot 2.5.15 + MyBatis + Thymeleaf + Shiro + MySQL + Redis
@@ -227,7 +227,7 @@ A: See [Deployment Guide – FAQ](使用文档说明/DEPLOYMENT.md#常见问题)
 
 ## Development team
 
-**Project name**: Case-Property Video Surveillance System
+**Project name**: Asset Video Surveillance System
 **Version**: 4.7.8
 **Based on**: RuoYi framework v4.7.8
 **Last updated**: 2025-12-27
