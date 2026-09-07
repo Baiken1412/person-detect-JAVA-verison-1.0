@@ -1,6 +1,6 @@
 # 资产视频监控系统
 
-**🌐 [English](README_PROJECT.md) | [中文](README_PROJECT.zh.md)**
+**🌐 [English](README.md) | [中文](README.zh.md)**
 
 基于Spring Boot + MyBatis + Thymeleaf开发的资产视频监控管理系统
 
@@ -11,7 +11,7 @@
 
 ## 📚 文档导航
 
-### 🚀 [部署手册 (DEPLOYMENT.md)](./DEPLOYMENT.md)
+### 🚀 [部署手册 (DEPLOYMENT.md)](使用文档说明/DEPLOYMENT.md)
 
 **适用人员**: 运维人员、系统管理员
 
@@ -24,11 +24,11 @@
 - ✅ 启动验证和常见问题
 - ✅ 性能优化和监控建议
 
-**快速开始**: [点击查看部署手册](./DEPLOYMENT.md)
+**快速开始**: [点击查看部署手册](使用文档说明/DEPLOYMENT.md)
 
 ---
 
-### 🔧 [维护手册 (MAINTENANCE.md)](./MAINTENANCE.md)
+### 🔧 [维护手册 (MAINTENANCE.md)](使用文档说明/MAINTENANCE.md)
 
 **适用人员**: 开发人员、维护人员
 
@@ -41,10 +41,10 @@
 - ✅ 开发规范和调试技巧
 
 **快速查找**:
-- [事件聚合算法修改](./MAINTENANCE.md#一复合事件聚合算法修改)
-- [事件列表页面定制](./MAINTENANCE.md#二事件列表页面定制)
-- [事件包导出功能修改](./MAINTENANCE.md#三事件包导出功能修改)
-- [数据库表结构](./MAINTENANCE.md#数据库设计)
+- [事件聚合算法修改](使用文档说明/MAINTENANCE.md#一复合事件聚合算法修改)
+- [事件列表页面定制](使用文档说明/MAINTENANCE.md#二事件列表页面定制)
+- [事件包导出功能修改](使用文档说明/MAINTENANCE.md#三事件包导出功能修改)
+- [数据库表结构](使用文档说明/MAINTENANCE.md#数据库设计)
 
 ---
 
@@ -100,7 +100,7 @@
 
 ### 1. 部署系统
 
-如果你是首次部署，请查看 **[部署手册](./DEPLOYMENT.md)**
+如果你是首次部署，请查看 **[部署手册](使用文档说明/DEPLOYMENT.md)**
 
 ```bash
 # 1. 安装环境（JDK 1.8, MySQL 8.0, Redis 5.0）
@@ -123,13 +123,13 @@ java -jar target/ruoyi.jar
 
 ### 2. 开发修改
 
-如果你需要修改功能，请查看 **[维护手册](./MAINTENANCE.md)**
+如果你需要修改功能，请查看 **[维护手册](使用文档说明/MAINTENANCE.md)**
 
 **常见修改场景**:
-- [修改事件聚合时间阈值](./MAINTENANCE.md#一复合事件聚合算法修改)
-- [添加新的统计维度](./MAINTENANCE.md#五统计功能修改)
-- [修改PDF导出格式](./MAINTENANCE.md#32-修改pdf格式)
-- [添加新的标注字段](./MAINTENANCE.md#41-添加标注字段)
+- [修改事件聚合时间阈值](使用文档说明/MAINTENANCE.md#一复合事件聚合算法修改)
+- [添加新的统计维度](使用文档说明/MAINTENANCE.md#五统计功能修改)
+- [修改PDF导出格式](使用文档说明/MAINTENANCE.md#32-修改pdf格式)
+- [添加新的标注字段](使用文档说明/MAINTENANCE.md#41-添加标注字段)
 
 ---
 
@@ -154,10 +154,11 @@ caseapp/
 │           └── caseapp/track/                     # 其他页面
 │
 ├── pom.xml                                    # Maven依赖
-├── README.md                                  # RuoYi框架原始说明
-├── README_PROJECT.md                          # 项目说明文档（本文件）⭐
-├── DEPLOYMENT.md                              # 部署手册 ⭐⭐⭐
-└── MAINTENANCE.md                             # 维护手册 ⭐⭐⭐
+├── README.md                                  # 项目说明文档（英文）⭐
+├── README.zh.md                               # 项目说明文档（本文件）⭐
+└── 使用文档说明/
+    ├── DEPLOYMENT.md                          # 部署手册 ⭐⭐⭐
+    └── MAINTENANCE.md                         # 维护手册 ⭐⭐⭐
 ```
 
 ---
@@ -197,19 +198,19 @@ caseapp/
 ## 常见问题
 
 ### Q: 如何修改事件聚合的时间间隔？
-A: 查看 [维护手册 - 事件聚合算法修改](./MAINTENANCE.md#一复合事件聚合算法修改)
+A: 查看 [维护手册 - 事件聚合算法修改](使用文档说明/MAINTENANCE.md#一复合事件聚合算法修改)
 
 ### Q: 如何添加新的统计指标？
-A: 查看 [维护手册 - 统计功能修改](./MAINTENANCE.md#五统计功能修改)
+A: 查看 [维护手册 - 统计功能修改](使用文档说明/MAINTENANCE.md#五统计功能修改)
 
 ### Q: 导出的事件包在哪里？
 A: 默认位置: `桌面/事件包导出/batch_events_[时间]/`
 
 ### Q: 如何修改导出PDF的格式？
-A: 查看 [维护手册 - PDF格式修改](./MAINTENANCE.md#32-修改pdf格式)
+A: 查看 [维护手册 - PDF格式修改](使用文档说明/MAINTENANCE.md#32-修改pdf格式)
 
 ### Q: 系统无法启动怎么办？
-A: 查看 [部署手册 - 常见问题](./DEPLOYMENT.md#常见问题)
+A: 查看 [部署手册 - 常见问题](使用文档说明/DEPLOYMENT.md#常见问题)
 
 ---
 
@@ -241,8 +242,8 @@ A: 查看 [部署手册 - 常见问题](./DEPLOYMENT.md#常见问题)
 
 ## 获取帮助
 
-- 📖 查看 [部署手册](./DEPLOYMENT.md)
-- 🔧 查看 [维护手册](./MAINTENANCE.md)
+- 📖 查看 [部署手册](使用文档说明/DEPLOYMENT.md)
+- 🔧 查看 [维护手册](使用文档说明/MAINTENANCE.md)
 - 💬 联系技术支持团队
 
 ---

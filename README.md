@@ -1,6 +1,6 @@
 # Case-Property Video Surveillance System
 
-**🌐 [English](README_PROJECT.md) | [中文](README_PROJECT.zh.md)**
+**🌐 [English](README.md) | [中文](README.zh.md)**
 
 A case-property video surveillance and management system built on Spring Boot + MyBatis + Thymeleaf.
 
@@ -11,7 +11,7 @@ A case-property video surveillance and management system built on Spring Boot + 
 
 ## 📚 Documentation
 
-### 🚀 [Deployment Guide (DEPLOYMENT.md)](./DEPLOYMENT.md)
+### 🚀 [Deployment Guide (DEPLOYMENT.md)](使用文档说明/DEPLOYMENT.md)
 
 **Audience**: Ops engineers, system administrators
 
@@ -24,11 +24,11 @@ A case-property video surveillance and management system built on Spring Boot + 
 - ✅ Startup verification and common issues
 - ✅ Performance tuning and monitoring recommendations
 
-**Quick start**: [see the deployment guide](./DEPLOYMENT.md)
+**Quick start**: [see the deployment guide](使用文档说明/DEPLOYMENT.md)
 
 ---
 
-### 🔧 [Maintenance Guide (MAINTENANCE.md)](./MAINTENANCE.md)
+### 🔧 [Maintenance Guide (MAINTENANCE.md)](使用文档说明/MAINTENANCE.md)
 
 **Audience**: Developers, maintainers
 
@@ -41,10 +41,10 @@ A case-property video surveillance and management system built on Spring Boot + 
 - ✅ Development conventions and debugging tips
 
 **Quick links**:
-- [Event-aggregation algorithm changes](./MAINTENANCE.md#一复合事件聚合算法修改)
-- [Customizing the event-list page](./MAINTENANCE.md#二事件列表页面定制)
-- [Modifying the event-package export feature](./MAINTENANCE.md#三事件包导出功能修改)
-- [Database table structure](./MAINTENANCE.md#数据库设计)
+- [Event-aggregation algorithm changes](使用文档说明/MAINTENANCE.md#一复合事件聚合算法修改)
+- [Customizing the event-list page](使用文档说明/MAINTENANCE.md#二事件列表页面定制)
+- [Modifying the event-package export feature](使用文档说明/MAINTENANCE.md#三事件包导出功能修改)
+- [Database table structure](使用文档说明/MAINTENANCE.md#数据库设计)
 
 ---
 
@@ -100,7 +100,7 @@ password: admin123
 
 ### 1. Deploy the system
 
-If this is your first deployment, see the **[Deployment Guide](./DEPLOYMENT.md)**
+If this is your first deployment, see the **[Deployment Guide](使用文档说明/DEPLOYMENT.md)**
 
 ```bash
 # 1. Set up the environment (JDK 1.8, MySQL 8.0, Redis 5.0)
@@ -123,13 +123,13 @@ java -jar target/ruoyi.jar
 
 ### 2. Development / customization
 
-If you need to modify functionality, see the **[Maintenance Guide](./MAINTENANCE.md)**
+If you need to modify functionality, see the **[Maintenance Guide](使用文档说明/MAINTENANCE.md)**
 
 **Common modification scenarios**:
-- [Change the event-aggregation time threshold](./MAINTENANCE.md#一复合事件聚合算法修改)
-- [Add a new statistics dimension](./MAINTENANCE.md#五统计功能修改)
-- [Change the PDF export format](./MAINTENANCE.md#32-修改pdf格式)
-- [Add a new annotation field](./MAINTENANCE.md#41-添加标注字段)
+- [Change the event-aggregation time threshold](使用文档说明/MAINTENANCE.md#一复合事件聚合算法修改)
+- [Add a new statistics dimension](使用文档说明/MAINTENANCE.md#五统计功能修改)
+- [Change the PDF export format](使用文档说明/MAINTENANCE.md#32-修改pdf格式)
+- [Add a new annotation field](使用文档说明/MAINTENANCE.md#41-添加标注字段)
 
 ---
 
@@ -154,10 +154,11 @@ caseapp/
 │           └── caseapp/track/                     # other pages
 │
 ├── pom.xml                                    # Maven dependencies
-├── README.md                                  # original RuoYi framework readme
-├── README_PROJECT.md                          # project readme (this file) ⭐
-├── DEPLOYMENT.md                              # deployment guide ⭐⭐⭐
-└── MAINTENANCE.md                             # maintenance guide ⭐⭐⭐
+├── README.md                                  # project readme (this file) ⭐
+├── README.zh.md                               # 中文版 readme
+└── 使用文档说明/
+    ├── DEPLOYMENT.md                          # deployment guide ⭐⭐⭐
+    └── MAINTENANCE.md                         # maintenance guide ⭐⭐⭐
 ```
 
 ---
@@ -197,19 +198,19 @@ Uses Apache PDFBox to automatically generate structured PDF documents, with Chin
 ## FAQ
 
 **Q: How do I change the event-aggregation time interval?**
-A: See [Maintenance Guide – event-aggregation algorithm changes](./MAINTENANCE.md#一复合事件聚合算法修改)
+A: See [Maintenance Guide – event-aggregation algorithm changes](使用文档说明/MAINTENANCE.md#一复合事件聚合算法修改)
 
 **Q: How do I add a new statistics metric?**
-A: See [Maintenance Guide – statistics feature changes](./MAINTENANCE.md#五统计功能修改)
+A: See [Maintenance Guide – statistics feature changes](使用文档说明/MAINTENANCE.md#五统计功能修改)
 
 **Q: Where do exported event packages go?**
 A: Default location: `Desktop/Event Package Export/batch_events_[timestamp]/`
 
 **Q: How do I change the exported PDF format?**
-A: See [Maintenance Guide – PDF format changes](./MAINTENANCE.md#32-修改pdf格式)
+A: See [Maintenance Guide – PDF format changes](使用文档说明/MAINTENANCE.md#32-修改pdf格式)
 
 **Q: What if the system won't start?**
-A: See [Deployment Guide – FAQ](./DEPLOYMENT.md#常见问题)
+A: See [Deployment Guide – FAQ](使用文档说明/DEPLOYMENT.md#常见问题)
 
 ---
 
@@ -241,8 +242,8 @@ This project is built on the RuoYi framework and follows its open-source license
 
 ## Getting help
 
-- 📖 See the [Deployment Guide](./DEPLOYMENT.md)
-- 🔧 See the [Maintenance Guide](./MAINTENANCE.md)
+- 📖 See the [Deployment Guide](使用文档说明/DEPLOYMENT.md)
+- 🔧 See the [Maintenance Guide](使用文档说明/MAINTENANCE.md)
 - 💬 Contact the technical support team
 
 ---
